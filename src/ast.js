@@ -126,7 +126,7 @@ module.exports = function makeAST(tokens) {
             if (tok === "\\") {
                 let block = false;
                 let args;
-                // TODO: Must find block from the args, if any, and if so parse it
+                
                 if ((block = ast.contents.pop() || {}).type === "block") {
                     ast.contents.pop();
                     let fLength = getFoldLength(stream, index);
