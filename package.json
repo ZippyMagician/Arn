@@ -1,0 +1,36 @@
+{
+  "name": "arn",
+  "version": "0.1.0",
+  "description": "A functional golfing language",
+  "main": "src",
+  "scripts": {
+    "test": "node bin/arn.js run ../examples/evil_numbers.arn --stdin \"46\""
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ZippyMagician/Arn.git"
+  },
+  "bin": {
+    "arn": "./bin/arn.js"
+  },
+  "keywords": [
+    "code-golf",
+    "golfing",
+    "code",
+    "functional",
+    "paradigm",
+    "language",
+    "interpreter"
+  ],
+  "author": "Joshua Barnett",
+  "license": "Apache-2.0",
+  "bugs": {
+    "url": "https://github.com/ZippyMagician/Arn/issues"
+  },
+  "homepage": "https://github.com/ZippyMagician/Arn#readme",
+  "dependencies": {
+    "bignumber.js": "^9.0.0",
+    "minimist": "^1.2.5",
+    "readline-sync": "^1.4.10"
+  }
+}
