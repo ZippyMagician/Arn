@@ -1,6 +1,6 @@
 {
-  "name": "arn",
-  "version": "0.1.0",
+  "name": "arn-language",
+  "version": "0.1.1",
   "description": "A functional golfing language",
   "main": "src",
   "scripts": {

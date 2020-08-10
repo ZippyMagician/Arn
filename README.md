@@ -4,7 +4,7 @@ A general-purpose function golfing language
 ## Installation
 To install **Arn** you must have [Node.js](https://nodejs.org) installed on your system. Once installed, run
 ```sh
-npm install -g arn
+npm install -g arn-language
 ```
 You can then run the command
 ```sh
