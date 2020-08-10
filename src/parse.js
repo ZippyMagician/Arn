@@ -93,11 +93,12 @@ module.exports = (tree, opts) => {
                         child_env.set(map_ops.arg, {type: "string", value: v});
                         return evalNode(map_ops.contents, child_env);
                     }
-    
+                    
                     val = val.map(prefix_map);
                 }
-    
-                return evalNode(ast(tokenize(val.join(` ${fold_ops.map(r => r.value).join("")} `))), env);
+                
+                if (fold_ops.length) return evalNode(ast(tokenize(val.join(` ${fold_ops.map(r => r.value).join("")} `))), env);
+                else return val;
             default:
                 throw new SyntaxError("Couldn't recognize prefix: " + node.value);
         }
@@ -280,7 +281,6 @@ module.exports = (tree, opts) => {
                 ret_val = evalSuffix(node, env);
                 break;
             case "keyword":
-                console.log(node)
                 ret_val = evalNode(env.get(node.value), env);
                 break;
             case "javascript":

@@ -15,6 +15,6 @@ module.exports = (code, opts) => {
     
     // Shortest Hello, World!
     // console.log('("Hello, World!) Packed + Compressed:', compressor.pack(`'yt, bs!`));
-
+    
     console.log(parse(to_ast(tokenize(code)), opts));
 }
