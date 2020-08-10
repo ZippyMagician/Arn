@@ -50,8 +50,9 @@ module.exports.builtins = {
 }
 
 // Predefined variables
+// Out of date
 module.exports.vars = {
-    '\'': '""',
+    'c': '""',
     pi: new BigNumber('3.14159265358979323846'),
-    e: new BigNumber(' 2.71828182845904523536')
+    e: new BigNumber('2.71828182845904523536')
 }

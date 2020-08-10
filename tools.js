@@ -19,3 +19,5 @@ function create_codepage() {
 
     console.log(base);
 }
+
+create_codepage();

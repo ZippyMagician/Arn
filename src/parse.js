@@ -18,6 +18,14 @@ function cast(value, type) {
 }
 
 module.exports = (tree, opts) => {
+    function zip(left, right) {
+        return left.map((val, index) => [val, right[index]]);
+    }
+    
+    function zip_with(left, right, op, env) {
+        return zip(left, right).map(entry => evalNode(entry.join(op.value), env));
+    }
+
     // Overhead for all the punctuation
     function evalPrefix(node, env) {
         const coerce = (n, t) => cast(evalNode(n.arg, env), t);
@@ -131,7 +139,7 @@ module.exports = (tree, opts) => {
                 return coerce(node.left, "string") + coerce(node.right, "string");
             case '@':
                 if (node.arg) {
-                    return zip_with(evalNode(node.left, env), evalNode(node.right, env), node.arg);
+                    return zip_with(evalNode(node.left, env), evalNode(node.right, env), node.arg, env);
                 } else {
                     return zip(evalNode(node.left, env), evalNode(node.right, env));
                 }
@@ -298,6 +306,8 @@ module.exports = (tree, opts) => {
     env.set("f", {type: "integer", value: 0});
     env.set("t", {type: "integer", value: 1});
     env.set("c", {type: "string", value: ""});
+    env.set("pi", {type: "integer", value: "3.14159265358979323846"});
+    env.set("e", {type: "integer", value: "2.71828182845904523536"});
     env.set("_", {
         type: "array",
         contents: {
