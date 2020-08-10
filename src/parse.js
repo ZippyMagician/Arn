@@ -62,7 +62,10 @@ module.exports = (tree, opts) => {
                 const filter = v => {
                     let child_env = env.clone();
                     child_env.set(ind, {type: "string", value: v});
-                    return evalNode(func, child_env);
+                    let ret_val = evalNode(func, child_env);
+                    env.update(child_env, ind);
+
+                    return ret_val;
                 }
     
                 return coerce(node, "array").filter(filter);
@@ -73,7 +76,10 @@ module.exports = (tree, opts) => {
                 const any_filter = v => {
                     let child_env = env.clone();
                     child_env.set(ind, {type: "string", value: v});
-                    return evalNode(func, child_env);
+                    let ret_val = evalNode(func, child_env);
+                    env.update(child_env, ind);
+
+                    return ret_val;
                 }
     
                 return coerce(node, "array").filter(any_filter).length > 0;
@@ -90,8 +96,11 @@ module.exports = (tree, opts) => {
                 if (map_ops) {
                     const prefix_map = v => {
                         let child_env = env.clone();
-                        child_env.set(map_ops.arg, {type: "string", value: v});
-                        return evalNode(map_ops.contents, child_env);
+                        child_env.set(map_ops.block.arg, {type: "string", value: v});
+                        let ret = evalNode(map_ops.block.contents, child_env);
+                        env.update(child_env, map_ops.block.arg);
+
+                        return ret;
                     }
                     
                     val = val.map(prefix_map);
@@ -166,10 +175,14 @@ module.exports = (tree, opts) => {
             case '@:':
                 let left = node.left;
                 if (left.type !== "keyword") throw new SyntaxError("Cannot modify immutable item:", left);
+
                 let obj = env.get(left.value);
-                let index = coerce(obj, "array").indexOf(coerce(node.right, "string"));
-                env.set(left.value, [...coerce(obj, "array").slice(0, index), ...coerce(obj, "array").slice(index + 1)]);
-                return coerce(obj, "array")[index];
+                let entry = coerce(obj, "array");
+                let index = entry.indexOf(coerce(node.right, "string"));
+
+                env.set(left.value, {type: "array", contents: {type: "prog", contents: [...entry.slice(0, index), ...entry.slice(index + 1)].map(r => {return {type: "string", value: r}})}});
+
+                return evalNode(env.get(left.value), env);
             case '?':
                 return coerce(node.left, "array")[coerce(node.right, "int")];
             default:
@@ -178,6 +191,7 @@ module.exports = (tree, opts) => {
     }
     
     function doBase(command, ops, item, length) {
+        if (!command) return item;
         switch (command) {
             case 'b':
                 return (+item).toString(2).padStart(length, '0');
@@ -270,6 +284,7 @@ module.exports = (tree, opts) => {
                 }
                 
                 ret_val = evalNode(body, child_env);
+                env.update(child_env);
                 break;
             case "prefix":
                 ret_val = evalPrefix(node, env);
@@ -319,6 +334,9 @@ module.exports = (tree, opts) => {
             }}) : [{type: "string", value: rl.question("STDIN: ")}]
         }
     });
+
+    let item;
+    if ((item = env.get("_").contents.contents).length === 1) env.set("_", item[0]);
 
     let std = [{type: "keyword", value: "_"}];
 

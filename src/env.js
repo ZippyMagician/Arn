@@ -49,6 +49,14 @@ class Environment {
         }
     }
 
+    update(environment, exclude = "_") {
+        for (let item of environment.storage) {
+            if (this._exists(item.name) && item.name !== exclude) {
+                this.set(item.name, item.value);
+            }
+        }
+    }
+
     clone() {
         return new Environment(this);
     }

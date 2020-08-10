@@ -46,7 +46,7 @@ module.exports = function makeAST(tokens) {
             else if (isPunc(start)) offset++;
             contents.push(look());
         }
-
+        
         return contents;
     }
 
