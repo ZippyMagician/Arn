@@ -14,8 +14,7 @@ module.exports = (code, opts) => {
     if (compressor.isPacked(code)) code = compressor.unpack(code);
     
     // Shortest Hello, World!
-    //console.log('("Hello, World!) Packed + Compressed:', compressor.pack(`'yt, bs!`));
+    // console.log('("Hello, World!) Packed + Compressed:', compressor.pack(`'yt, bs!`));
 
-    //console.log(JSON.stringify(to_ast(tokenize(code))));
     console.log(parse(to_ast(tokenize(code)), opts));
 }

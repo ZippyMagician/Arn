@@ -62,7 +62,7 @@ module.exports = (tree, opts) => {
                 const filter = v => {
                     let child_env = env.clone();
                     child_env.set(ind, {type: "string", value: v});
-                    evalNode(func, child_env);
+                    return evalNode(func, child_env);
                 }
     
                 return coerce(node, "array").filter(filter);
@@ -73,7 +73,7 @@ module.exports = (tree, opts) => {
                 const any_filter = v => {
                     let child_env = env.clone();
                     child_env.set(ind, {type: "string", value: v});
-                    evalNode(func, child_env);
+                    return evalNode(func, child_env);
                 }
     
                 return coerce(node, "array").filter(any_filter).length > 0;
@@ -179,13 +179,13 @@ module.exports = (tree, opts) => {
     function doBase(command, ops, item, length) {
         switch (command) {
             case 'b':
-                return item.toString(2).padStart(length, '0');
+                return (+item).toString(2).padStart(length, '0');
             case 'h':
-                return item.toString(16).padStart(length, '0');
+                return (+item).toString(16).padStart(length, '0');
             case 'o':
-                return item.toString(8).padStart(length, '0');
+                return (+item).toString(8).padStart(length, '0');
             case 'd':
-                return item;
+                return (+item);
             case 'O':
                 return doBase(ops[1], ops, parseInt(item, 8), length);
             case 'H':
