@@ -280,6 +280,7 @@ module.exports = (tree, opts) => {
                 ret_val = evalSuffix(node, env);
                 break;
             case "keyword":
+                console.log(node)
                 ret_val = evalNode(env.get(node.value), env);
                 break;
             case "javascript":
