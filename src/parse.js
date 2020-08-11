@@ -178,6 +178,8 @@ module.exports = (tree, opts) => {
                 }
             case ':|':
                 return coerce(node.left, "array").join(coerce(node.right, "string"));
+            case ':i':
+                return coerce(node.left, "array").indexOf(evalNode(node.right));
             case '->':
             case '=>':
                 let range = [];

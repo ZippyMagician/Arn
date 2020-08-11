@@ -20,12 +20,12 @@ module.exports.prefixes = [
 module.exports.infixes = [
     '=', '<', '>', '+', '-', '*', '/', '%', '^', '|', '@', '.', '~', '@',
     '<=', '>=', '!=', '||', '&&', ':|', '->', '=>', ':!', ':?', '::', '@:',
-    '?', ':=', ':', '&'
+    '?', ':=', ':', '&', ':i'
 ];
 
 module.exports.suffixes = [
     '#',
-    '*^', ':_', ':n', ':s', ':i'
+    '*^', ':_', ':n', ':s', ':}', ':{'
 ];
 
 // Infixes that cannot follow other infixes; they take priority
