@@ -3,17 +3,17 @@ const { default: BigNumber } = require('bignumber.js');
 
 // All punctuation. It is stored so that different punctuation can go adjacent to one another, allowing for shorter programs.
 module.exports.punctuation = [
-    'n', '!', '$', '#', '\\',                                             // Single-length prefixes
+    '!', '$', '#', '\\',                                                       // Single-length prefixes
     '=', '<', '>', '+', '-', '*', '/', '%', '^', '|', '@', '.', '~', '@', '&', // Single-length infixes
     '#', '?',                                                                  // Single-length suffixes
-    '!!', ':v', ':^', '++', '--', ':*', ':/', ':>', ':<', '|:', '$:',          // Double-length prefixes
+    '!!', ':v', ':^', '++', '--', ':*', ':/', ':>', ':<', '|:', '$:', 'n:',    // Double-length prefixes
     '<=', '>=', '!=', '||', '&&', ':|', '->', '=>', ':!', ':?', '::', '@:',    // Double-length infixes
     '*^', ':_', ':{', ':}', ':@',                                              // Double-length suffixes
     '{', '}', '(', ')', '[', ']', ',', ':=', ':', ':n', ':s', ':i', ';'        // Other punctuation
 ];
 
 module.exports.prefixes = [
-    'n', '!', '$', '\\',
+    'n:', '!', '$', '\\',
     '!!', ':v', ':^', '++', '--', ':*', ':/', ':>', ':<', '|:',  '$:'
 ];
 

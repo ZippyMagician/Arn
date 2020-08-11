@@ -34,7 +34,7 @@ module.exports = (tree, opts) => {
         let value;
     
         switch (node.value) {
-            case 'n':
+            case 'n:':
                 return -1 * coerce(node, "int");
             case '!!':
                 return [...coerce(node, "string")].reverse().join("");
@@ -396,7 +396,7 @@ module.exports = (tree, opts) => {
     hardcode("out", std, "process.stdout.write(_ + \" \");");
     hardcode("in", std, "stdin || rl.question('> ')");
     define_func("outl", std, "out |\"\n\"");
-    define_func("intr", std.concat([{type: "keyword", value: "sep"}]), "|{|sep}\\ :! c");
+    define_func("intr", std.concat([{type: "keyword", value: "sep"}]), "|{|sep}\\");
     define_func("fact", std, "*\\ 1=>");
     define_func("mean", std, "(+\\) / #");
     define_func("mode", std, ":< :@ :{:{");

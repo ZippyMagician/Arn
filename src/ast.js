@@ -71,7 +71,7 @@ module.exports = function makeAST(tokens) {
                 let args = [];
                 while (count > 0) {
                     next();
-                    args.push(parseExpr());
+                    args.push(maybeExpr());
                     count -= 1;
                 }
 
