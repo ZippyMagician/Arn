@@ -8,7 +8,7 @@ module.exports.punctuation = [
     '#', '?',                                                                  // Single-length suffixes
     '!!', ':v', ':^', '++', '--', ':*', ':/', ':>', ':<', '|:', '$:',          // Double-length prefixes
     '<=', '>=', '!=', '||', '&&', ':|', '->', '=>', ':!', ':?', '::', '@:',    // Double-length infixes
-    '*^', ':_', ':{', ':}',                                                    // Double-length suffixes
+    '*^', ':_', ':{', ':}', ':@',                                              // Double-length suffixes
     '{', '}', '(', ')', '[', ']', ',', ':=', ':', ':n', ':s', ':i', ';'        // Other punctuation
 ];
 
@@ -25,7 +25,7 @@ module.exports.infixes = [
 
 module.exports.suffixes = [
     '#',
-    '*^', ':_', ':n', ':s', ':}', ':{'
+    '*^', ':_', ':n', ':s', ':}', ':{', ':@'
 ];
 
 // Infixes that cannot follow other infixes; they take priority
@@ -40,13 +40,10 @@ module.exports.builtins = {
     out: 1,
     outl: 1,
     in: 0,
-    line: 0,
-    map: 2,
     intr: 2,
     fact: 1,
     mean: 1,
-    pop: 1,
-    push: 2
+    mode: 1
 }
 
 // Predefined variables

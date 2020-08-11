@@ -2,7 +2,8 @@ const constants = require('./constants.js');
 
 function getFoldLength(tokens, from) {
     let bIndex = from, fIndex = from;
-    while (tokens[bIndex] !== {type: "punctuation", value: "{"} && bIndex > 0) bIndex--;
+    while (tokens[bIndex--] != {type: "punctuation", value: "{"} && bIndex > 0) {};
+    bIndex += 1;
     if (bIndex > 0) {
         while (tokens[fIndex] !== {type: "punctuation", value: ";"} && fIndex > 0) fIndex--;
     }
@@ -245,6 +246,7 @@ module.exports = function makeAST(tokens) {
                 return parseExpr();
             } else if (look().value === "{") {
                 index--;
+                if (infix) return {type: "keyword", value: "_"};
                 return parseBlock();
             } else if (look().value === "[") {
                 return parseArray();

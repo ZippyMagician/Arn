@@ -75,9 +75,9 @@ module.exports = (tree, opts) => {
             case ':/':
                 return Math.sqrt(coerce(node, "int"));
             case ':>':
-                return coerce(node, "array").sort();
+                return coerce(node, "array").sort((a, b) => (typeof a === "object" ? a.length : a) - (typeof b === "object" ? b.length : b));
             case ':<':
-                return coerce(node, "array").sort((a, b) => b - a);
+                return coerce(node, "array").sort((a, b) => (typeof b === "object" ? b.length : b) - (typeof a === "object" ? a.length : a));
             case '$':
                 func = node.block.contents;
                 ind = node.block.arg;
@@ -111,6 +111,16 @@ module.exports = (tree, opts) => {
     
                 return [scalar, [...scalar].reverse().join("")];
             case '\\':
+                const stringify = val => {
+                    if (typeof val === "string") {
+                        return `"${val}"`;
+                    } else if (typeof val === "object") {
+                        return `[${val.toString().replace(/,/g, " ")}]`;
+                    } else {
+                        return +val;
+                    }
+                }
+
                 let map_ops = node.map_ops;
                 let fold_ops = node.fold_ops;
     
@@ -119,9 +129,9 @@ module.exports = (tree, opts) => {
                 if (map_ops) {
                     const prefix_map = v => {
                         let child_env = env.clone();
-                        child_env.set(map_ops.block.arg, {type: "string", value: v});
-                        let ret = evalNode(map_ops.block.contents, child_env);
-                        env.update(child_env, map_ops.block.arg);
+                        child_env.set(map_ops.arg, {type: "string", value: v});
+                        let ret = evalNode(map_ops.contents, child_env);
+                        env.update(child_env, map_ops.arg);
 
                         return ret;
                     }
@@ -129,6 +139,8 @@ module.exports = (tree, opts) => {
                     val = val.map(prefix_map);
                 }
                 
+                // Values won't parse properly unless they are stringified to represent their actual type in the data
+                val = val.map(r => stringify(r));
                 if (fold_ops.length) return evalNode(ast(tokenize(val.join(` ${fold_ops.map(r => r.value).join("")} `))), env);
                 else return val;
             default:
@@ -268,6 +280,12 @@ module.exports = (tree, opts) => {
             case ':}':
                 let item = coerce(node, "array");
                 return item[item.length - 1];
+            case ':@':
+                let arr = coerce(node, "array");
+                // Splice first element so reduce will work properly
+                arr = [arr[0], ...arr];
+                    
+                return arr.reduce((acc, val) => typeof acc === "object" ? (acc.filter(entry => entry[0] === val).length ? (acc[acc.indexOf(acc.filter(entry => entry[0] === val)[0])].push(val), acc) : (acc.push([val]), acc)) : [[val]]);
             default:
                 throw new SyntaxError("Couldn't recognize suffix: " + node.value);
         }
@@ -381,6 +399,7 @@ module.exports = (tree, opts) => {
     define_func("intr", std.concat([{type: "keyword", value: "sep"}]), "|{|sep}\\ :! c");
     define_func("fact", std, "*\\ 1=>");
     define_func("mean", std, "(+\\) / #");
+    define_func("mode", std, ":< :@ :{:{");
 
     return evalNode(tree, env);
 }
