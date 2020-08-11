@@ -63,6 +63,8 @@ module.exports = function makeAST(tokens) {
             if (look().type === "integer") {
                 if (/e[0-9]+/g.test(look().value)) {
                     return {type: "integer", value: +("1" + look().value)}
+                } else {
+                    return look();
                 }
             } else {
                 return look();

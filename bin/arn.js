@@ -30,7 +30,7 @@ switch (opts.long[0]) {
                 execute(str, opts);
             });
         } else {
-            fs.readFile(__dirname + '/' + file, 'utf8', (err, data) => {
+            fs.readFile(process.cwd() + '/' + file, 'utf8', (err, data) => {
                 let str = String.raw`${data}`;
                 execute(str, opts);
             });

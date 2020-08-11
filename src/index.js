@@ -6,6 +6,7 @@ const to_ast = require('./ast.js');
 const parse = require('./parse.js');
 
 module.exports = (code, opts) => {
+    console.log(code);
     if (opts.c) {
         console.log("Packed:", compressor.pack(code));
         return;
