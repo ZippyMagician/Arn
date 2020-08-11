@@ -37,6 +37,6 @@ switch (opts.long[0]) {
         }
         break;
     case 'help':
-        console.log("Here is a list of commands:\n * run -> Runs a file, or program directly if passed the -u flag\n * help -> Gets a list of all commands/flags\n\nHere are a list of flags:\n * -u -> Take manually inputted program instead of file\n * -c -> Compiles the code instead of running it");
+        console.log("Here is a list of commands:\n * run -> Runs a file, or program directly if passed the -u flag\n * help -> Gets a list of all commands/flags\n\nHere are a list of flags:\n * -u -> Take manually inputted program instead of file\n * -c -> Compiles the code instead of running it\n * -d -> Will print some debug information (will be expanded in the future)");
         break;
 }
