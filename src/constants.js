@@ -8,7 +8,7 @@ module.exports.punctuation = [
     '#', '?',                                                                  // Single-length suffixes
     '!!', ':v', ':^', '++', '--', ':*', ':/', ':>', ':<', '|:', '$:',          // Double-length prefixes
     '<=', '>=', '!=', '||', '&&', ':|', '->', '=>', ':!', ':?', '::', '@:',    // Double-length infixes
-    '*^', ':_',                                                                // Double-length suffixes
+    '*^', ':_', ':{', ':}',                                                    // Double-length suffixes
     '{', '}', '(', ')', '[', ']', ',', ':=', ':', ':n', ':s', ':i', ';'        // Other punctuation
 ];
 

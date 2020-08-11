@@ -31,6 +31,7 @@ module.exports = (tree, opts) => {
         const coerce = (n, t) => cast(evalNode(n.arg, env), t);
         let func;
         let ind;
+        let value;
     
         switch (node.value) {
             case 'n':
@@ -44,9 +45,31 @@ module.exports = (tree, opts) => {
             case ':^':
                 return Math.ceil(coerce(node, "int"));
             case '++':
-                return ++coerce(node, "int");
+                if (node.arg.type === "keyword") {
+                    value = evalNode(env.get(node.arg.value));
+                    if (typeof value === "object") {
+                        env.set(node.arg.value, {type: "array", contents: {type: "prog", contents: value.map(r => {return {type: "integer", value: ++r}})}});
+                        return value.map(r => ++r);
+                    } else {
+                        env.set(node.arg.value, {type: "integer", value: ++value});
+                        return value;
+                    }
+                } else {
+                    return ++coerce(node, "int");
+                }
             case '--':
-                return --coerce(node, "int");
+                if (node.arg.type === "keyword") {
+                    value = evalNode(env.get(node.arg.value));
+                    if (typeof value === "object") {
+                        env.set(node.arg.value, {type: "array", contents: {type: "prog", contents: value.map(r => {return {type: "integer", value: --r}})}});
+                        return value.map(r => --r);
+                    } else {
+                        env.set(node.arg.value, {type: "integer", value: --value});
+                        return value;
+                    }
+                } else {
+                    return --coerce(node, "int");
+                }
             case ':*':
                 return coerce(node, "int") ** 2;
             case ':/':
@@ -238,6 +261,13 @@ module.exports = (tree, opts) => {
                 return coerce(node, "string").split("\n");
             case ':s':
                 return coerce(node, "string").split(" ");
+            case ':{':
+                return coerce(node, "array")[0];
+            case ':}':
+                let item = coerce(node, "array");
+                return item[item.length - 1];
+            default:
+                throw new SyntaxError("Couldn't recognize suffix: " + node.value);
         }
     }
 
@@ -299,7 +329,8 @@ module.exports = (tree, opts) => {
                 ret_val = evalNode(env.get(node.value), env);
                 break;
             case "javascript":
-                ret_val = eval(`${env.storage.map(obj => `var ${obj.name} = ${evalNode(obj.value, env) || '""'}`).join(";")};${node.body}`);
+                let gettype = val => typeof val === "string" ? `"${val}"` : val;
+                ret_val = eval(`${env.storage.map(obj => `var ${obj.name} = ${gettype(evalNode(obj.value, env)) || '""'}`).join(";")};${node.body}`);
                 break;
             default:
                 throw new SyntaxError("Unrecognized node in AST:", node);
