@@ -6,14 +6,14 @@ module.exports.punctuation = [
     '!', '$', '#', '\\',                                                       // Single-length prefixes
     '=', '<', '>', '+', '-', '*', '/', '%', '^', '|', '@', '.', '~', '@', '&', // Single-length infixes
     '#', '?',                                                                  // Single-length suffixes
-    '!!', ':v', ':^', '++', '--', ':*', ':/', ':>', ':<', '|:', '$:', 'n:',    // Double-length prefixes
+    '!!', ':v', ':^', '++', '--', ':*', ':/', ':>', ':<', '|:', '$:', 'n_',    // Double-length prefixes
     '<=', '>=', '!=', '||', '&&', ':|', '->', '=>', ':!', ':?', '::', '@:',    // Double-length infixes
     '*^', ':_', ':{', ':}', ':@',                                              // Double-length suffixes
     '{', '}', '(', ')', '[', ']', ',', ':=', ':', ':n', ':s', ':i', ';'        // Other punctuation
 ];
 
 module.exports.prefixes = [
-    'n:', '!', '$', '\\',
+    'n_', '!', '$', '\\',
     '!!', ':v', ':^', '++', '--', ':*', ':/', ':>', ':<', '|:',  '$:'
 ];
 

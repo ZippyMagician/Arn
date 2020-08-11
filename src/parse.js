@@ -34,7 +34,7 @@ module.exports = (tree, opts) => {
         let value;
     
         switch (node.value) {
-            case 'n:':
+            case 'n_':
                 return -1 * coerce(node, "int");
             case '!!':
                 return [...coerce(node, "string")].reverse().join("");
