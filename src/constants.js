@@ -31,7 +31,7 @@ module.exports.suffixes = [
 
 // Infixes that cannot follow other infixes; they take priority
 module.exports.ninfixes = [
-    '=', '!=', '<', '>', '<=', '>=', '*', '/', '&'
+    '=', '!=', '<', '>', '<=', '>=', '+', '-', '&'
 ]
 
 // Builtin functions and their definition (or marked as true if hardcoded)
