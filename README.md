@@ -47,3 +47,4 @@ Arn is still very early in development (as of writing this, version `0.1`!). Thi
 Current features that will exist in the future:
  * Sequences
  * Pattern matching?
+ * If/Else (or some sort of ternary)
