@@ -1,4 +1,5 @@
 // All constant values used throughout the program for various purposes
+// TODO: Make use of bignumber.js
 const { default: BigNumber } = require('bignumber.js');
 
 // All punctuation. It is stored so that different punctuation can go adjacent to one another, allowing for shorter programs.
