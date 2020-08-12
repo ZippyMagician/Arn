@@ -12,6 +12,7 @@ class Options {
         this.stdin = argv.stdin;
         this.c = argv.c;
         this.u = argv.u;
+        this.d = argv.d;
     }
 }
 

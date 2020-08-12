@@ -6,10 +6,10 @@ const rl = require('readline-sync');
 
 var stdin = false;
 
-function cast(value, type) {
+function cast(value, type, env) {
     switch (type) {
         case "int":
-            return typeof value === "array" ? value[0] : +value;
+            return typeof value === "object" ? +value[0] : +value;
         case "string":
             return typeof value === "string" ? value : typeof value === "number" ? value.toString() : value[0];
         case "array":
@@ -28,7 +28,7 @@ module.exports = (tree, opts) => {
 
     // Overhead for all the punctuation
     function evalPrefix(node, env) {
-        const coerce = (n, t) => cast(evalNode(n.arg, env), t);
+        const coerce = (n, t) => cast(evalNode(n.arg, env), t, env);
         let func;
         let ind;
         let value;
@@ -149,7 +149,7 @@ module.exports = (tree, opts) => {
     }
     
     function evalInfix(node, env) {
-        const coerce = (n, t) => cast(evalNode(n, env), t);
+        const coerce = (n, t) => cast(evalNode(n, env), t, env);
         
         switch (node.value) {
             case '=':
@@ -200,7 +200,6 @@ module.exports = (tree, opts) => {
     
                 if (node.value === "->") for (ind; ind < end; ind++) range.push(ind);
                 else for (ind; ind <= end; ind++) range.push(ind);
-    
                 return range;
             case ':!':
                 return coerce(node.left, "string").split(coerce(node.right, "string"));
@@ -250,7 +249,7 @@ module.exports = (tree, opts) => {
     }
     
     function evalSuffix(node, env) {
-        const coerce = (n, t) => cast(evalNode(n.arg, env), t);
+        const coerce = (n, t) => cast(evalNode(n.arg, env), t, env);
         
         switch (node.value) {
             case '#':
@@ -359,7 +358,7 @@ module.exports = (tree, opts) => {
         return ret_val;
     }
     
-    if (opts.stdin) stdin = opts.stdin.toString().indexOf("\n") > -1 ? opts.stdin.toString().split("\n") : [opts.stdin.toString()];
+    if (opts.stdin) stdin = opts.stdin.toString().indexOf("\\n") > -1 ? opts.stdin.toString().split("\\n") : [opts.stdin.toString()];
 
     function define_func(name, args, fn) {
         env.create_func(name, args, ast(tokenize(fn)));
