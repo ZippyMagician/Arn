@@ -314,6 +314,15 @@ module.exports = (tree, opts) => {
             case "expression":
                 ret_val = evalNode(node.contents, env);
                 break;
+            case "block":
+                child_env = env.clone();
+                child_env.set(node.arg, env.get("_"));
+
+                for (let child_node of node.contents) {
+                    ret_val = evalNode(child_node, env);
+                }
+                env.update(child_env, node.arg);
+                break;
             case "array":
                 ret_val = [];
                 for (let child_node of node.contents.contents) {
