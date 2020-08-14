@@ -4,18 +4,9 @@ const tokenize = require('./lexer.js');
 const dictionary = require('./dictionary');
 const rl = require('readline-sync');
 
-var stdin = false;
+const { cast, printf } = require('./formatter.js');
 
-function cast(value, type, env) {
-    switch (type) {
-        case "int":
-            return typeof value === "object" ? +value[0] : +value;
-        case "string":
-            return typeof value === "string" ? value : typeof value === "number" ? value.toString() : value[0];
-        case "array":
-            return typeof value === "string" || typeof value === "number" ? value.toString().split(value.toString().indexOf(" ") > -1 ? " " : "") : value;
-    }
-}
+var stdin = false;
 
 module.exports = (tree, opts) => {
     function zip(left, right) {
@@ -28,7 +19,7 @@ module.exports = (tree, opts) => {
 
     // Overhead for all the punctuation
     function evalPrefix(node, env) {
-        const coerce = (n, t) => cast(evalNode(n.arg, env), t, env);
+        const coerce = (n, t) => cast(evalNode(n.arg, env), t);
         let func;
         let ind;
         let value;
@@ -149,7 +140,7 @@ module.exports = (tree, opts) => {
     }
     
     function evalInfix(node, env) {
-        const coerce = (n, t) => cast(evalNode(n, env), t, env);
+        const coerce = (n, t) => cast(evalNode(n, env), t);
         
         switch (node.value) {
             case '=':
@@ -249,7 +240,7 @@ module.exports = (tree, opts) => {
     }
     
     function evalSuffix(node, env) {
-        const coerce = (n, t) => cast(evalNode(n.arg, env), t, env);
+        const coerce = (n, t) => cast(evalNode(n.arg, env), t);
         
         switch (node.value) {
             case '#':
@@ -357,8 +348,7 @@ module.exports = (tree, opts) => {
                 ret_val = evalNode(env.get(node.value), env);
                 break;
             case "javascript":
-                let gettype = val => typeof val === "string" ? `"${val}"` : val;
-                ret_val = eval(`${env.storage.map(obj => `var ${obj.name} = ${gettype(evalNode(obj.value, env)) || '""'}`).join(";")};${node.body}`);
+                env.get(node.name).body(env);
                 break;
             default:
                 throw new SyntaxError("Unrecognized node in AST:", node);
@@ -401,8 +391,8 @@ module.exports = (tree, opts) => {
 
     define_func("max", std, ":<(?0");
     define_func("min", std, ":>(?0");
-    hardcode("out", std, "process.stdout.write(_ + \" \");");
-    hardcode("in", std, "stdin || rl.question('> ')");
+    hardcode("out", std, (env) => printf(env.get("_")));
+    hardcode("in", [], (env) => stdin || rl.question("> "));
     define_func("outl", std, "out |\"\n\"");
     define_func("intr", std.concat([{type: "keyword", value: "sep"}]), "|{|sep}\\");
     define_func("fact", std, "*\\ 1=>");

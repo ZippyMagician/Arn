@@ -2,8 +2,9 @@ const compressor = require('./compressor.js');
 const str_packer = require('./dictionary.js');
 const tokenize = require('./lexer.js');
 const to_ast = require('./ast.js');
-// TODO: Finish parser
 const parse = require('./parse.js');
+
+const { printf } = require('./formatter.js');
 
 module.exports = (code, opts) => {
     if (opts.d) {
@@ -15,5 +16,5 @@ module.exports = (code, opts) => {
     }
     if (compressor.isPacked(code)) code = compressor.unpack(code);
     
-    console.log(parse(to_ast(tokenize(code)), opts));
+    printf(parse(to_ast(tokenize(code)), opts));
 }
