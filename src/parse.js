@@ -5,6 +5,7 @@ const dictionary = require('./dictionary');
 const rl = require('readline-sync');
 
 const { cast, printf } = require('./formatter.js');
+const Sequence = require('./sequence.js');
 
 var stdin = false;
 
@@ -285,6 +286,7 @@ module.exports = (tree, opts) => {
     // Evaluates current node of tree
     function evalNode(node, env) {
         let ret_val = "";
+        let child_env
 
         switch (node.type) {
             case "prog":
@@ -309,15 +311,22 @@ module.exports = (tree, opts) => {
                 child_env = env.clone();
                 child_env.set(node.arg, env.get("_"));
 
-                for (let child_node of node.contents) {
-                    ret_val = evalNode(child_node, env);
-                }
+                ret_val = evalNode(node.contents, child_env);
                 env.update(child_env, node.arg);
                 break;
             case "array":
-                ret_val = [];
-                for (let child_node of node.contents.contents) {
-                    ret_val.push(evalNode(child_node, env));
+                // Check if sequence
+                if (node.contents.contents.filter(r => r.type === "block").length) {
+                    let container;
+                    let seq_length = (container = node.contents.contents.filter(r => r.type === "infix" && r.value === "->")).length ? evalNode(container[0].right, env) : false;
+                    let seq_block = node.contents.contents.filter(r => r.type === "block")[0];
+
+                    ret_val = new Sequence(node.contents.contents.filter(r => r.type !== "block" && !(r.type === "infix" && r.value === "->")).map(r => evalNode(r, env)), seq_block, seq_length, env, evalNode);
+                } else {
+                    ret_val = [];
+                    for (let child_node of node.contents.contents) {
+                        ret_val.push(evalNode(child_node, env));
+                    }
                 }
                 break;
             case "function":
@@ -326,7 +335,7 @@ module.exports = (tree, opts) => {
             case "call":
                 let [arg_list, body] = env.get_func(node.value);
                 if (arg_list.filter(r => r.type !== "keyword").length > 0) throw new SyntaxError("Cannot pass non-keywords as argument names to function: " + node.value);
-                let child_env = env.clone();
+                child_env = env.clone();
 
                 for (let i in arg_list) {
                     child_env.set(arg_list[i].value, node.args[i]);
