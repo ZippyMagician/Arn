@@ -33,7 +33,7 @@ module.exports = (tree, opts) => {
                 return [...coerce(node, "string")].reverse().join("");
             case '!':
                 const fix = item => /^\d+$/.test(item) ? +item : item;
-                return !fix(evalNode(node.arg, env, true));
+                return !fix(evalNode(node.arg, env, true)) ? 1 : 0;
             case ':v':
                 return Math.floor(coerce(node, "int"));
             case ':^':

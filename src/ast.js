@@ -2,10 +2,10 @@ const constants = require('./constants.js');
 
 function getFoldLength(tokens, from) {
     let bIndex = from, fIndex = from;
-    while (tokens[bIndex--] != {type: "punctuation", value: "{"} && bIndex > 0) {};
+    while (tokens[bIndex--] != {type: "punctuation", value: "{"} && bIndex >= 0) {};
     bIndex += 1;
     if (bIndex > 0) {
-        while (tokens[fIndex] !== {type: "punctuation", value: ";"} && fIndex > 0) fIndex--;
+        fIndex = 0;
     }
     return [fIndex, bIndex - fIndex];
 }
@@ -139,7 +139,8 @@ module.exports = function makeAST(tokens) {
                 if ((block = ast.contents.pop() || {}).type === "block") {
                     ast.contents.pop();
                     let fLength = getFoldLength(stream, index);
-                    args = stream.slice(fLength[0], fLength[1] - (block.arg !== "_" ? 1 : 0));
+                    if (fLength[1] === 0) args = [];
+                    else args = stream.slice(fLength[0], fLength[1] - (block.arg !== "_" ? 1 : 0));
                 } else {
                     block = false;
                     args = stream.slice(0, stream.indexOf(look()));

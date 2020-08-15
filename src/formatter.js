@@ -10,17 +10,14 @@ module.exports.printf = function printf(item, nested = false) {
             break;
         case 'object':
             if (item instanceof BigNumber) console.log(item.toString());
+            else if (nested) console.log(item.join(" "));
             else {
                 item.forEach(entry => {
                     if (typeof entry === "object") {
-                        if (nested) {
-                            console.log(entry instanceof BigNumber ? entry.toString() : entry.join(" "));
+                        if (entry instanceof BigNumber) {
+                            console.log(entry.toString());
                         } else {
-                            if (entry instanceof BigNumber) {
-                                console.log(entry.toString());
-                            } else {
-                                printf(entry, true);
-                            }
+                            printf(entry, true);
                         }
                     } else {
                         console.log(entry.toString());
