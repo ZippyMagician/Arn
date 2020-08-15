@@ -175,10 +175,14 @@ module.exports = (tree, opts) => {
             case '/':
                 return coerce(node.left, "int").dividedBy(coerce(node.right, "int")).toString();
             case '%':
-                // TODO: Check this and fix.
                 return coerce(node.left, "int").modulo(coerce(node.right, "int")).toString();
             case '^':
-                return coerce(node.left, "int").exponentiatedBy(coerce(node.right, "int")).toString();
+                let repeat;
+                if (typeof (repeat = evalNode(node.left, env)) === "string") {
+                    return repeat.repeat(coerce(node.right, "int").toString());
+                } else {
+                    return coerce(node.left, "int").exponentiatedBy(coerce(node.right, "int")).toString();
+                }
             case '|':
                 return coerce(node.left, "string") + coerce(node.right, "string");
             case '@':
