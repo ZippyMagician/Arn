@@ -52,7 +52,7 @@ module.exports = class Sequence {
             constructed.right = this._iterReplace({ ...node.right }, this.cur_offset);
         }
         
-        if (compare(node, { type: 'keyword', value: '_' })) {
+        if (compare(node, { type: 'variable', value: '_' })) {
             // idk why I have to do this, TODO: Look for fix
             constructed = require('./formatter.js').constructType(this._built[this.cur_offset]);
             this.cur_offset -= 1;
