@@ -48,4 +48,4 @@ Current features that will exist in the future:
  * ~~Sequences~~
  * Pattern matching?
  * If/Else (or some sort of ternary)
- * Swap out integers for bignums
+ * ~~Swap out integers for bignums~~
