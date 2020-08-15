@@ -11,7 +11,7 @@ module.exports.printf = function printf(item, nested = false) {
         case 'object':
             if (item instanceof BigNumber) console.log(item.toString());
             else {
-                item.foreach(entry => {
+                item.forEach(entry => {
                     if (typeof entry === "object") {
                         if (nested) {
                             console.log(entry instanceof BigNumber ? entry.toString() : entry.join(" "));
@@ -35,7 +35,7 @@ module.exports.printf = function printf(item, nested = false) {
 module.exports.cast = function cast(value, type) {
     switch (type) {
         case "int":
-            return typeof value === "object" ? value instanceof Sequence ? +value.get(0) : +value[0] : +value;
+            return new BigNumber(typeof value === "object" ? value instanceof Sequence ? value.get(0) : value instanceof BigNumber ? value.toString() : value[0] : value);
         case "string":
             return typeof value === "string" ? value : typeof value === "number" ? value.toString() : value instanceof Sequence ? value.get(0) : value[0];
         case "array":
@@ -50,7 +50,10 @@ module.exports.constructType = function constructType(value) {
             return {type: "string", value: value};
         case 'number':
             return {type: "integer", value: +value};
-        case 'array':
+        case 'object':
+            if (value instanceof BigNumber) {
+                return {type: "integer", value: value.toString()};
+            }
             return {type: "array", contents: {type: "prog", contents: value.map(r => constructType(r))}};
         default:
             throw new Error("Could not construct type from", value);

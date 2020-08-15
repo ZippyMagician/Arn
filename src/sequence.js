@@ -105,7 +105,7 @@ module.exports = class Sequence {
         }
     }
 
-    foreach(call) {
+    forEach(call) {
         if (!this.length) {
             while (true) {
                 call(this._next());

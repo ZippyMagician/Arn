@@ -6,6 +6,7 @@ const rl = require('readline-sync');
 
 const { cast, printf } = require('./formatter.js');
 const Sequence = require('./sequence.js');
+const { default: BigNumber } = require('bignumber.js');
 
 var stdin = false;
 
@@ -19,7 +20,7 @@ module.exports = (tree, opts) => {
     }
 
     // Overhead for all the punctuation
-    function evalPrefix(node, env) {
+    function evalPrefix(node, env, fix = false) {
         const coerce = (n, t) => cast(evalNode(n.arg, env), t);
         let func;
         let ind;
@@ -27,18 +28,19 @@ module.exports = (tree, opts) => {
     
         switch (node.value) {
             case 'n_':
-                return -1 * coerce(node, "int");
+                return coerce(node, "int").multipliedBy(new BigNumber(-1)).toString();
             case '!!':
                 return [...coerce(node, "string")].reverse().join("");
             case '!':
-                return !evalNode(node.arg, env);
+                const fix = item => /^\d+$/.test(item) ? +item : item;
+                return !fix(evalNode(node.arg, env, true));
             case ':v':
                 return Math.floor(coerce(node, "int"));
             case ':^':
                 return Math.ceil(coerce(node, "int"));
             case '++':
                 if (node.arg.type === "keyword") {
-                    value = evalNode(env.get(node.arg.value));
+                    value = evalNode(env.get(node.arg.value), env, true);
                     if (typeof value === "object") {
                         env.set(node.arg.value, {type: "array", contents: {type: "prog", contents: value.map(r => {return {type: "integer", value: ++r}})}});
                         return value.map(r => ++r);
@@ -51,7 +53,7 @@ module.exports = (tree, opts) => {
                 }
             case '--':
                 if (node.arg.type === "keyword") {
-                    value = evalNode(env.get(node.arg.value));
+                    value = evalNode(env.get(node.arg.value), env, true);
                     if (typeof value === "object") {
                         env.set(node.arg.value, {type: "array", contents: {type: "prog", contents: value.map(r => {return {type: "integer", value: --r}})}});
                         return value.map(r => --r);
@@ -77,7 +79,7 @@ module.exports = (tree, opts) => {
                 const filter = v => {
                     let child_env = env.clone();
                     child_env.set(ind, {type: "string", value: v});
-                    let ret_val = evalNode(func, child_env);
+                    let ret_val = evalNode(func, child_env, true);
                     env.update(child_env, ind);
 
                     return ret_val;
@@ -91,8 +93,8 @@ module.exports = (tree, opts) => {
                 const any_filter = v => {
                     let child_env = env.clone();
                     child_env.set(ind, {type: "string", value: v});
-                    let ret_val = evalNode(func, child_env);
-                    env.update(child_env, ind);
+                    let ret_val = evalNode(func, child_env, true);
+                    env.update(child_env, ind, true);
 
                     return ret_val;
                 }
@@ -107,7 +109,8 @@ module.exports = (tree, opts) => {
                     if (typeof val === "string") {
                         return `"${val}"`;
                     } else if (typeof val === "object") {
-                        return `[${val.toString().replace(/,/g, " ")}]`;
+                        if (val instanceof BigNumber) return `${val.toString()}`;
+                        else return `[${val.toString().replace(/,/g, " ")}]`;
                     } else {
                         return +val;
                     }
@@ -122,7 +125,7 @@ module.exports = (tree, opts) => {
                     const prefix_map = v => {
                         let child_env = env.clone();
                         child_env.set(map_ops.arg, {type: "string", value: v});
-                        let ret = evalNode(map_ops.contents, child_env);
+                        let ret = evalNode(map_ops.contents, child_env, true);
                         env.update(child_env, map_ops.arg);
 
                         return ret;
@@ -133,57 +136,59 @@ module.exports = (tree, opts) => {
                 
                 // Values won't parse properly unless they are stringified to represent their actual type in the data
                 val = val.map(r => stringify(r));
-                if (fold_ops.length) return evalNode(ast(tokenize(val.join(` ${fold_ops.map(r => r.value).join("")} `))), env);
+                if (fold_ops.length) return evalNode(ast(tokenize(val.join(` ${fold_ops.map(r => r.value).join("")} `))), env, true);
                 else return val;
             default:
                 throw new SyntaxError("Couldn't recognize prefix: " + node.value);
         }
     }
     
-    function evalInfix(node, env) {
+    function evalInfix(node, env, f = false) {
         const coerce = (n, t) => cast(evalNode(n, env), t);
+        const fix = item => /^\d+$/.test(item) ? +item : item;
         
         switch (node.value) {
             case '=':
-                return evalNode(node.left, env) == evalNode(node.right, env);
+                return evalNode(node.left, env, true) == evalNode(node.right, env, true);
             case '<':
-                return evalNode(node.left, env) < evalNode(node.right, env);
+                return coerce(node.left, "int").isLessThan(coerce(node.right, "int"));
             case '>':
-                return evalNode(node.left, env) > evalNode(node.right, env);
+                return coerce(node.left, "int").isGreaterThan(coerce(node.right, "int"));
             case '<=':
-                return evalNode(node.left, env) <= evalNode(node.right, env);
+                return coerce(node.left, "int").isLessThanOrEqualTo(coerce(node.right, "int"));
             case '>=':
-                return evalNode(node.left, env) >= evalNode(node.right, env);
+                return coerce(node.left, "int").isGreaterThanOrEqualTo(coerce(node.right, "int"));
             case '!=':
-                return evalNode(node.left, env) != evalNode(node.right, env);
+                return evalNode(node.left, env, true) != evalNode(node.right, env, true);
             case '||':
-                return evalNode(node.left, env) || evalNode(node.right, env);
+                return fix(evalNode(node.left, env, true)) || fix(evalNode(node.right, env, true));
             case '&&':
-                return evalNode(node.left, env) && evalNode(node.right, env);
+                return fix(evalNode(node.left, env, true)) && fix(evalNode(node.right, env, true));
             case '+':
-                return coerce(node.left, "int") + coerce(node.right, "int");
+                return coerce(node.left, "int").plus(coerce(node.right, "int")).toString();
             case '-':
-                return coerce(node.left, "int") - coerce(node.right, "int");
+                return coerce(node.left, "int").minus(coerce(node.right, "int")).toString();
             case '*':
-                return coerce(node.left, "int") * coerce(node.right, "int");
+                return coerce(node.left, "int").multipliedBy(coerce(node.right, "int")).toString();
             case '/':
-                return coerce(node.left, "int") / coerce(node.right, "int");
+                return coerce(node.left, "int").dividedBy(coerce(node.right, "int")).toString();
             case '%':
-                return coerce(node.left, "int") % coerce(node.right, "int");
+                // TODO: Check this and fix.
+                return coerce(node.left, "int").modulo(coerce(node.right, "int")).toString();
             case '^':
-                return coerce(node.left, "int") ** coerce(node.right, "int");
+                return coerce(node.left, "int").exponentiatedBy(coerce(node.right, "int")).toString();
             case '|':
                 return coerce(node.left, "string") + coerce(node.right, "string");
             case '@':
                 if (node.arg) {
-                    return zip_with(evalNode(node.left, env), evalNode(node.right, env), node.arg, env);
+                    return zip_with(evalNode(node.left, env, true), evalNode(node.right, env, true), node.arg, env);
                 } else {
-                    return zip(evalNode(node.left, env), evalNode(node.right, env));
+                    return zip(evalNode(node.left, env, true), evalNode(node.right, env, true));
                 }
             case ':|':
                 return coerce(node.left, "array").join(coerce(node.right, "string"));
             case ':i':
-                return coerce(node.left, "array").indexOf(evalNode(node.right));
+                return coerce(node.left, "array", true).indexOf(evalNode(node.right, env, true));
             case '->':
             case '=>':
                 let range = [];
@@ -222,19 +227,19 @@ module.exports = (tree, opts) => {
         if (!command) return item;
         switch (command) {
             case 'b':
-                return (+item).toString(2).padStart(length, '0');
+                return item.toNumber().toString(2).padStart(length, '0');
             case 'h':
-                return (+item).toString(16).padStart(length, '0');
+                return item.toNumber().toString(16).padStart(length, '0');
             case 'o':
-                return (+item).toString(8).padStart(length, '0');
+                return item.toNumber().toString(8).padStart(length, '0');
             case 'd':
-                return (+item);
+                return item.toNumber();
             case 'O':
-                return doBase(ops[1], ops, parseInt(item, 8), length);
+                return doBase(ops[1], ops, new BigNumber(item.toNumber(), 8), length);
             case 'H':
-                return doBase(ops[1], ops, parseInt(item, 16), length);
+                return doBase(ops[1], ops, new BigNumber(item.toNumber(), 16), length);
             case 'B':
-                return doBase(ops[1], ops, parseInt(item, 2), length);
+                return doBase(ops[1], ops, new BigNumber(item.toNumber(), 2), length);
             default:
                 throw new SyntaxError("Issue with base parsing:", command, ops, item);
         }
@@ -245,7 +250,7 @@ module.exports = (tree, opts) => {
         
         switch (node.value) {
             case '#':
-                return evalNode(node.arg, env).length;
+                return evalNode(node.arg, env, true).length;
             case ':_':
                 let ops = node.ops[0].split("");
                 let length = 0;
@@ -259,7 +264,7 @@ module.exports = (tree, opts) => {
                     command = ops[0];
                 }
     
-                return doBase(command, ops, coerce(node, "string"), length);
+                return doBase(command, ops, coerce(node, "int"), length);
             case '^*':
                 return coerce(node, "int") > 0 && Math.sqrt(coerce(node, "int")) % 1 === 0;
             case ':n':
@@ -284,14 +289,14 @@ module.exports = (tree, opts) => {
 
     var env = new Environment();
     // Evaluates current node of tree
-    function evalNode(node, env) {
+    function evalNode(node, env, fix = false) {
         let ret_val = "";
         let child_env
 
         switch (node.type) {
             case "prog":
                 for (let child_node of node.contents) {
-                    ret_val = evalNode(child_node, env);
+                    ret_val = evalNode(child_node, env, fix);
                 }
                 break;
             case "string":
@@ -302,30 +307,31 @@ module.exports = (tree, opts) => {
                 }
                 break;
             case "integer":
-                ret_val = +node.value;
+                ret_val = new BigNumber(node.value);
+                if (fix) ret_val = ret_val.toString();
                 break;
             case "expression":
-                ret_val = evalNode(node.contents, env);
+                ret_val = evalNode(node.contents, env, fix);
                 break;
             case "block":
                 child_env = env.clone();
                 child_env.set(node.arg, env.get("_"));
 
-                ret_val = evalNode(node.contents, child_env);
+                ret_val = evalNode(node.contents, child_env, fix);
                 env.update(child_env, node.arg);
                 break;
             case "array":
                 // Check if sequence
                 if (node.contents.contents.filter(r => r.type === "block").length) {
                     let container;
-                    let seq_length = (container = node.contents.contents.filter(r => r.type === "infix" && r.value === "->")).length ? evalNode(container[0].right, env) : false;
+                    let seq_length = (container = node.contents.contents.filter(r => r.type === "infix" && r.value === "->")).length ? evalNode(container[0].right, env, fix) : false;
                     let seq_block = node.contents.contents.filter(r => r.type === "block")[0];
 
-                    ret_val = new Sequence(node.contents.contents.filter(r => r.type !== "block" && !(r.type === "infix" && r.value === "->")).map(r => evalNode(r, env)), seq_block, seq_length, env, evalNode);
+                    ret_val = new Sequence(node.contents.contents.filter(r => r.type !== "block" && !(r.type === "infix" && r.value === "->")).map(r => evalNode(r, env, fix)), seq_block, seq_length, env, evalNode);
                 } else {
                     ret_val = [];
                     for (let child_node of node.contents.contents) {
-                        ret_val.push(evalNode(child_node, env));
+                        ret_val.push(evalNode(child_node, env, fix));
                     }
                 }
                 break;
@@ -341,20 +347,20 @@ module.exports = (tree, opts) => {
                     child_env.set(arg_list[i].value, node.args[i]);
                 }
                 
-                ret_val = evalNode(body, child_env);
+                ret_val = evalNode(body, child_env, fix);
                 env.update(child_env);
                 break;
             case "prefix":
-                ret_val = evalPrefix(node, env);
+                ret_val = evalPrefix(node, env, fix);
                 break;
             case "infix":
-                ret_val = evalInfix(node, env);
+                ret_val = evalInfix(node, env, fix);
                 break;
             case "suffix":
-                ret_val = evalSuffix(node, env);
+                ret_val = evalSuffix(node, env, fix);
                 break;
             case "keyword":
-                ret_val = evalNode(env.get(node.value), env);
+                ret_val = evalNode(env.get(node.value), env, fix);
                 break;
             case "javascript":
                 env.get(node.name).body(env);
