@@ -223,7 +223,9 @@ module.exports = (tree, opts) => {
 
                 return evalNode(env.get(left.value), env);
             case '?':
-                return coerce(node.left, "array")[coerce(node.right, "int")];
+                let arr = coerce(node.left, "array");
+                if (arr.get) return arr.get(coerce(node.right, "int"));
+                else return arr[coerce(node.right, "int")];
             default:
                 throw new SyntaxError("Could not recognize infix:", node);
         }
