@@ -39,7 +39,7 @@ module.exports = (tree, opts) => {
             case ':^':
                 return Math.ceil(coerce(node, "int"));
             case '++':
-                if (node.arg.type === "keyword") {
+                if (node.arg.type === "variable") {
                     value = evalNode(env.get(node.arg.value), env, true);
                     if (typeof value === "object") {
                         env.set(node.arg.value, {type: "array", contents: {type: "prog", contents: value.map(r => {return {type: "integer", value: ++r}})}});
@@ -52,7 +52,7 @@ module.exports = (tree, opts) => {
                     return ++coerce(node, "int");
                 }
             case '--':
-                if (node.arg.type === "keyword") {
+                if (node.arg.type === "variable") {
                     value = evalNode(env.get(node.arg.value), env, true);
                     if (typeof value === "object") {
                         env.set(node.arg.value, {type: "array", contents: {type: "prog", contents: value.map(r => {return {type: "integer", value: --r}})}});
@@ -209,7 +209,7 @@ module.exports = (tree, opts) => {
                 return coerce(node.left, "array").indexOf(coerce(node.right, "string")) > -1;
             case '@:':
                 let left = node.left;
-                if (left.type !== "keyword") throw new SyntaxError("Cannot modify immutable item:", left);
+                if (left.type !== "variable") throw new SyntaxError("Cannot modify immutable item:", left);
 
                 let obj = env.get(left.value);
                 let entry = coerce(obj, "array");
@@ -342,7 +342,7 @@ module.exports = (tree, opts) => {
                 break;
             case "call":
                 let [arg_list, body] = env.get_func(node.value);
-                if (arg_list.filter(r => r.type !== "keyword").length > 0) throw new SyntaxError("Cannot pass non-keywords as argument names to function: " + node.value);
+                if (arg_list.filter(r => r.type !== "variable").length > 0) throw new SyntaxError("Cannot pass non-variables as argument names to function: " + node.value);
                 child_env = env.clone();
 
                 for (let i in arg_list) {
@@ -361,7 +361,7 @@ module.exports = (tree, opts) => {
             case "suffix":
                 ret_val = evalSuffix(node, env, fix);
                 break;
-            case "keyword":
+            case "variable":
                 ret_val = evalNode(env.get(node.value), env, fix);
                 break;
             case "javascript":
@@ -404,14 +404,14 @@ module.exports = (tree, opts) => {
     let item;
     if ((item = env.get("_").contents.contents).length === 1) env.set("_", item[0]);
 
-    let std = [{type: "keyword", value: "_"}];
+    let std = [{type: "variable", value: "_"}];
 
     define_func("max", std, ":<(?0");
     define_func("min", std, ":>(?0");
     hardcode("out", std, (env) => printf(env.get("_")));
     hardcode("in", [], (env) => stdin || rl.question("> "));
     define_func("outl", std, "out |\"\n\"");
-    define_func("intr", std.concat([{type: "keyword", value: "sep"}]), "|{|sep}\\");
+    define_func("intr", std.concat([{type: "variable", value: "sep"}]), "|{|sep}\\");
     define_func("fact", std, "*\\ 1=>");
     define_func("mean", std, "(+\\) / #");
     define_func("mode", std, ":< :@ :{:{");

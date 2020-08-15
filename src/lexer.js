@@ -25,7 +25,7 @@ module.exports = function tokenize(code) {
             tokens.push({type: "integer", value: item[1]});
             buffer = buffer.slice(item[0].length).trim();
         } else if (item = /^([a-zA-Z0-9_]+)/g.exec(buffer)) {
-            tokens.push({type: "keyword", value: item[1]});
+            tokens.push({type: "variable", value: item[1]});
             buffer = buffer.slice(item[0].length).trim();
         } else {
             throw new Error("Did not recognize token in buffer: " + buffer);

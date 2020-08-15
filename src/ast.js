@@ -52,7 +52,7 @@ module.exports = function makeAST(tokens) {
     }
 
     function maybeScalar(arg = false, infix = false) {
-        if (!look()) return {type: "keyword", value: "_"}
+        if (!look()) return {type: "variable", value: "_"}
         // Checks for suffixes/infixes if already the arg of another function to prevent issues
         if (arg && next() && look().type === "punctuation" && (constants.suffixes.includes(look().value) || constants.infixes.includes(look().value)) && (!infix || (infix && !constants.ninfixes.includes(look().value)))) {
             ast.contents.push(last())
@@ -69,7 +69,7 @@ module.exports = function makeAST(tokens) {
             } else {
                 return look();
             }
-        } else if (look().type === "keyword") {
+        } else if (look().type === "variable") {
             let data;
             if (isPunc("{", peek())) return false;
             else if (data = isFunction(look().value)[0]) {
@@ -106,7 +106,7 @@ module.exports = function makeAST(tokens) {
     // Called from index BEFORE "{"
     function parseBlock() {
         let arg = "_"
-        if (look() && look().type === "keyword") arg = look().value;
+        if (look() && look().type === "variable") arg = look().value;
         next();
         let contents = parseContents("{", "}");
 
@@ -154,7 +154,7 @@ module.exports = function makeAST(tokens) {
                 }
             // Filter
             } else if (tok === "$") {
-                if (peek().type === "keyword") next();
+                if (peek().type === "variable") next();
                 let contents = parseBlock();
                 next();
                 return {
@@ -165,7 +165,7 @@ module.exports = function makeAST(tokens) {
                 };
             // Any
             } else if (tok === "$:") {
-                if (peek().type === "keyword") next();
+                if (peek().type === "variable") next();
                 let contents = parseBlock();
                 next();
                 return {
@@ -189,7 +189,7 @@ module.exports = function makeAST(tokens) {
             if (tok === ":=") {
                 while (!isPunc("(", look())) index--;
                 let name = last();
-                if (name.type !== "keyword") throw new SyntaxError(`Incorrect function assignment at: ${save = tokens.map(r => r.value).join("")}\n${" ".repeat(24 + index - 1) + "---^-here"}`);
+                if (name.type !== "variable") throw new SyntaxError(`Incorrect function assignment at: ${save = tokens.map(r => r.value).join("")}\n${" ".repeat(24 + index - 1) + "---^-here"}`);
                 let args = parseContents("(", ")");
                 next(); next();
 
@@ -206,14 +206,14 @@ module.exports = function makeAST(tokens) {
                         type: "infix",
                         value: tok,
                         arg: last().value,
-                        left: left || {type: "keyword", value: "_"},
+                        left: left || {type: "variable", value: "_"},
                         right: maybeExpr(true, true)
                     }
                 } else {
                     return {
                         type: "infix",
                         value: tok,
-                        left: left || {type: "keyword", value: "_"},
+                        left: left || {type: "variable", value: "_"},
                         right: maybeExpr(true, true)
                     }
                 }
@@ -221,7 +221,7 @@ module.exports = function makeAST(tokens) {
                 return {
                     type: "infix",
                     value: tok,
-                    left: left || {type: "keyword", value: "_"},
+                    left: left || {type: "variable", value: "_"},
                     right: maybeExpr(true, true)
                 };
             }
@@ -233,14 +233,14 @@ module.exports = function makeAST(tokens) {
                 return {
                     type: "suffix",
                     value: tok,
-                    arg: left || {type: "keyword", value: "_"},
+                    arg: left || {type: "variable", value: "_"},
                     ops
                 };
             } else {
                 return {
                     type: "suffix",
                     value: tok,
-                    arg: left || {type: "keyword", value: "_"}
+                    arg: left || {type: "variable", value: "_"}
                 };
             }
         } else {
@@ -254,7 +254,7 @@ module.exports = function makeAST(tokens) {
                 return parseExpr();
             } else if (look().value === "{") {
                 index--;
-                if (infix) return {type: "keyword", value: "_"};
+                if (infix) return {type: "variable", value: "_"};
                 return parseBlock();
             } else if (look().value === "[") {
                 return parseArray();
