@@ -135,8 +135,10 @@ module.exports = (tree, opts) => {
                 }
                 
                 // Values won't parse properly unless they are stringified to represent their actual type in the data
-                val = val.map(r => stringify(r));
-                if (fold_ops.length) return evalNode(ast(tokenize(val.join(` ${fold_ops.map(r => r.value).join("")} `))), env, true);
+                if (fold_ops.length) {
+                    val = val.map(r => stringify(r));
+                    return evalNode(ast(tokenize(val.join(` ${fold_ops.map(r => r.value).join("")} `))), env, true);
+                }
                 else return val;
             default:
                 throw new SyntaxError("Couldn't recognize prefix: " + node.value);
@@ -192,8 +194,8 @@ module.exports = (tree, opts) => {
             case '->':
             case '=>':
                 let range = [];
-                let ind = coerce(node.left, "int");
-                let end = coerce(node.right, "int");
+                let ind = coerce(node.left, "int").toNumber();
+                let end = coerce(node.right, "int").toNumber();
     
                 if (node.value === "->") for (ind; ind < end; ind++) range.push(ind);
                 else for (ind; ind <= end; ind++) range.push(ind);

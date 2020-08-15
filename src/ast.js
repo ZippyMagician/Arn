@@ -139,7 +139,7 @@ module.exports = function makeAST(tokens) {
                 if ((block = ast.contents.pop() || {}).type === "block") {
                     ast.contents.pop();
                     let fLength = getFoldLength(stream, index);
-                    args = stream.slice(fLength[0], fLength[1]);
+                    args = stream.slice(fLength[0], fLength[1] - (block.arg ? 1 : 0));
                 } else {
                     block = false;
                     args = stream.slice(0, stream.indexOf(look()));
