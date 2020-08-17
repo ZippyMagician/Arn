@@ -4,7 +4,9 @@
   "description": "A functional golfing language",
   "main": "src",
   "scripts": {
-    "test": "node bin/arn.js run ../examples/evil_numbers.arn --stdin \"\""
+    "test": "node bin/arn.js run ../examples/evil_numbers.arn --stdin \"\"",
+    "test:string": "node tests/string_tests.js",
+    "test:array": "node tests/array_tests.js"
   },
   "repository": {
     "type": "git",

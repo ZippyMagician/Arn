@@ -1,3 +1,3 @@
-node string_tests.js || { echo 'String tests failed'; exit 1; }
+npm run tests:string || { echo 'String tests failed'; exit 1; }
 
-node array_tests.js || { echo 'Array tests failed'; exit 1; }
+npm run tests:array || { echo 'Array tests failed'; exit 1; }
