@@ -24,7 +24,7 @@ module.exports = function tokenize(code) {
         } else if (item = /^([0-9.]*e?[0-9.]+)/g.exec(buffer)) {
             tokens.push({type: "integer", value: item[1]});
             buffer = buffer.slice(item[0].length).trim();
-        } else if (item = /^([a-zA-Z0-9_]+)/g.exec(buffer)) {
+        } else if (item = /^([a-zA-Z_][a-zA-Z0-9_]*)/g.exec(buffer)) {
             tokens.push({type: "variable", value: item[1]});
             buffer = buffer.slice(item[0].length).trim();
         } else {
