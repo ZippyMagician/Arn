@@ -2,7 +2,7 @@ language: node_js
 node_js:
   - 12
 install: npm install
-script: node ./tests/main.sh
+script: npm run test
 cache:
   directories:
     - node_modules
