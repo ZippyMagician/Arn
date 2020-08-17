@@ -1,4 +1,6 @@
 # Arn
+[![Build Status](https://travis-ci.org/ZippyMagician/Arn.svg?branch=master)](https://travis-ci.org/ZippyMagician/Arn)
+
 A general-purpose function golfing language
 
 ## Installation
