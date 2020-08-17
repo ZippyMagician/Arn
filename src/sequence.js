@@ -88,9 +88,11 @@ module.exports = class Sequence {
         if (!this.length) throw new RangeError("Cannot map an infinite sequence");
         else {
             while (this._index < this.length) {
-                call(this._next());
+                this._built[this._index - 1] = call(this._next());
             }
         }
+
+        return this._built;
     }
 
     filter(call) {
@@ -115,6 +117,12 @@ module.exports = class Sequence {
                 call(this._next());
             }
         }
+    }
+
+    join(sep) {
+        let built = [];
+        this.forEach(entry => built.push(entry));
+        return built.join(sep);
     }
 
     get(index) {

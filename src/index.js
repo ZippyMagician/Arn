@@ -6,7 +6,7 @@ const parse = require('./parse.js');
 
 const { printf } = require('./formatter.js');
 
-module.exports = (code, opts) => {
+module.exports.run = (code, opts) => {
     if (opts.d) {
         console.log("Program:", code);
     }
@@ -17,4 +17,9 @@ module.exports = (code, opts) => {
     if (compressor.isPacked(code)) code = compressor.unpack(code);
     
     printf(parse(to_ast(tokenize(code)), opts));
+}
+
+module.exports.parse = (code, opts) => {
+    if (compressor.isPacked(code)) code = compressor.unpack(code);
+    return parse(to_ast(tokenize(code)), opts);
 }
