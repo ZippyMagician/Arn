@@ -1,6 +1,6 @@
 {
   "name": "arn-language",
-  "version": "0.3.2",
+  "version": "0.3.3",
   "description": "A functional golfing language",
   "main": "src",
   "scripts": {
@@ -30,6 +30,7 @@
   "homepage": "https://github.com/ZippyMagician/Arn#readme",
   "dependencies": {
     "bignumber.js": "^9.0.0",
+    "colors": "^1.4.0",
     "minimist": "^1.2.5",
     "readline-sync": "^1.4.10"
   }
