@@ -28,6 +28,35 @@ module.exports.printf = function printf(item, nested = false) {
     }
 }
 
+module.exports.sprintf = function sprintf(item, nested = false) {
+    let ret = "";
+    switch (typeof item) {
+        case 'string':
+        case 'number':
+            ret = item.toString();
+            break;
+        case 'object':
+            if (item instanceof BigNumber) ret = item.toString();
+            else if (nested) ret = item.join(" ");
+            else {
+                item.forEach(entry => {
+                    if (typeof entry === "object") {
+                        if (entry instanceof BigNumber) {
+                            ret += entry.toString() + "\n";
+                        } else {
+                            ret += sprintf(entry, true) + "\n";
+                        }
+                    } else {
+                        ret += entry.toString() + "\n";
+                    }
+                });
+            }
+            break;
+    }
+
+    return ret;
+}
+
 // Casts between types
 module.exports.cast = function cast(value, type) {
     switch (type) {
