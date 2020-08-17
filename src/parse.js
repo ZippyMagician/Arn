@@ -16,6 +16,7 @@ module.exports = (tree, opts) => {
     }
     
     function zip_with(left, right, op, env) {
+        console.log(zip(left, right).map(entry => entry.map(r => stringify(r)).join(` ${op.value} `)));
         return zip(left, right).map(entry => evalNode(ast(tokenize(entry.map(r => stringify(r)).join(` ${op.value} `))), env));
     }
 
@@ -196,7 +197,7 @@ module.exports = (tree, opts) => {
             case ':!':
                 return coerce(node.left, "string").split(coerce(node.right, "string"));
             case '.':
-                node.right.args = [env.get(node.left.value), ...node.right.args];
+                node.right.args = [node.left, ...node.right.args];
                 return evalNode(node.right, env);
             case '&':
                 return coerce(node.left, "array").indexOf(coerce(node.right, "string")) > -1;
@@ -406,7 +407,7 @@ module.exports = (tree, opts) => {
     hardcode("out", std, (env) => printf(env.get("_")));
     hardcode("in", [], (env) => stdin || rl.question("> "));
     define_func("outl", std, "out |\"\n\"");
-    define_func("intr", std.concat([{type: "variable", value: "sep"}]), "|{|sep}\\");
+    define_func("intr", std.concat([{type: "variable", value: "sep"}]), "|\\ (@| sep)");
     define_func("fact", std, "*\\ 1=>");
     define_func("mean", std, "(+\\) / #");
     define_func("mode", std, ":< :@ :{:{");
