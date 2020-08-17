@@ -16,13 +16,15 @@ module.exports = (tree, opts) => {
     }
     
     function zip_with(left, right, op, env) {
-        console.log(zip(left, right).map(entry => entry.map(r => stringify(r)).join(` ${op.value} `)));
         return zip(left, right).map(entry => evalNode(ast(tokenize(entry.map(r => stringify(r)).join(` ${op.value} `))), env));
     }
 
     // Overhead for all the punctuation
-    function evalPrefix(node, env, fix = false) {
+    function evalPrefix(node, env, f = false) {
         const coerce = (n, t) => cast(evalNode(n.arg, env), t);
+        const fix = item => /^\d+$/.test(item) ? +item : item;
+        const unpack = (n) => n instanceof BigNumber ? fix(n.toString()) : n;
+
         let func;
         let ind;
         let value;
@@ -70,9 +72,9 @@ module.exports = (tree, opts) => {
             case ':/':
                 return Math.sqrt(coerce(node, "int"));
             case ':>':
-                return coerce(node, "array").sort((a, b) => (typeof a === "object" ? a.length : a) - (typeof b === "object" ? b.length : b));
+                return coerce(node, "array").map(r => unpack(r)).sort((a, b) => (typeof a === "object" ? a.length : a) - (typeof b === "object" ? b.length : b));
             case ':<':
-                return coerce(node, "array").sort((a, b) => (typeof b === "object" ? b.length : b) - (typeof a === "object" ? a.length : a));
+                return coerce(node, "array").map(r => unpack(r)).sort((a, b) => (typeof b === "object" ? b.length : b) - (typeof a === "object" ? a.length : a));
             case '$':
                 func = node.block.contents;
                 ind = node.block.arg;
@@ -402,8 +404,8 @@ module.exports = (tree, opts) => {
 
     let std = [{type: "variable", value: "_"}];
 
-    define_func("max", std, ":<(?0");
-    define_func("min", std, ":>(?0");
+    define_func("max", std, "(:<):{");
+    define_func("min", std, "(:>):{");
     hardcode("out", std, (env) => printf(env.get("_")));
     hardcode("in", [], (env) => stdin || rl.question("> "));
     define_func("outl", std, "out |\"\n\"");
