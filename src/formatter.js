@@ -85,3 +85,14 @@ module.exports.constructType = function constructType(value) {
             throw new Error("Could not construct type from", value);
     }
 }
+
+module.exports.stringify = val => {
+    if (typeof val === "string") {
+        return `"${val}"`;
+    } else if (typeof val === "object") {
+        if (val instanceof BigNumber) return `${val.toString()}`;
+        else return `[${val.toString().replace(/,/g, " ")}]`;
+    } else {
+        return +val;
+    }
+}

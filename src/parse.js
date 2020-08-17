@@ -4,7 +4,7 @@ const tokenize = require('./lexer.js');
 const dictionary = require('./dictionary');
 const rl = require('readline-sync');
 
-const { cast, printf } = require('./formatter.js');
+const { cast, printf, stringify } = require('./formatter.js');
 const Sequence = require('./sequence.js');
 const { default: BigNumber } = require('bignumber.js');
 
@@ -16,7 +16,7 @@ module.exports = (tree, opts) => {
     }
     
     function zip_with(left, right, op, env) {
-        return zip(left, right).map(entry => evalNode(entry.join(op.value), env));
+        return zip(left, right).map(entry => evalNode(ast(tokenize(entry.map(r => stringify(r)).join(` ${op.value} `))), env));
     }
 
     // Overhead for all the punctuation
@@ -105,17 +105,6 @@ module.exports = (tree, opts) => {
     
                 return [scalar, [...scalar].reverse().join("")];
             case '\\':
-                const stringify = val => {
-                    if (typeof val === "string") {
-                        return `"${val}"`;
-                    } else if (typeof val === "object") {
-                        if (val instanceof BigNumber) return `${val.toString()}`;
-                        else return `[${val.toString().replace(/,/g, " ")}]`;
-                    } else {
-                        return +val;
-                    }
-                }
-
                 let map_ops = node.map_ops;
                 let fold_ops = node.fold_ops;
     
@@ -187,9 +176,9 @@ module.exports = (tree, opts) => {
                 return coerce(node.left, "string") + coerce(node.right, "string");
             case '@':
                 if (node.arg) {
-                    return zip_with(evalNode(node.left, env, true), evalNode(node.right, env, true), node.arg, env);
+                    return zip_with(coerce(node.left, "array"), coerce(node.right, "array"), node.arg, env);
                 } else {
-                    return zip(evalNode(node.left, env, true), evalNode(node.right, env, true));
+                    return zip(coerce(node.left, "array"), coerce(node.right, "array"));
                 }
             case ':|':
                 return coerce(node.left, "array").join(coerce(node.right, "string"));

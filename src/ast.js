@@ -206,7 +206,7 @@ module.exports = function makeAST(tokens) {
                     return {
                         type: "infix",
                         value: tok,
-                        arg: last().value,
+                        arg: last(),
                         left: left || {type: "variable", value: "_"},
                         right: maybeExpr(true, true)
                     }
