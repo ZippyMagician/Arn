@@ -54,7 +54,7 @@ module.exports.sprintf = function sprintf(item, nested = false) {
             break;
     }
 
-    return ret;
+    return ret.trim();
 }
 
 // Casts between types
