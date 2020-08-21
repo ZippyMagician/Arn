@@ -19,7 +19,7 @@ assert_eq(
 // Test 3
 assert_eq(
     sprintf(arn.parse('"This is a string":s', new Options())),
-    "This\nis\na\nstring\n"
+    "This\nis\na\nstring"
 );
 
 reset();
