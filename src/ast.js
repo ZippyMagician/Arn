@@ -229,11 +229,12 @@ module.exports = function makeAST(tokens) {
         } else if (constants.suffixes.includes(tok)) {
             let left;
             if (validItem(ast.contents[ast.contents.length - 1])) left = ast.contents.pop();
-            if (tok === ":_") {
+            // Both do the same thing, :_ kept for backwards compatability
+            if (tok === ":_" || tok === ";") {
                 let ops = next().value.split("");
                 return {
                     type: "suffix",
-                    value: tok,
+                    value: ":_",
                     arg: left || {type: "variable", value: "_"},
                     ops
                 };

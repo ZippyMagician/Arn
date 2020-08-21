@@ -25,7 +25,7 @@ module.exports.infixes = [
 ];
 
 module.exports.suffixes = [
-    '#',
+    '#', ';',
     '*^', ':_', ':n', ':s', ':}', ':{', ':@'
 ];
 

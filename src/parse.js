@@ -128,6 +128,7 @@ module.exports = (tree, opts) => {
                 
                 // Values won't parse properly unless they are stringified to represent their actual type in the data
                 if (fold_ops.length) {
+                    if (val.length == 1) return val[0];
                     val = val.map(r => stringify(r));
                     return evalNode(ast(tokenize(val.join(` ${fold_ops.map(r => r.value).join("")} `))), env, true);
                 }
