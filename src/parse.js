@@ -38,9 +38,9 @@ module.exports = (tree, opts) => {
                 const fix = item => /^\d+$/.test(item) ? +item : item;
                 return !fix(evalNode(node.arg, env, true)) ? 1 : 0;
             case ':v':
-                return Math.floor(coerce(node, "int"));
+                return Math.floor(fix(evalNode(node.arg, env, true))).toString();
             case ':^':
-                return Math.ceil(coerce(node, "int"));
+                return Math.ceil(fix(evalNode(node.arg, env, true))).toString();
             case '++':
                 if (node.arg.type === "variable") {
                     value = evalNode(env.get(node.arg.value), env, true);
@@ -130,6 +130,7 @@ module.exports = (tree, opts) => {
                 if (fold_ops.length) {
                     if (val.length == 1) return val[0];
                     val = val.map(r => stringify(r));
+                    console.log(val.join(` ${fold_ops.map(r => r.value).join("")} `))
                     return evalNode(ast(tokenize(val.join(` ${fold_ops.map(r => r.value).join("")} `))), env, true);
                 }
                 else return val;

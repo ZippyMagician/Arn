@@ -6,6 +6,7 @@ module.exports.printf = function printf(item, nested = false) {
     switch (typeof item) {
         case 'string':
         case 'number':
+        case 'boolean':
             console.log(item.toString());
             break;
         case 'object':

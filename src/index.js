@@ -15,7 +15,6 @@ module.exports.run = (code, opts) => {
         return;
     }
     if (compressor.isPacked(code)) code = compressor.unpack(code);
-    
     printf(parse(to_ast(tokenize(code)), opts));
 }
 
