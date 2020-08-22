@@ -388,8 +388,9 @@ module.exports = (tree, opts) => {
     env.set("f", {type: "integer", value: 0});
     env.set("t", {type: "integer", value: 1});
     env.set("c", {type: "string", value: ""});
-    env.set("pi", {type: "integer", value: "3.14159265358979323846"});
-    env.set("e", {type: "integer", value: "2.71828182845904523536"});
+    env.set("pi", {type: "integer", value: "3.14159265358979323846264338327950288"});
+    env.set("e", {type: "integer", value: "2.71828182845904523536028747135266249"});
+    env.set("phi", {type: "integer", value: "1.61803398874989484820458683436563811"})
     env.set("_", {
         type: "array",
         contents: {
