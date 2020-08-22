@@ -52,11 +52,11 @@ module.exports = (tree, opts) => {
                         return value;
                     }
                 } else {
-                    return ++coerce(node, "int");
+                    return coerce(node, "int").plus(new BigNumber(1)).toString();
                 }
             case '--':
                 if (node.arg.type === "variable") {
-                    value = evalNode(env.get(node.arg.value), env, true);
+                    value = fix(evalNode(env.get(node.arg.value), env, true));
                     if (typeof value === "object") {
                         env.set(node.arg.value, {type: "array", contents: {type: "prog", contents: value.map(r => {return {type: "integer", value: --r}})}});
                         return value.map(r => --r);
@@ -65,12 +65,12 @@ module.exports = (tree, opts) => {
                         return value;
                     }
                 } else {
-                    return --coerce(node, "int");
+                    return coerce(node, "int").minus(new BigNumber(1)).toString();
                 }
             case ':*':
-                return coerce(node, "int") ** 2;
+                return coerce(node, "int").exponentiatedBy(new BigNumber(2)).toString();
             case ':/':
-                return Math.sqrt(coerce(node, "int"));
+                return coerce(node, "int").squareRoot().toString();
             case ':>':
                 return coerce(node, "array").map(r => unpack(r)).sort((a, b) => (typeof a === "object" ? a.length : a) - (typeof b === "object" ? b.length : b));
             case ':<':
