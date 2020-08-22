@@ -169,7 +169,9 @@ module.exports = (tree, opts) => {
             case '/':
                 return coerce(node.left, "int").dividedBy(coerce(node.right, "int")).toString();
             case '%':
-                return coerce(node.left, "int").modulo(coerce(node.right, "int")).toString();
+                let mod_right = coerce(node.right, "int");
+                // Javascript has a f*cking annoying modulo bug for negatives
+                return coerce(node.left, "int").modulo(mod_right).plus(mod_right).modulo(mod_right).toString();
             case '^':
                 let repeat;
                 if (typeof (repeat = evalNode(node.left, env)) === "string") {
