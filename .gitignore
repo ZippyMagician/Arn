@@ -1,2 +1,6 @@
+# Folders
 node_modules/
 tools/
+
+# Files
+package-lock.json
