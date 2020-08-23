@@ -10132,7 +10132,7 @@ window.walkTree = function parse(tree, opts) {
                 break;
             case "string":
                 if (node.char) {
-                    ret_val = dictionary.decompress(node.value, node.char === `'`)
+                    ret_val = decompress(node.value, node.char === `'`)
                 } else {
                     ret_val = node.value;
                 }
