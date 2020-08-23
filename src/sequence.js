@@ -3,7 +3,7 @@ function compare(original, partial) {
   }
 
 // A sequence can be infinite or finite
-module.exports = class Sequence {
+module.exports.Sequence = class Sequence {
     constructor (constants, block, length, env, evalNode) {
         this.constant = constants;
         this._built = this.constant;

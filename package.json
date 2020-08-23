@@ -6,7 +6,8 @@
   "scripts": {
     "test": "bash ./tests/main.sh",
     "test:string": "node ./tests/string_tests.js",
-    "test:array": "node ./tests/array_tests.js"
+    "test:array": "node ./tests/array_tests.js",
+    "build": "node ./node_modules/browserify/bin/cmd.js src/index.js -o docs/arn.js -s arn"
   },
   "repository": {
     "type": "git",
@@ -32,6 +33,7 @@
   "homepage": "https://github.com/ZippyMagician/Arn#readme",
   "dependencies": {
     "bignumber.js": "^9.0.0",
+    "browserify": "^16.5.2",
     "colors": "^1.4.0",
     "minimist": "^1.2.5",
     "readline-sync": "^1.4.10"

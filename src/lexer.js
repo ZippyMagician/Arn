@@ -1,7 +1,7 @@
 const constants = require('./constants.js');
 
 // Version 1.1 as of 8/9/2020 4:43 PM EST
-module.exports = function tokenize(code) {
+module.exports.tokenize = function tokenize(code) {
     let buffer = code.trim();
     let tokens = [];
     

@@ -1,5 +1,5 @@
 const { default: BigNumber } = require('bignumber.js');
-const Sequence = require('./sequence.js');
+const { Sequence } = require('./sequence.js');
 
 // Prints in a formatted way
 module.exports.printf = function printf(item, nested = false) {

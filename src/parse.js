@@ -1,16 +1,16 @@
-const Environment = require('./env.js');
-const ast = require('./ast.js');
-const tokenize = require('./lexer.js');
+const { Environment } = require('./env.js');
+const { makeAST: ast } = require('./ast.js');
+const { tokenize } = require('./lexer.js');
 const dictionary = require('./dictionary');
 const rl = require('readline-sync');
 
 const { cast, printf, stringify } = require('./formatter.js');
-const Sequence = require('./sequence.js');
+const { Sequence } = require('./sequence.js');
 const { default: BigNumber } = require('bignumber.js');
 
 var stdin = false;
 
-module.exports = (tree, opts) => {
+module.exports.walkTree = function parse(tree, opts) {
     function zip(left, right) {
         return left.map((val, index) => [val, right[index]]);
     }
@@ -130,7 +130,6 @@ module.exports = (tree, opts) => {
                 if (fold_ops.length) {
                     if (val.length == 1) return val[0];
                     val = val.map(r => stringify(r));
-                    console.log(val.join(` ${fold_ops.map(r => r.value).join("")} `))
                     return evalNode(ast(tokenize(val.join(` ${fold_ops.map(r => r.value).join("")} `))), env, true);
                 }
                 else return val;

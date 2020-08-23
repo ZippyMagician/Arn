@@ -11,7 +11,7 @@ function getFoldLength(tokens, from) {
 }
 
 // Version 1 as of 8/6/2020 2:42 PM EST
-module.exports = function makeAST(tokens) {
+module.exports.makeAST = function makeAST(tokens) {
     const stream = tokens;
     let index = -1;
     const last = () => stream[index - 1];
