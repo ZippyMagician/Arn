@@ -77,17 +77,17 @@
         <script type="text/javascript">
             function encodeLink(a) {
                 try {
-                    return btoa(a.split("").map(i => String.fromCharCode(codestr.indexOf(i))).join("")).replace(/=+$/, '')
+                    return btoa(a.split("").map(i => String.fromCharCode(codestr.indexOf(i))).join("")).replace(/=+$/, '');
                 } catch (error) {
-                    return escape(a)
+                    return encodeURI(a);
                 }
             }
 
             function decodeLink(a) {
                 try {
-                    return atob(a).split("").map(i => codestr[i.charCodeAt(0)]).join("")
+                    return atob(a).split("").map(i => codestr[i.charCodeAt(0)]).join("");
                 } catch (error) {
-                    return unescape(a)
+                    return decodeURI(a);
                 }
             }
 
@@ -111,7 +111,7 @@
             x = decodeLink(qstr("input"));
             ins.value = x;
 
-            out.innerHTML = runArn(code.value, ins.value);
+            // out.innerHTML = runArn(code.value, ins.value);
             
             function stackTemplate() {
                 let comp = pack(code.value);
@@ -124,11 +124,11 @@
                     '```\n' +
                     body +
                     '\n```' +
-                    '\n[Try it!](https://zippymagician.github.io/Arn?code=' +
+                    '\n<a href="https://zippymagician.github.io/Arn?code=' +
                     encodeLink(code.value) +
                     '&input=' +
                     encodeLink(ins.value) +
-                    ")\n\n# Explained\nUnpacked: `" + code.value + "`\nELABORATE HERE";
+                    "\">Try it!</a>\n\n# Explained\nUnpacked: `" + code.value + "`\nELABORATE HERE";
             }
 
             function fetchLink() {
