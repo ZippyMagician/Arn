@@ -1,5 +1,5 @@
 const { pack, unpack, isPacked } = require('./compressor.js');
-const { str_packer } = require('./dictionary.js');
+const { decompress } = require('./dictionary.js');
 const { tokenize } = require('./lexer.js');
 const { makeAST: to_ast } = require('./ast.js');
 const { walkTree: parse } = require('./parse.js');

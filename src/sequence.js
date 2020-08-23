@@ -1,6 +1,6 @@
 function compare(original, partial) {
     return !Object.keys(partial).some((key) => partial[key] !== original[key]);
-  }
+}
 
 // A sequence can be infinite or finite
 module.exports.Sequence = class Sequence {
