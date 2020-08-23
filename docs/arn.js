@@ -9340,45 +9340,48 @@ constants.builtins = {
     mode: 1
 }
 
-const codePage = `!"#$%&'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_\`abcdefghijklmnopqrstuvwxyz{|}~¡¢£¤¥¦§¨©ª«¬®¯°○■↑↓→←║═╔╗╚╝░▒►◄│─┌┐└┘├┤┴┬♦┼█▄▀▬±²³´µ¶·¸¹º»¼½¾¿ÀÁÂÃÄÅÆÇÈÉÊËÌÍÎÏÐÑÒÓÔÕÖ×ØÙÚÛÜÝÞßàáâãäåæçèéêëìíîïðñòóôõö÷øùúûüýþÿŒœŠšŸŽžƒƥʠˆ˜–—‘’‚“”„†‡•…‰‹›€™⁺⁻⁼`.split("");
-
 window.pack = (code) => {
-  let bytes = [...code].map(r => r.charCodeAt(0) - 32);
+    //console.log(`PACK: "${code.toString()}"`);
+    let bytes = [...code.toString()].map(r => r.charCodeAt(0) - 32);
 
-  bytes = packBytes(bytes);
-  return bytes.map(r => codePage[r]).join("");
+    bytes = packBytes(bytes);
+    return bytes.map(r => codePage[r]).join("");
 }
 
 function packBytes(bytes) {
-  let result = [];
-  let big = 0n;
+    let result = [];
+    let big = 0n;
 
-  for (let i = bytes.length - 1; i >= 0; i--) {
-    big = big * 95n + BigInt(bytes[i]);
-  }
+    for (let i = bytes.length - 1; i >= 0; i--) {
+        big = big * 95n + BigInt(bytes[i]);
+    }
 
-  while (big > 0) {
-    result.push(big % 252n);
-    big /= 252n;
-  }
+    while (big > 0) {
+        result.push(big % 252n);
+        big /= 252n;
+    }
 
-  return result;
+    return result;
 }
 
 window.unpack = (packed) => {
-  let bytes = [...packed].map(r => codePage.indexOf(r));
+    console.log(codePage)
+    let bytes = [...packed.toString()].map(r => (console.log("CHAR:", `"${r}"`), codePage.indexOf(r)));
 
-  bytes = unpackBytes(bytes);
-  return bytes.map(r => String.fromCharCode((r + 32n).toString())).join("");
+    bytes = unpackBytes(bytes);
+    return bytes.map(r => String.fromCharCode((r + 32n).toString())).join("");
 }
 
 function unpackBytes(bytes) {
+    console.log(bytes)
   let big = 0n;
   let result = [];
 
   for (let i = bytes.length - 1; i >= 0; i--) {
       big = big * 252n + BigInt(bytes[i]);
   }
+
+  console.log("HASH:", big);
 
   while (big > 0) {
       result.push(big % 95n);
@@ -9848,7 +9851,7 @@ window.walkTree = function parse(tree, opts) {
     function evalPrefix(node, env, f = false) {
         const coerce = (n, t) => cast(evalNode(n.arg, env), t);
         const fix = item => /^\d+$/.test(item) ? +item : item;
-        const unpack = (n) => n instanceof BigNumber ? fix(n.toString()) : n;
+        const upack = (n) => n instanceof BigNumber ? fix(n.toString()) : n;
 
         let func;
         let ind;
@@ -9897,9 +9900,9 @@ window.walkTree = function parse(tree, opts) {
             case ':/':
                 return coerce(node, "int").squareRoot().toString();
             case ':>':
-                return coerce(node, "array").map(r => unpack(r)).sort((a, b) => (typeof a === "object" ? a.length : a) - (typeof b === "object" ? b.length : b));
+                return coerce(node, "array").map(r => upack(r)).sort((a, b) => (typeof a === "object" ? a.length : a) - (typeof b === "object" ? b.length : b));
             case ':<':
-                return coerce(node, "array").map(r => unpack(r)).sort((a, b) => (typeof b === "object" ? b.length : b) - (typeof a === "object" ? a.length : a));
+                return coerce(node, "array").map(r => upack(r)).sort((a, b) => (typeof b === "object" ? b.length : b) - (typeof a === "object" ? a.length : a));
             case '$':
                 func = node.block.contents;
                 ind = node.block.arg;
