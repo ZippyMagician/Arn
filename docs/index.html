@@ -75,14 +75,12 @@
         <script type="text/javascript" src="bignumber.js"></script><script type="text/javascript" src="constants.js" charset=utf-8></script><script type="text/javascript" src="arn.js"></script><script type="text/javascript" src="main.js"></script>
 
         <script type="text/javascript">
-            function encodeLink(a, enc = false) {
-                if (enc) return encodeURI(pack(a));
-                else return encodeURI(a);
+            function encodeLink(a) {
+                return btoa(a);
             }
 
-            function decodeLink(a, enc = false) {
-                if (enc) return unpack(decodeURI(a));
-                else return decodeURI(a);
+            function decodeLink(a) {
+                return atob(a);
             }
 
             function qstr(qs) {
@@ -99,7 +97,7 @@
             var ins = document.getElementById("ins");
             var out = document.getElementById("debug_output");
 
-            var x = decodeLink(qstr("code"), true);
+            var x = decodeLink(qstr("code"));
             document.getElementById("code").value = x;
 
             x = decodeLink(qstr("input"));
@@ -118,11 +116,11 @@
                     '```\n' +
                     body +
                     '\n```' +
-                    '\n<a href="https://zippymagician.github.io/Arn?code=' +
-                    encodeLink(code.value, true) +
+                    '\n[Try it!](https://zippymagician.github.io/Arn?code=' +
+                    encodeLink(code.value) +
                     '&input=' +
                     encodeLink(ins.value) +
-                    "\">Try it!</a>\n\n# Explained\nUnpacked: `" + code.value + "`\nELABORATE HERE";
+                    ")\n\n# Explained\nUnpacked: `" + code.value + "`\nELABORATE HERE";
             }
 
             function fetchLink() {
@@ -131,7 +129,7 @@
 			       '` (' +
 			       bytes.innerHTML +
 			       ' bytes)](https://zippymagician.github.io/Arn?code=' +
-			       encodeLink(code.value, true) +
+			       encodeLink(code.value) +
 			       '&input=' +
 			       encodeLink(ins.value) +
 			       ')';
