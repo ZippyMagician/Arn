@@ -34,6 +34,7 @@ module.exports.sprintf = function sprintf(item, nested = false) {
     switch (typeof item) {
         case 'string':
         case 'number':
+        case 'boolean':
             ret = item.toString();
             break;
         case 'object':
