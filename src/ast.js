@@ -1,8 +1,12 @@
 const constants = require('./constants.js');
 
+function compare(original, partial) {
+    return !Object.keys(partial).some((key) => partial[key] !== original[key]);
+}
+
 function getFoldLength(tokens, from) {
     let bIndex = from, fIndex = from;
-    while (tokens[bIndex--] != {type: "punctuation", value: "{"} && bIndex >= 0) {};
+    while (!compare(tokens[bIndex--], {type: "punctuation", value: "{"}) && bIndex >= 0) {};
     bIndex += 1;
     if (bIndex > 0) {
         fIndex = 0;
@@ -171,13 +175,13 @@ module.exports.makeAST = function makeAST(tokens) {
                     block = false;
                     args = stream.slice(0, stream.indexOf(look()));
                 }
-                next()
+                next();
                 return {
                     type: "prefix",
                     value: tok,
                     fold_ops: args,
                     map_ops: block,
-                    arg: maybeExpr(true)
+                    arg: maybeExpr(true) || {type: "variable", value: "_"}
                 }
             // Filter
             } else if (tok === "$") {
@@ -188,7 +192,7 @@ module.exports.makeAST = function makeAST(tokens) {
                     type: "prefix",
                     value: tok,
                     block: contents,
-                    arg: maybeExpr(true)
+                    arg: maybeExpr(true) || {type: "variable", value: "_"}
                 };
             // Any
             } else if (tok === "$:") {
@@ -199,14 +203,14 @@ module.exports.makeAST = function makeAST(tokens) {
                     type: "prefix",
                     value: tok,
                     block: contents,
-                    arg: maybeExpr(true)
+                    arg: maybeExpr(true) || {type: "variable", value: "_"}
                 };
             } else {
                 next();
                 return {
                     type: "prefix",
                     value: tok,
-                    arg: maybeExpr(true)
+                    arg: maybeExpr(true) || {type: "variable", value: "_"}
                 }
             }
         } else if (constants.infixes.includes(tok)) {
@@ -221,14 +225,14 @@ module.exports.makeAST = function makeAST(tokens) {
                         value: tok,
                         arg: last(),
                         left: left || {type: "variable", value: "_"},
-                        right: maybeExpr(true, true)
+                        right: maybeExpr(true, true) || {type: "variable", value: "_"}
                     }
                 } else {
                     return {
                         type: "infix",
                         value: tok,
                         left: left || {type: "variable", value: "_"},
-                        right: maybeExpr(true, true)
+                        right: maybeExpr(true, true) || {type: "variable", value: "_"}
                     }
                 }
             } else {
@@ -236,7 +240,7 @@ module.exports.makeAST = function makeAST(tokens) {
                     type: "infix",
                     value: tok,
                     left: left || {type: "variable", value: "_"},
-                    right: maybeExpr(true, true)
+                    right: maybeExpr(true, true) || {type: "variable", value: "_"}
                 };
             }
         } else if (constants.suffixes.includes(tok)) {

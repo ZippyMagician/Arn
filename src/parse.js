@@ -128,9 +128,10 @@ module.exports.walkTree = function parse(tree, opts) {
                 
                 // Values won't parse properly unless they are stringified to represent their actual type in the data
                 if (fold_ops.length) {
+                    let repair_negatives = n => n.type === "integer" ? n.value.replace(/\-/g, "(n_") + ")" : n.value;
                     if (val.length == 1) return val[0];
                     val = val.map(r => stringify(r));
-                    return evalNode(ast(tokenize(val.join(` ${fold_ops.map(r => r.value).join("")} `))), env, true);
+                    return evalNode(ast(tokenize(val.join(` ${fold_ops.map(r => repair_negatives(r)).join("")} `))), env, true);
                 }
                 else return val;
             default:
