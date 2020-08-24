@@ -4,7 +4,7 @@ const { tokenize } = require('./lexer.js');
 const dictionary = require('./dictionary');
 const rl = require('readline-sync');
 
-const { cast, printf, stringify } = require('./formatter.js');
+const { cast, printf, stringify, constructType } = require('./formatter.js');
 const { Sequence } = require('./sequence.js');
 const { default: BigNumber } = require('bignumber.js');
 
@@ -347,7 +347,7 @@ module.exports.walkTree = function parse(tree, opts) {
                 child_env = env.clone();
 
                 for (let i in arg_list) {
-                    child_env.set(arg_list[i].value, node.args[i]);
+                    child_env.set(arg_list[i].value, constructType(evalNode(node.args[i], env)));
                 }
                 
                 ret_val = evalNode(body, child_env, fix);
@@ -417,6 +417,6 @@ module.exports.walkTree = function parse(tree, opts) {
     define_func("fact", std, "*\\ 1=>");
     define_func("mean", std, "(+\\) / #");
     define_func("mode", std, ":< :@ :{:{");
-
+    
     return evalNode(tree, env);
 }

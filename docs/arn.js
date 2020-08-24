@@ -10176,7 +10176,7 @@ window.walkTree = function parse(tree, opts) {
                 child_env = env.clone();
 
                 for (let i in arg_list) {
-                    child_env.set(arg_list[i].value, node.args[i]);
+                    child_env.set(arg_list[i].value, constructType(evalNode(node.args[i], env)));
                 }
                 
                 ret_val = evalNode(body, child_env, fix);
