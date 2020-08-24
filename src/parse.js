@@ -339,14 +339,14 @@ module.exports.walkTree = function parse(tree, opts) {
                 }
                 break;
             case "function":
-                env.create_func(node.name, node.args, node.body);
+                env.create_func(node.value, node.args, node.body);
                 break;
             case "call":
                 let [arg_list, body] = env.get_func(node.value);
-                if (arg_list.filter(r => r.type !== "variable").length > 0) throw new SyntaxError("Cannot pass non-variables as argument names to function: " + node.value);
+                if (arg_list && arg_list.filter(r => r.type !== "variable").length > 0) throw new SyntaxError("Cannot pass non-variables as argument names to function: " + node.value);
                 child_env = env.clone();
 
-                for (let i in arg_list) {
+                if (arg_list) for (let i in arg_list) {
                     child_env.set(arg_list[i].value, constructType(evalNode(node.args[i], env)));
                 }
                 

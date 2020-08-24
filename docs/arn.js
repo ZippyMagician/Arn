@@ -9514,6 +9514,32 @@ window.makeAST = function makeAST(tokens) {
                     value: data[0],
                     args
                 };
+            } else if (isPunc(":=", peek()) || (isPunc("(", peek()) && stream.filter(r => isPunc(':=', r)))) {
+                // The creation of a function
+                let name = look();
+                next();
+                let args;
+                if (isPunc("(")) {
+                    args = parseContents("(", ")");
+                    next();
+                }
+
+                if (!isPunc(":=", look())) {
+                    ast.contents.push(name);
+                    index--;
+                    if (args && args.length) return {
+                        type: "expression",
+                        contents: makeAST(args)
+                    }; else return {};
+                } else {
+                    next();
+                    return {
+                        type: "function",
+                        value: name.value,
+                        args: args || false,
+                        body: maybeExpr()
+                    };
+                }
             } else return look();
         } else {
             let save = "";
@@ -9613,20 +9639,7 @@ window.makeAST = function makeAST(tokens) {
             let left;
             if (validItem(ast.contents[ast.contents.length - 1])) left = ast.contents.pop();
             next();
-            if (tok === ":=") {
-                while (!isPunc("(", look())) index--;
-                let name = last();
-                if (name.type !== "variable") throw new SyntaxError(`Incorrect function assignment at: ${save = tokens.map(r => r.value).join("")}\n${" ".repeat(24 + index - 1) + "---^-here"}`);
-                let args = parseContents("(", ")");
-                next(); next();
-
-                return {
-                    type: "function",
-                    name,
-                    args,
-                    body: maybeExpr()
-                };
-            } else if (tok === "@") {
+            if (tok === "@") {
                 if (look().type === "punctuation" && !isPunc("(") && !isPunc("[") && !isPunc("{")) {
                     next();
                     return {
@@ -10168,14 +10181,14 @@ window.walkTree = function parse(tree, opts) {
                 }
                 break;
             case "function":
-                env.create_func(node.name, node.args, node.body);
+                env.create_func(node.value, node.args, node.body);
                 break;
             case "call":
                 let [arg_list, body] = env.get_func(node.value);
-                if (arg_list.filter(r => r.type !== "variable").length > 0) throw new SyntaxError("Cannot pass non-variables as argument names to function: " + node.value);
+                if (arg_list && arg_list.filter(r => r.type !== "variable").length > 0) throw new SyntaxError("Cannot pass non-variables as argument names to function: " + node.value);
                 child_env = env.clone();
 
-                for (let i in arg_list) {
+                if (arg_list) for (let i in arg_list) {
                     child_env.set(arg_list[i].value, constructType(evalNode(node.args[i], env)));
                 }
                 

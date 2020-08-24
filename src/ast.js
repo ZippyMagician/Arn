@@ -31,7 +31,7 @@ module.exports.makeAST = function makeAST(tokens) {
     }
 
     function isFunction(key) {
-        let mapped = ast.contents.filter(r => r.type === "function").map(r => [r.name, r.args.length]);
+        let mapped = ast.contents.filter(r => r.type === "function").map(r => [r.value, r.args && r.args.length]);
         for (let key in constants.builtins) mapped.push([key, constants.builtins[key]]);
         let res = mapped.filter(r => r[0] === key);
 
@@ -88,6 +88,32 @@ module.exports.makeAST = function makeAST(tokens) {
                     value: data[0],
                     args
                 };
+            } else if (isPunc(":=", peek()) || (isPunc("(", peek()) && stream.filter(r => isPunc(':=', r)))) {
+                // The creation of a function
+                let name = look();
+                next();
+                let args;
+                if (isPunc("(")) {
+                    args = parseContents("(", ")");
+                    next();
+                }
+
+                if (!isPunc(":=", look())) {
+                    ast.contents.push(name);
+                    index--;
+                    if (args && args.length) return {
+                        type: "expression",
+                        contents: makeAST(args)
+                    }; else return {};
+                } else {
+                    next();
+                    return {
+                        type: "function",
+                        value: name.value,
+                        args: args || false,
+                        body: maybeExpr()
+                    };
+                }
             } else return look();
         } else {
             let save = "";
@@ -187,20 +213,7 @@ module.exports.makeAST = function makeAST(tokens) {
             let left;
             if (validItem(ast.contents[ast.contents.length - 1])) left = ast.contents.pop();
             next();
-            if (tok === ":=") {
-                while (!isPunc("(", look())) index--;
-                let name = last();
-                if (name.type !== "variable") throw new SyntaxError(`Incorrect function assignment at: ${save = tokens.map(r => r.value).join("")}\n${" ".repeat(24 + index - 1) + "---^-here"}`);
-                let args = parseContents("(", ")");
-                next(); next();
-
-                return {
-                    type: "function",
-                    name,
-                    args,
-                    body: maybeExpr()
-                };
-            } else if (tok === "@") {
+            if (tok === "@") {
                 if (look().type === "punctuation" && !isPunc("(") && !isPunc("[") && !isPunc("{")) {
                     next();
                     return {

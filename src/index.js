@@ -14,7 +14,7 @@ module.exports.run = (code, opts) => {
         console.log("Packed:", pack(code));
         return;
     }
-    if (isPacked(code)) code = unpack(code);
+    if (isPacked(code.replace(/\n/g, " ").replace(/\s{2}/g, " "))) code = unpack(code);
     printf(parse(to_ast(tokenize(code)), opts));
 }
 
