@@ -9323,6 +9323,20 @@ constants.suffixes = [
     '*^', ':_', ':n', ':s', ':}', ':{', ':@'
 ];
 
+// The precedence of all operators
+constants.PRECEDENCE = {
+    '.': 100,
+    '&&': 90, '||': 90,
+    '=': 80, '!=': 80, '<': 80, '<=': 80, '>': 80, '>=': 80,
+    '^': 75, '*': 70, '/': 70, '%': 65, '@': 65, ':|': 60, ':!': 60,
+    '=>': 55, '->': 55, ':': 55, ':=': 55,
+    '+': 50, '-': 50, '|': 50,
+    '#': 45, ';': 45, ':_': 45,
+    ':n': 40, ':s': 40, ':}': 40, ':{': 40, ':@': 40, '^*': 40,
+    '!': 40, 'n_': 40, '$': 40, '\\': 40, '!!': 40, ':v': 40, ':^': 40, '++': 40, '--': 40, ':*': 40, ':/': 40,
+    ':>': 40, ':<': 40, ':^': 40, ':v': 40, '|:': 40, '$:': 40
+};
+
 // Infixes that cannot follow other infixes; they take priority
 constants.ninfixes = [
     '=', '!=', '<', '>', '<=', '>=', '+', '-', '&'
@@ -9445,6 +9459,8 @@ function getFoldLength(tokens, from) {
     }
     return [fIndex, bIndex - fIndex];
 }
+
+const precedence = constants.PRECEDENCE;
 
 // Version 1 as of 8/6/2020 2:42 PM EST
 window.makeAST = function makeAST(tokens) {
