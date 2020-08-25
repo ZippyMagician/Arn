@@ -35,7 +35,7 @@ module.exports.makeAST = function makeAST(tokens) {
 
     // TODO: Make sure this will work for all edge cases
     function validItem(obj) {
-        return obj && obj.type !== "block" && obj.type !== "function" && (precedence[obj.value] && obj.type !== "string" ? precedence[obj.value] <= current_prec : true)// && obj.type !== "infix";
+        return obj && obj.type !== "block" && obj.type !== "function" && (precedence[obj.value] && obj.type !== "string" ? precedence[obj.value] >= current_prec : true);// && obj.type !== "infix";
     }
 
     function isFunction(key) {

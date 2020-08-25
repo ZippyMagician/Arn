@@ -89,7 +89,7 @@ module.exports.constructType = function constructType(value) {
 }
 
 module.exports.stringify = val => {
-    if (typeof val === "string") {
+    if (typeof val === "string" && isNaN(+val)) {
         return `"${val}"`;
     } else if (typeof val === "object") {
         if (val instanceof BigNumber) return `${val.toString()}`;

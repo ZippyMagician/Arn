@@ -9285,7 +9285,7 @@ window.constructType = function constructType(value) {
 }
 
 window.stringify = val => {
-    if (typeof val === "string") {
+    if (typeof val === "string" && isNaN(+val)) {
         return `"${val}"`;
     } else if (typeof val === "object") {
         if (val instanceof BigNumber) return `${val.toString()}`;
@@ -9466,7 +9466,7 @@ window.makeAST = function makeAST(tokens) {
 
     // TODO: Make sure this will work for all edge cases
     function validItem(obj) {
-        return obj && obj.type !== "block" && obj.type !== "function" && (precedence[obj.value] && obj.type !== "string" ? precedence[obj.value] <= current_prec : true)// && obj.type !== "infix";
+        return obj && obj.type !== "block" && obj.type !== "function" && (precedence[obj.value] && obj.type !== "string" ? precedence[obj.value] >= current_prec : true);// && obj.type !== "infix";
     }
 
     function isFunction(key) {
@@ -10009,7 +10009,7 @@ window.walkTree = function parse(tree, opts) {
                 
                 // Values won't parse properly unless they are stringified to represent their actual type in the data
                 if (fold_ops.length) {
-                    let repair_negatives = n => n.type === "integer" ? n.value.replace(/\-/g, "(n_") + ")" : n.value;
+                    let repair_negatives = n => n.type === "integer" && +n.value < 0 ? n.value.replace(/\-/g, "(n_") + ")" : n.value;
                     if (val.length == 1) return val[0];
                     val = val.map(r => stringify(r));
                     return evalNode(makeAST(tokenize(val.join(` ${fold_ops.map(r => repair_negatives(r)).join("")} `))), env, true);
