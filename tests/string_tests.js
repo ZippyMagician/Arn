@@ -12,7 +12,7 @@ assert_eq(
 
 // Test 2
 assert_eq(
-    sprintf(arn.parse(':{ | :}', new Options([], "Greetings!"))),
+    sprintf(arn.parse(':{ | :}', new Options(["Greetings!"]))),
     "G!"
 );
 

@@ -12,7 +12,11 @@ You can then run the command
 ```sh
 arn run PATH
 ```
-to run a file as an Arn program. You can also pass `--stdin "INPUT"` to pass some user input to the program. If none is passed but input is required, Arn will dynamically prompt the user. Use `arn --help` to get a full list of commands/flags.
+to run a file as an Arn program. You can also pass extra arguments to pass some user input to the program (example below). Use `arn --help` to get a full list of commands/flags.
+```sh
+arn run PATH 5 "Hello, World!"
+```
+Would pass two lines of input to the program, one with a 5, and one with the string `Hello, World!`
 
 ## About
 **Arn** is a golfing language; that is, it is designed to perform tasks in as few bytes as possible. However, unlike other golfing languages (such as **05AB1E** or **Gaia**), Arn is a functional paradigm with variable-based storage.

@@ -10298,7 +10298,7 @@ window.walkTree = function parse(tree, opts) {
             contents: stdin ? stdin.map(str => {return {
                 type: "string",
                 value: str
-            }}) : [{type: "string", value: rl.question("STDIN: ")}]
+            }}) : [{type: "string", value: ""}]
         }
     });
 

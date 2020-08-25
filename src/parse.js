@@ -378,7 +378,7 @@ module.exports.walkTree = function parse(tree, opts) {
         return ret_val;
     }
     
-    if (opts.stdin) stdin = opts.stdin.toString().indexOf("\\n") > -1 ? opts.stdin.toString().split("\\n") : [opts.stdin.toString()];
+    if (opts.long.length) stdin = opts.long;
 
     function define_func(name, args, fn) {
         env.create_func(name, args, ast(tokenize(fn)));
@@ -402,7 +402,7 @@ module.exports.walkTree = function parse(tree, opts) {
             contents: stdin ? stdin.map(str => {return {
                 type: "string",
                 value: str
-            }}) : [{type: "string", value: rl.question("STDIN: ")}]
+            }}) : [{type: "string", value: ""}]
         }
     });
 
@@ -414,7 +414,7 @@ module.exports.walkTree = function parse(tree, opts) {
     define_func("max", std, "(:<):{");
     define_func("min", std, "(:>):{");
     hardcode("out", std, (env) => printf(evalNode(env.get("_"), env, true)));
-    hardcode("in", [], (env) => stdin || rl.question("> "));
+    hardcode("in", [], (env) => stdin);
     define_func("intr", std.concat([{type: "variable", value: "sep"}]), "|\\ (@| sep)");
     define_func("fact", std, "*\\ 1=>");
     define_func("mean", std, "(+\\) / #");

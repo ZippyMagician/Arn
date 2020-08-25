@@ -21,10 +21,13 @@ let opts = new Options(argv);
 switch (opts.long[0]) {
     case 'run':
         if (opts.u) {
+            opts.long = opts.long.slice(1);
             execute(opts.u, opts);
             break;
         }
         let file = opts.long[1];
+        opts.long = opts.long.slice(2);
+        
         if (/^[A-Z]:/g.test(file)) {
             fs.readFile(file, 'utf8', (err, data) => {
                 let str = String.raw`${data}`;
