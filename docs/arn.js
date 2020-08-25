@@ -9236,7 +9236,7 @@ window.sprintf = function sprintf(item, nested = false) {
             if (item instanceof BigNumber) ret = item.toString();
             else if (nested) ret = item.join(" ");
             else {
-                if (item._evalNode && !item.length) return "[INFINITE SEQUENCE]" + "\n[DUMP]: " + JSON.stringify(item);
+                if (item._evalNode && !item.length) return "[INFINITE SEQUENCE]" + "\n[FIRST 5 ENTRIES]: " + item.take(5);
                 item.forEach(entry => {
                     if (typeof entry === "object") {
                         if (entry instanceof BigNumber) {
@@ -9877,6 +9877,21 @@ class Sequence {
 
             this._built = this._built.filter(r => r);
         }
+    }
+
+    take(count) {
+        let constructed = [];
+        if (!this.length) {
+            while (this._index < count) {
+                constructed.push(this._next());
+            }
+        } else {
+            while (this._index < this.length && this._index < count) {
+                constructed.push(this._next());
+            }
+        }
+        this._reset();
+        return constructed;
     }
 
     forEach(call) {

@@ -119,6 +119,21 @@ module.exports.Sequence = class Sequence {
         }
     }
 
+    take(count) {
+        let constructed = [];
+        if (!this.length) {
+            while (this._index < count) {
+                constructed.push(this._next());
+            }
+        } else {
+            while (this._index < this.length && this._index < count) {
+                constructed.push(this._next());
+            }
+        }
+        this._reset();
+        return constructed;
+    }
+
     join(sep) {
         let built = [];
         this.forEach(entry => built.push(entry));
