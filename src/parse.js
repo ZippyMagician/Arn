@@ -419,6 +419,6 @@ module.exports.walkTree = function parse(tree, opts) {
     define_func("fact", std, "*\\ 1=>");
     define_func("mean", std, "(+\\) / #");
     define_func("mode", std, "(:< :@) :{:{");
-    
+    console.log(JSON.stringify(tree))
     return evalNode(tree, env);
 }
