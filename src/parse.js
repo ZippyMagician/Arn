@@ -367,7 +367,7 @@ module.exports.walkTree = function parse(tree, opts) {
                 ret_val = evalNode(env.get(node.value), env, fix);
                 break;
             case "javascript":
-                env.get(node.name).body(env);
+                node.body(env);
                 break;
             default:
                 throw new SyntaxError("Unrecognized node in AST:", node);
@@ -411,7 +411,7 @@ module.exports.walkTree = function parse(tree, opts) {
 
     define_func("max", std, "(:<):{");
     define_func("min", std, "(:>):{");
-    hardcode("out", std, (env) => printf(env.get("_")));
+    hardcode("out", std, (env) => printf(evalNode(env.get("_"), env, true)));
     hardcode("in", [], (env) => stdin || rl.question("> "));
     define_func("outl", std, "out |\"\n\"");
     define_func("intr", std.concat([{type: "variable", value: "sep"}]), "|\\ (@| sep)");
