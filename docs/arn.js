@@ -9456,6 +9456,9 @@ window.makeAST = function makeAST(tokens) {
     const next = () => stream[++index];
 
     let ast = {type: "prog", contents: []};
+    // Stores precedence info
+    let current_prec = false;
+    let cur_obj = false;
 
     function isPunc(char, val = false) {
         return (val || look()) && (val || look()).type === "punctuation" && (val || look()).value === char;
@@ -9463,11 +9466,11 @@ window.makeAST = function makeAST(tokens) {
 
     // TODO: Make sure this will work for all edge cases
     function validItem(obj) {
-        return obj && obj.type !== "block" && obj.type !== "function"// && obj.type !== "infix";
+        return obj && obj.type !== "block" && obj.type !== "function" && (precedence[obj.value] && obj.type !== "string" ? precedence[obj.value] <= current_prec : true)// && obj.type !== "infix";
     }
 
     function isFunction(key) {
-        let mapped = ast.contents.filter(r => r.type === "function").map(r => [r.name, r.args.length]);
+        let mapped = ast.contents.filter(r => r.type === "function").map(r => [r.value, r.args && r.args.length]);
         for (let key in constants.builtins) mapped.push([key, constants.builtins[key]]);
         let res = mapped.filter(r => r[0] === key);
 
@@ -9490,7 +9493,7 @@ window.makeAST = function makeAST(tokens) {
     function maybeScalar(arg = false, infix = false) {
         if (!look()) return {type: "variable", value: "_"}
         // Checks for suffixes/infixes if already the arg of another function to prevent issues
-        if (arg && next() && look().type === "punctuation" && (constants.suffixes.includes(look().value) || constants.infixes.includes(look().value)) && (!infix || (infix && !constants.ninfixes.includes(look().value)))) {
+        if (arg && next() && look().type === "punctuation" && precedence[look().value] && precedence[look().value] > current_prec) {
             ast.contents.push(last())
             return parseFix(arg);
         } else if (arg) index--;
@@ -9558,11 +9561,18 @@ window.makeAST = function makeAST(tokens) {
     }
 
     function parseExpr() {
-        // Possible expansion in the future?
-        return {
+        let obj = {
             type: "expression",
             contents: makeAST(parseContents("(", ")"))
         };
+
+        if (next() && look().type === "punctuation" && precedence[look().value] && precedence[look().value] > current_prec) {
+            ast.contents.push(obj);
+            return parseFix(true);
+        } else {
+            index--;
+            return obj;
+        }
     }
 
     // Called from index BEFORE "{"
@@ -9580,18 +9590,29 @@ window.makeAST = function makeAST(tokens) {
     }
 
     function parseArray() {
-        return {
+        let obj = {
             type: "array",
             contents: makeAST(parseContents("[", "]"))
         };
+
+        if (next() && look().type === "punctuation" && precedence[look().value] && precedence[look().value] > current_prec) {
+            ast.contents.push(obj);
+            return parseFix(true);
+        } else {
+            index--;
+            return obj;
+        }
     }
 
     function parseFix(arg = false) {
         let tok = look().value;
+        let ret_obj;
+
         if (arg && isPunc("\\")) {
             index--;
-            return {};
+            return false;
         }
+        current_prec = precedence[tok];
         if (constants.prefixes.includes(tok)) {
             // Fold
             if (tok === "\\") {
@@ -9607,8 +9628,8 @@ window.makeAST = function makeAST(tokens) {
                     block = false;
                     args = stream.slice(0, stream.indexOf(look()));
                 }
-                next()
-                return {
+                next();
+                ret_obj = {
                     type: "prefix",
                     value: tok,
                     fold_ops: args,
@@ -9620,7 +9641,7 @@ window.makeAST = function makeAST(tokens) {
                 if (peek().type === "variable") next();
                 let contents = parseBlock();
                 next();
-                return {
+                ret_obj = {
                     type: "prefix",
                     value: tok,
                     block: contents,
@@ -9631,7 +9652,7 @@ window.makeAST = function makeAST(tokens) {
                 if (peek().type === "variable") next();
                 let contents = parseBlock();
                 next();
-                return {
+                ret_obj = {
                     type: "prefix",
                     value: tok,
                     block: contents,
@@ -9639,7 +9660,7 @@ window.makeAST = function makeAST(tokens) {
                 };
             } else {
                 next();
-                return {
+                ret_obj = {
                     type: "prefix",
                     value: tok,
                     arg: maybeExpr(true) || {type: "variable", value: "_"}
@@ -9652,7 +9673,7 @@ window.makeAST = function makeAST(tokens) {
             if (tok === "@") {
                 if (look().type === "punctuation" && !isPunc("(") && !isPunc("[") && !isPunc("{")) {
                     next();
-                    return {
+                    ret_obj = {
                         type: "infix",
                         value: tok,
                         arg: last(),
@@ -9660,7 +9681,7 @@ window.makeAST = function makeAST(tokens) {
                         right: maybeExpr(true, true) || {type: "variable", value: "_"}
                     }
                 } else {
-                    return {
+                    ret_obj = {
                         type: "infix",
                         value: tok,
                         left: left || {type: "variable", value: "_"},
@@ -9668,7 +9689,7 @@ window.makeAST = function makeAST(tokens) {
                     }
                 }
             } else {
-                return {
+                ret_obj = {
                     type: "infix",
                     value: tok,
                     left: left || {type: "variable", value: "_"},
@@ -9681,14 +9702,14 @@ window.makeAST = function makeAST(tokens) {
             // Both do the same thing, :_ kept for backwards compatability
             if (tok === ":_" || tok === ";") {
                 let ops = next().value.split("");
-                return {
+                ret_obj = {
                     type: "suffix",
                     value: ":_",
                     arg: left || {type: "variable", value: "_"},
                     ops
                 };
             } else {
-                return {
+                ret_obj = {
                     type: "suffix",
                     value: tok,
                     arg: left || {type: "variable", value: "_"}
@@ -9696,6 +9717,14 @@ window.makeAST = function makeAST(tokens) {
             }
         } else {
             return false;
+        }
+        if (ret_obj && next() && precedence[look().value] && current_prec <= precedence[look().value]) {
+            ast.contents.push(ret_obj);
+            ast.contents.push(parseFix(true));
+            return ast.contents.pop();
+        } else {
+            index--;
+            return ret_obj;
         }
     }
 
@@ -9875,7 +9904,7 @@ window.walkTree = function parse(tree, opts) {
     function evalPrefix(node, env, f = false) {
         const coerce = (n, t) => cast(evalNode(n.arg, env), t);
         const fix = item => /^\d+$/.test(item) ? +item : item;
-        const upack = (n) => n instanceof BigNumber ? fix(n.toString()) : n;
+        const unpack = (n) => n instanceof BigNumber ? fix(n.toString()) : n;
 
         let func;
         let ind;
@@ -9924,9 +9953,9 @@ window.walkTree = function parse(tree, opts) {
             case ':/':
                 return coerce(node, "int").squareRoot().toString();
             case ':>':
-                return coerce(node, "array").map(r => upack(r)).sort((a, b) => (typeof a === "object" ? a.length : a) - (typeof b === "object" ? b.length : b));
+                return coerce(node, "array").map(r => unpack(r)).sort((a, b) => (typeof a === "object" ? a.length : a) - (typeof b === "object" ? b.length : b));
             case ':<':
-                return coerce(node, "array").map(r => upack(r)).sort((a, b) => (typeof b === "object" ? b.length : b) - (typeof a === "object" ? a.length : a));
+                return coerce(node, "array").map(r => unpack(r)).sort((a, b) => (typeof b === "object" ? b.length : b) - (typeof a === "object" ? a.length : a));
             case '$':
                 func = node.block.contents;
                 ind = node.block.arg;
@@ -9980,9 +10009,10 @@ window.walkTree = function parse(tree, opts) {
                 
                 // Values won't parse properly unless they are stringified to represent their actual type in the data
                 if (fold_ops.length) {
+                    let repair_negatives = n => n.type === "integer" ? n.value.replace(/\-/g, "(n_") + ")" : n.value;
                     if (val.length == 1) return val[0];
                     val = val.map(r => stringify(r));
-                    return evalNode(makeAST(tokenize(val.join(` ${fold_ops.map(r => r.value).join("")} `))), env, true);
+                    return evalNode(makeAST(tokenize(val.join(` ${fold_ops.map(r => repair_negatives(r)).join("")} `))), env, true);
                 }
                 else return val;
             default:
@@ -10132,7 +10162,8 @@ window.walkTree = function parse(tree, opts) {
                 let item = coerce(node, "array");
                 return item[item.length - 1];
             case ':@':
-                let arr = coerce(node, "array");
+                const repair = entry => entry instanceof BigNumber ? entry.toNumber() : entry;
+                let arr = coerce(node, "array").map(repair);
                 // Splice first element so reduce will work properly
                 arr = [arr[0], ...arr];
                     
@@ -10230,7 +10261,7 @@ window.walkTree = function parse(tree, opts) {
     if (opts.stdin) stdin = opts.stdin.toString().indexOf("\\n") > -1 ? opts.stdin.toString().split("\\n") : [opts.stdin.toString()];
 
     function define_func(name, args, fn) {
-        env.create_func(name, args, makeAST(tokenize(fn)));
+        env.create_func(name, args, ast(tokenize(fn)));
     }
 
     function hardcode(name, args, fn) {
@@ -10251,7 +10282,7 @@ window.walkTree = function parse(tree, opts) {
             contents: stdin ? stdin.map(str => {return {
                 type: "string",
                 value: str
-            }}) : [{type: "string", value: ""}]
+            }}) : [{type: "string", value: rl.question("STDIN: ")}]
         }
     });
 
@@ -10263,13 +10294,12 @@ window.walkTree = function parse(tree, opts) {
     define_func("max", std, "(:<):{");
     define_func("min", std, "(:>):{");
     hardcode("out", std, (env) => printf(evalNode(env.get("_"), env, true)));
-    hardcode("in", [], (env) => stdin);
-    define_func("outl", std, "out |\"\n\"");
+    hardcode("in", [], (env) => stdin || rl.question("> "));
     define_func("intr", std.concat([{type: "variable", value: "sep"}]), "|\\ (@| sep)");
     define_func("fact", std, "*\\ 1=>");
     define_func("mean", std, "(+\\) / #");
-    define_func("mode", std, ":< :@ :{:{");
-
+    define_func("mode", std, "(:< :@) :{:{");
+    
     return evalNode(tree, env);
 }
 

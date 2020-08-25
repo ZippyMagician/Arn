@@ -1,4 +1,5 @@
 const constants = require('./constants.js');
+const precedence = constants.PRECEDENCE;
 
 function compare(original, partial) {
     return !Object.keys(partial).some((key) => partial[key] !== original[key]);
@@ -24,6 +25,9 @@ module.exports.makeAST = function makeAST(tokens) {
     const next = () => stream[++index];
 
     let ast = {type: "prog", contents: []};
+    // Stores precedence info
+    let current_prec = false;
+    let cur_obj = false;
 
     function isPunc(char, val = false) {
         return (val || look()) && (val || look()).type === "punctuation" && (val || look()).value === char;
@@ -31,7 +35,7 @@ module.exports.makeAST = function makeAST(tokens) {
 
     // TODO: Make sure this will work for all edge cases
     function validItem(obj) {
-        return obj && obj.type !== "block" && obj.type !== "function"// && obj.type !== "infix";
+        return obj && obj.type !== "block" && obj.type !== "function" && (precedence[obj.value] && obj.type !== "string" ? precedence[obj.value] <= current_prec : true)// && obj.type !== "infix";
     }
 
     function isFunction(key) {
@@ -58,7 +62,7 @@ module.exports.makeAST = function makeAST(tokens) {
     function maybeScalar(arg = false, infix = false) {
         if (!look()) return {type: "variable", value: "_"}
         // Checks for suffixes/infixes if already the arg of another function to prevent issues
-        if (arg && next() && look().type === "punctuation" && (constants.suffixes.includes(look().value) || constants.infixes.includes(look().value)) && (!infix || (infix && !constants.ninfixes.includes(look().value)))) {
+        if (arg && next() && look().type === "punctuation" && precedence[look().value] && precedence[look().value] > current_prec) {
             ast.contents.push(last())
             return parseFix(arg);
         } else if (arg) index--;
@@ -126,11 +130,18 @@ module.exports.makeAST = function makeAST(tokens) {
     }
 
     function parseExpr() {
-        // Possible expansion in the future?
-        return {
+        let obj = {
             type: "expression",
             contents: makeAST(parseContents("(", ")"))
         };
+
+        if (next() && look().type === "punctuation" && precedence[look().value] && precedence[look().value] > current_prec) {
+            ast.contents.push(obj);
+            return parseFix(true);
+        } else {
+            index--;
+            return obj;
+        }
     }
 
     // Called from index BEFORE "{"
@@ -148,18 +159,29 @@ module.exports.makeAST = function makeAST(tokens) {
     }
 
     function parseArray() {
-        return {
+        let obj = {
             type: "array",
             contents: makeAST(parseContents("[", "]"))
         };
+
+        if (next() && look().type === "punctuation" && precedence[look().value] && precedence[look().value] > current_prec) {
+            ast.contents.push(obj);
+            return parseFix(true);
+        } else {
+            index--;
+            return obj;
+        }
     }
 
     function parseFix(arg = false) {
         let tok = look().value;
+        let ret_obj;
+
         if (arg && isPunc("\\")) {
             index--;
-            return {};
+            return false;
         }
+        current_prec = precedence[tok];
         if (constants.prefixes.includes(tok)) {
             // Fold
             if (tok === "\\") {
@@ -176,7 +198,7 @@ module.exports.makeAST = function makeAST(tokens) {
                     args = stream.slice(0, stream.indexOf(look()));
                 }
                 next();
-                return {
+                ret_obj = {
                     type: "prefix",
                     value: tok,
                     fold_ops: args,
@@ -188,7 +210,7 @@ module.exports.makeAST = function makeAST(tokens) {
                 if (peek().type === "variable") next();
                 let contents = parseBlock();
                 next();
-                return {
+                ret_obj = {
                     type: "prefix",
                     value: tok,
                     block: contents,
@@ -199,7 +221,7 @@ module.exports.makeAST = function makeAST(tokens) {
                 if (peek().type === "variable") next();
                 let contents = parseBlock();
                 next();
-                return {
+                ret_obj = {
                     type: "prefix",
                     value: tok,
                     block: contents,
@@ -207,7 +229,7 @@ module.exports.makeAST = function makeAST(tokens) {
                 };
             } else {
                 next();
-                return {
+                ret_obj = {
                     type: "prefix",
                     value: tok,
                     arg: maybeExpr(true) || {type: "variable", value: "_"}
@@ -220,7 +242,7 @@ module.exports.makeAST = function makeAST(tokens) {
             if (tok === "@") {
                 if (look().type === "punctuation" && !isPunc("(") && !isPunc("[") && !isPunc("{")) {
                     next();
-                    return {
+                    ret_obj = {
                         type: "infix",
                         value: tok,
                         arg: last(),
@@ -228,7 +250,7 @@ module.exports.makeAST = function makeAST(tokens) {
                         right: maybeExpr(true, true) || {type: "variable", value: "_"}
                     }
                 } else {
-                    return {
+                    ret_obj = {
                         type: "infix",
                         value: tok,
                         left: left || {type: "variable", value: "_"},
@@ -236,7 +258,7 @@ module.exports.makeAST = function makeAST(tokens) {
                     }
                 }
             } else {
-                return {
+                ret_obj = {
                     type: "infix",
                     value: tok,
                     left: left || {type: "variable", value: "_"},
@@ -249,14 +271,14 @@ module.exports.makeAST = function makeAST(tokens) {
             // Both do the same thing, :_ kept for backwards compatability
             if (tok === ":_" || tok === ";") {
                 let ops = next().value.split("");
-                return {
+                ret_obj = {
                     type: "suffix",
                     value: ":_",
                     arg: left || {type: "variable", value: "_"},
                     ops
                 };
             } else {
-                return {
+                ret_obj = {
                     type: "suffix",
                     value: tok,
                     arg: left || {type: "variable", value: "_"}
@@ -264,6 +286,14 @@ module.exports.makeAST = function makeAST(tokens) {
             }
         } else {
             return false;
+        }
+        if (ret_obj && next() && precedence[look().value] && current_prec <= precedence[look().value]) {
+            ast.contents.push(ret_obj);
+            ast.contents.push(parseFix(true));
+            return ast.contents.pop();
+        } else {
+            index--;
+            return ret_obj;
         }
     }
 

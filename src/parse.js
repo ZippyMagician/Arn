@@ -281,7 +281,8 @@ module.exports.walkTree = function parse(tree, opts) {
                 let item = coerce(node, "array");
                 return item[item.length - 1];
             case ':@':
-                let arr = coerce(node, "array");
+                const repair = entry => entry instanceof BigNumber ? entry.toNumber() : entry;
+                let arr = coerce(node, "array").map(repair);
                 // Splice first element so reduce will work properly
                 arr = [arr[0], ...arr];
                     
@@ -413,11 +414,10 @@ module.exports.walkTree = function parse(tree, opts) {
     define_func("min", std, "(:>):{");
     hardcode("out", std, (env) => printf(evalNode(env.get("_"), env, true)));
     hardcode("in", [], (env) => stdin || rl.question("> "));
-    define_func("outl", std, "out |\"\n\"");
     define_func("intr", std.concat([{type: "variable", value: "sep"}]), "|\\ (@| sep)");
     define_func("fact", std, "*\\ 1=>");
     define_func("mean", std, "(+\\) / #");
-    define_func("mode", std, ":< :@ :{:{");
+    define_func("mode", std, "(:< :@) :{:{");
     
     return evalNode(tree, env);
 }
