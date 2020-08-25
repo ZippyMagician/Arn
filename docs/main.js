@@ -1,6 +1,6 @@
 // Newlines separate different test suites
 function runArn(t, inp) {
-    inp = inp.split("\n");
+    inp = inp.split("\n").map(r => r.replace(/\[N\]/g, "\n"));
     if (inp.length === 1) {
         try {
             return sprintf(parse(t, {stdin: inp[0] || ""}));
