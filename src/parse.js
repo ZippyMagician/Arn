@@ -238,7 +238,7 @@ module.exports.walkTree = function parse(tree, opts) {
                 if (arr.get) return arr.get(coerce(node.right, "int"));
                 else return arr[coerce(node.right, "int")];
             default:
-                throw new SyntaxError("Could not recognize infix:", node);
+                throw new SyntaxError("Could not recognize infix:", node.value);
         }
     }
     
@@ -390,7 +390,7 @@ module.exports.walkTree = function parse(tree, opts) {
                 node.body(env);
                 break;
             default:
-                throw new SyntaxError("Unrecognized node in AST:", node);
+                throw new SyntaxError("Unrecognized node in AST:", JSON.stringify(node));
         }
 
         return ret_val;

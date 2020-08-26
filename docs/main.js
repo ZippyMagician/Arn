@@ -5,7 +5,7 @@ function runArn(t, inp) {
         try {
             return sprintf(parse(t, {stdin: inp[0] || ""}));
         } catch (error) {
-            return t + "\n" + error;
+            return error;
         }
     } else {
         let output = "";
