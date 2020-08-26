@@ -84,7 +84,7 @@ module.exports.constructType = function constructType(value) {
             }
             return {type: "array", contents: {type: "prog", contents: value.map(r => constructType(r))}};
         default:
-            throw new Error("Could not construct type from", value);
+            throw new TypeError("Couldn't construct type from", value);
     }
 }
 

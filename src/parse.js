@@ -159,6 +159,12 @@ module.exports.walkTree = function parse(tree, opts) {
         const fix = item => /^\d+$/.test(item) ? +item : item;
         
         switch (node.value) {
+            case ':':
+                let varName = node.left.value;
+                let varValue = evalNode(node.right, env, true);
+
+                env.set(varName, node.right);
+                return varValue;
             case '=':
                 return evalNode(node.left, env, true) == evalNode(node.right, env, true);
             case '<':
@@ -238,7 +244,7 @@ module.exports.walkTree = function parse(tree, opts) {
                 if (arr.get) return arr.get(coerce(node.right, "int"));
                 else return arr[coerce(node.right, "int")];
             default:
-                throw new SyntaxError("Could not recognize infix:", node.value);
+                throw new SyntaxError("Couldn't recognize infix:", node.value);
         }
     }
     
