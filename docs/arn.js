@@ -9298,41 +9298,43 @@ window.stringify = val => {
 const constants = {};
 
 constants.punctuation = [
-    '!', '$', '#', '\\',                                                       // Single-length prefixes
-    '=', '<', '>', '+', '-', '*', '/', '%', '^', '|', '@', '.', '~', '@', '&', // Single-length infixes
-    '#', '?',                                                                  // Single-length suffixes
-    '!!', ':v', ':^', '++', '--', ':*', ':/', ':>', ':<', '|:', '$:', 'n_',    // Double-length prefixes
-    '<=', '>=', '!=', '||', '&&', ':|', '->', '=>', ':!', ':?', '::', '@:',    // Double-length infixes
-    '*^', ':_', ':{', ':}', ':@',                                              // Double-length suffixes
-    '{', '}', '(', ')', '[', ']', ',', ':=', ':', ':n', ':s', ':i', ';'        // Other punctuation
+    '!', '$', '#', '\\', '~',                                                    // Single-length prefixes
+    '=', '<', '>', '+', '-', '*', '/', '%', '^', '|', '@', '.', '@', '&',        // Single-length infixes
+    '#', '?',                                                                    // Single-length suffixes
+    '!!', ':v', ':^', '++', '--', ':*', ':/', ':>', ':<', '|:', '$:', 'n_', '?.',// Double-length prefixes
+    ':+', ':-',                                                                  // More prefixes
+    '<=', '>=', '!=', '||', '&&', ':|', '->', '=>', ':!', ':?', '::', '@:',      // Double-length infixes
+    '^*', ':_', ':{', ':}', ':@', '.@',                                          // Double-length suffixes
+    '{', '}', '(', ')', '[', ']', ',', ':=', ':', ':n', ':s', ':i', ';'          // Other punctuation
 ];
 
 constants.prefixes = [
-    'n_', '!', '$', '\\',
-    '!!', ':v', ':^', '++', '--', ':*', ':/', ':>', ':<', '|:',  '$:'
+    'n_', '!', '$', '\\', '~',
+    '!!', ':v', ':^', '++', '--', ':*', ':/', ':>', ':<', '|:',  '$:', '?.',
+    ':+', ':-'
 ];
 
 constants.infixes = [
-    '=', '<', '>', '+', '-', '*', '/', '%', '^', '|', '@', '.', '~', '@',
+    '=', '<', '>', '+', '-', '*', '/', '%', '^', '|', '@', '.',
     '<=', '>=', '!=', '||', '&&', ':|', '->', '=>', ':!', ':?', '::', '@:',
     '?', ':=', ':', '&', ':i'
 ];
 
 constants.suffixes = [
     '#', ';',
-    '*^', ':_', ':n', ':s', ':}', ':{', ':@'
+    '^*', ':_', ':n', ':s', ':}', ':{', ':@', '.@'
 ];
 
 // The precedence of all operators
 constants.PRECEDENCE = {
     '.': 100,
     '^': 75, '*': 70, '/': 70, '%': 65, '@': 65, ':|': 60, ':!': 60,
-    '=>': 55, '->': 55, ':': 55, ':=': 55,
+    '=>': 55, '->': 55, ':': 55, ':=': 55, '~': 55,
     '+': 50, '-': 50,
-    '#': 45, ';': 45, ':_': 45,
+    '#': 45, ';': 45, ':_': 45, '.@': 45,
     ':n': 40, ':s': 40, ':}': 40, ':{': 40, ':@': 40, '^*': 40, '|': 40,
     '!': 40, 'n_': 40, '$': 40, '\\': 40, '!!': 40, ':v': 40, ':^': 40, '++': 40, '--': 40, ':*': 40, ':/': 40,
-    ':>': 40, ':<': 40, ':^': 40, ':v': 40, '|:': 40, '$:': 40,
+    ':+': 40, ':-': 40, ':>': 40, ':<': 40, ':^': 40, ':v': 40, '|:': 40, '$:': 40, '?.': 40,
     '=': 30, '!=': 30, '<': 30, '<=': 30, '>': 30, '>=': 30,
     '&&': 20, '||': 20
 };
@@ -9923,8 +9925,8 @@ class Sequence {
 var stdin = false;
 
 window.walkTree = function parse(tree, opts) {
-    function zip(left, right) {
-        return left.map((val, index) => [val, right[index]]);
+    function zip(...vals) {
+        return vals[0].map((_, i) => vals.map(array => array[i]));
     }
     
     function zip_with(left, right, op, env) {
@@ -9983,6 +9985,10 @@ window.walkTree = function parse(tree, opts) {
                 return coerce(node, "int").exponentiatedBy(new BigNumber(2)).toString();
             case ':/':
                 return coerce(node, "int").squareRoot().toString();
+            case ':+':
+                return coerce(node, "int").multipliedBy(2).toString();
+            case ':-':
+                return coerce(node, "int").dividedBy(2).toString();
             case ':>':
                 return coerce(node, "array").map(r => unpack(r)).sort((a, b) => (typeof a === "object" ? a.length : a) - (typeof b === "object" ? b.length : b));
             case ':<':
@@ -10046,6 +10052,16 @@ window.walkTree = function parse(tree, opts) {
                     return evalNode(makeAST(tokenize(val.join(` ${fold_ops.map(r => repair_negatives(r)).join("")} `))), env, true);
                 }
                 else return val;
+            case '~':
+                let range = [];
+                let ind = 1;
+                let end = coerce(node, "int").toNumber();
+        
+                for (ind; ind <= end; ind++) range.push(ind);
+                return range;
+            case '?.':
+                let vec = coerce(node, "array");
+                return unpack(vec[Math.floor(Math.random() * vec.length)]);
             default:
                 throw new SyntaxError("Couldn't recognize prefix: " + node.value);
         }
@@ -10199,6 +10215,10 @@ window.walkTree = function parse(tree, opts) {
                 arr = [arr[0], ...arr];
                     
                 return arr.reduce((acc, val) => typeof acc === "object" ? (acc.filter(entry => entry[0] === val).length ? (acc[acc.indexOf(acc.filter(entry => entry[0] === val)[0])].push(val), acc) : (acc.push([val]), acc)) : [[val]]);
+            case '.@':
+                let vec = coerce(node, "array", true);
+    
+                return zip(...vec);
             default:
                 throw new SyntaxError("Couldn't recognize suffix: " + node.value);
         }
