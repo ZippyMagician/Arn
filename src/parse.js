@@ -26,7 +26,7 @@ module.exports.walkTree = function parse(tree, opts) {
         const unpack = (n) => n instanceof BigNumber ? fix(n.toString()) : n;
 
         let func;
-        let ind;
+        var ind;
         let value;
     
         switch (node.value) {
@@ -52,7 +52,7 @@ module.exports.walkTree = function parse(tree, opts) {
                         return value;
                     }
                 } else {
-                    return coerce(node, "int").plus(new BigNumber(1)).toString();
+                    return coerce(node, "int").plus(1).toString();
                 }
             case '--':
                 if (node.arg.type === "variable") {
@@ -65,10 +65,10 @@ module.exports.walkTree = function parse(tree, opts) {
                         return value;
                     }
                 } else {
-                    return coerce(node, "int").minus(new BigNumber(1)).toString();
+                    return coerce(node, "int").minus(1).toString();
                 }
             case ':*':
-                return coerce(node, "int").exponentiatedBy(new BigNumber(2)).toString();
+                return coerce(node, "int").exponentiatedBy(2).toString();
             case ':/':
                 return coerce(node, "int").squareRoot().toString();
             case ':+':
@@ -141,7 +141,7 @@ module.exports.walkTree = function parse(tree, opts) {
                 else return val;
             case '~':
                 let range = [];
-                let ind = 1;
+                ind = 1;
                 let end = coerce(node, "int").toNumber();
     
                 for (ind; ind <= end; ind++) range.push(ind);

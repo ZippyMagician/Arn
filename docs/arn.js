@@ -10054,7 +10054,7 @@ window.walkTree = function parse(tree, opts) {
                 else return val;
             case '~':
                 let range = [];
-                let ind = 1;
+                ind = 1;
                 let end = coerce(node, "int").toNumber();
         
                 for (ind; ind <= end; ind++) range.push(ind);
