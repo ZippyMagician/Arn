@@ -1,7 +1,10 @@
 #!/usr/bin/env node
 var argv = require('minimist')(process.argv.slice(2));
-const { run: execute } = require('../src');
+const { run: execute, parse } = require('../src');
+const { printf } = require('../src/formatter.js');
 const fs = require('fs');
+const rl = require('readline-sync');
+require('colors');
 
 class Options {
     constructor(argv) {
@@ -42,5 +45,17 @@ switch (opts.long[0]) {
         break;
     case 'help':
         console.log("Here is a list of commands:\n * run -> Runs a file, or program directly if passed the -u flag\n * help -> Gets a list of all commands/flags\n\nHere are a list of flags:\n * -u -> Take manually inputted program instead of file\n * -c -> Compiles the code instead of running it\n * -d -> Will print some debug information (will be expanded in the future)");
+        break;
+    default:
+        let inp = rl.question(">> ");
+        while (inp !== "close") {
+            try {
+                printf(parse(inp, new Options({_:[]})));
+            } catch (e) {
+                console.log(e);
+            }
+
+            inp = rl.question(">> ");
+        }
         break;
 }
