@@ -37,8 +37,6 @@
             h1, button {
                 display: inline;
                 vertical-align: middle;
-                margin-top: 10px;
-                margin-bottom: 15px;
             }
 
             h1 {
@@ -57,13 +55,32 @@
                 background-color: #f1f1f1;
                 font-size: 100%;
             }
+
+            #dropdowndiv {
+                width: 200px;
+                margin-top: 10px;
+                margin-bottom: 10px;
+            }
+
+            #dropdowndiv button {
+                margin: 0;
+            }
 	    </style>
     </head>
     <body>
         <h1>Arn Interpreter</h1>
         <button style="border:1px solid;background-color:#fff" onclick="out.innerHTML = runArn(code.value, ins.value)">Run (Esc):<span id="bytes">0</span> byte(s)</button>
         <button onclick="fetchLink()" style="border:1px solid; background-color:#fff">Permalink</button>
-        <p>When putting in program input: Use a literal newline to separate cases in input. Use <b>[N]</b> if you need a newline in a specific case</p>
+        <div class="input-group" id='dropdowndiv'>
+            <input type="TextBox" id="selectedbox" class="form-control" value="Examples" readonly></input>
+            <div class="input-group-btn">
+                <button type="button" class="btn dropdown-toggle" data-toggle="dropdown">
+                    <span class="caret"></span>
+                </button>
+                <ul id="demolist" class="dropdown-menu"></ul>
+            </div>
+        </div>
+        <p>When putting in program input: Use a literal newline to separate cases in input. Use <b>[N]</b> if you need a newline in a specific case. A full description of the language can be found <a href="https://github.com/ZippyMagician/Arn/wiki">here</a></p>
         <p>A major update has occured to operator precedence recently. If a program that is said to work does not, please try downloading version <b>0.3.8</b> through NPM and run it there.</p>
         <br>
         <div class="form-group" id="txtgroup">
@@ -74,6 +91,8 @@
         <button style="border: 1px solid; background-color: #fff; margin: 0px;" onclick="template.select();document.execCommand('copy');">Copy</button>
         <div id="debug_output" class="well pre-scrollable" style="background-color: #333;">Output goes here</div>
 
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.1.1/jquery.min.js"></script>
+        <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js" integrity="sha384-Tc5IQib027qvyjSMfHjOMaLkfuWVxZxUPnCJA7l2mCWNIpG9mGCD8wGNIcPD7Txa" crossorigin="anonymous"></script>
         <script type="text/javascript" src="bignumber.js"></script><script type="text/javascript" src="constants.js" charset=utf-8></script><script type="text/javascript" src="arn.js"></script><script type="text/javascript" src="main.js"></script>
 
         <script type="text/javascript">
