@@ -9133,10 +9133,12 @@ window.decompress = (chars, all_cap = false) => {
 }
 
 class Environment {
-    constructor(parent) {
+    constructor(parent, code) {
         this.parent = parent;
         this.storage = [];
         this.func_storage = [];
+
+        this._code = code;
 
         if (this.parent) {
             for (let entry of this.parent.storage) {
@@ -9157,11 +9159,11 @@ class Environment {
         }
     }
 
-    get(name) {
+    get(name, line = 0, pos = 0) {
         if (this._exists(name)) {
             return this.storage.filter(r => r.name === name)[0].value;
         } else {
-            throw new SyntaxError("Unrecognized variable: " + name);
+            throw new SyntaxError("Unrecognized variable.\n" + constructArea(this._code, line, pos));
         }
     }
 
@@ -9173,13 +9175,13 @@ class Environment {
         this.func_storage.push({name, args, body});
     }
 
-    get_func(name) {
+    get_func(name, line = 0, pos = 0) {
         let filter = this.func_storage.filter(r => r.name === name);
 
         if (filter.length > 0) {
             return [filter[0].args, filter[0].body];
         } else {
-            throw new SyntaxError("Unrecognized function: " + name);
+            throw new SyntaxError("Unrecognized function.\n" + constructArea(this._code, line, pos));
         }
     }
 
@@ -9192,7 +9194,7 @@ class Environment {
     }
 
     clone() {
-        return new Environment(this);
+        return new Environment(this, this._code);
     }
 }
 
@@ -9293,6 +9295,13 @@ window.stringify = val => {
     } else {
         return +val;
     }
+}
+
+window.constructArea = function constructArea(code, line, pos) {
+    let lines = code.split("\n").map((r, i) => `${line === i ? `  ${i}` : "   "}|   ${r}`);
+    lines = [...lines.slice(0, line + 1), "   |" + " ".repeat(pos + 3) + "^---here", ...lines.slice(line + 1)];
+
+    return lines.join("\n");
 }
 
 const constants = {};
@@ -9408,35 +9417,57 @@ function unpackBytes(bytes) {
   return result;
 }
 
+function fix(str) {
+    return str.replace(/\t/g, "    ");
+}
+
 window.tokenize = function tokenize(code) {
-    let buffer = code.trim();
+    let pos = 0;
+    let line = 0;
+    let buffer = fix(code.trim().replace(/\r\n/g, "\n"));
+    // Need to do this multiple times in some cases
+    while (/\n[ \t]+\n/g.test(buffer)) buffer = buffer.replace(/\n[ \t]+\n/g, "\n\n")
     let tokens = [];
     
     while (buffer.length) {
         let item;
         if (item = /^"((?:\\"|[^"])*)"?/g.exec(buffer)) {
-            tokens.push({type: "string", value: item[1]});
-            buffer = buffer.slice(item[0].length).trim();
+            tokens.push({type: "string", value: item[1], pos, line});
+            buffer = buffer.slice(item[0].length);
+            pos += item[0].length + (buffer.length - buffer.trim().length);
         } else if (item = /^(['`])((?:\\['`]|[^'`])*)['`]?/g.exec(buffer)) {
-            tokens.push({type: "string", char: item[1], value: item[2]});
-            buffer = buffer.slice(item[0].length).trim();
+            tokens.push({type: "string", char: item[1], value: item[2], pos, line});
+            buffer = buffer.slice(item[0].length);
+            pos += item[0].length + (buffer.length - buffer.trim().length);
         } else if (constants.punctuation.includes(buffer[0]) || constants.punctuation.includes(buffer.substr(0, 2))) {
             if (constants.punctuation.includes(buffer.substr(0, 2))) {
-                tokens.push({type: "punctuation", value: buffer.substr(0, 2)});
-                buffer = buffer.slice(2).trim();
+                tokens.push({type: "punctuation", value: buffer.substr(0, 2), pos, line});
+                buffer = buffer.slice(2);
+                pos += 2 + (buffer.length - buffer.trim().length);
             } else {
-                tokens.push({type: "punctuation", value: buffer[0]});
-                buffer = buffer.slice(1).trim();
+                tokens.push({type: "punctuation", value: buffer[0], pos, line});
+                buffer = buffer.slice(1);
+                pos += 1 + (buffer.length - buffer.trim().length);
             }
-        } else if (item = /^([0-9.]*e?[0-9.]+)/g.exec(buffer)) {
-            tokens.push({type: "integer", value: item[1]});
-            buffer = buffer.slice(item[0].length).trim();
+        } else if (item = /^((?:[0-9]*\.?[0-9]+)*e?[0-9]*\.?[0-9]+)/g.exec(buffer)) {
+            tokens.push({type: "integer", value: item[1], pos, line});
+            buffer = buffer.slice(item[0].length);
+            pos += item[0].length + (buffer.length - buffer.trim().length);
         } else if (item = /^([a-zA-Z_][a-zA-Z0-9_]*)/g.exec(buffer)) {
-            tokens.push({type: "variable", value: item[1]});
-            buffer = buffer.slice(item[0].length).trim();
+            tokens.push({type: "variable", value: item[1], pos, line});
+            buffer = buffer.slice(item[0].length);
+            pos += item[0].length + (buffer.length - buffer.trim().length);
         } else {
-            throw new Error("Did not recognize token in buffer: " + buffer);
+            throw new Error("Did not recognize token in buffer.\n" + constructArea(code.trim(), line, tokens[tokens.length - 1].pos));
         }
+        
+        if ([...buffer].filter(r => r === "\n").length !== [...buffer.trim()].filter(r => r === "\n").length) {
+            let store = [...buffer].filter(r => r === "\n").length - [...buffer.trim()].filter(r => r === "\n").length;
+            line += store;
+            pos = buffer.length - buffer.trim().length - store;
+        }
+
+        buffer = buffer.trim();
     }
 
     return tokens;
@@ -9464,8 +9495,7 @@ function getFoldLength(tokens, from) {
 
 const precedence = constants.PRECEDENCE;
 
-// Version 1 as of 8/6/2020 2:42 PM EST
-window.makeAST = function makeAST(tokens) {
+window.makeAST = function makeAST(tokens, original) {
     const stream = tokens;
     let index = -1;
     const last = () => stream[index - 1];
@@ -9531,6 +9561,7 @@ window.makeAST = function makeAST(tokens) {
             if (isPunc("{", peek())) return false;
             else if (data = isFunction(look().value)[0]) {
                 let count = data[1];
+                let current = look();
                 // The first argument will be passed into the function through "." if it exists.
                 if (isPunc(".", last())) count -= 1;
                 let args = [];
@@ -9543,14 +9574,18 @@ window.makeAST = function makeAST(tokens) {
                 return {
                     type: "call",
                     value: data[0],
-                    args
+                    args,
+                    pos: current.pos,
+                    line: current.line
                 };
             } else if (isPunc(":=", peek()) || (isPunc("(", peek()) && stream.filter(r => isPunc(':=', r)))) {
                 // The creation of a function
                 let name = look();
                 next();
                 let args;
+                let current;
                 if (isPunc("(")) {
+                    current = look();
                     args = parseContents("(", ")");
                     next();
                 }
@@ -9560,7 +9595,9 @@ window.makeAST = function makeAST(tokens) {
                     index--;
                     if (args && args.length) return {
                         type: "expression",
-                        contents: makeAST(args)
+                        contents: makeAST(args, original),
+                        pos: current.pos,
+                        line: current.line
                     }; else return {};
                 } else {
                     next();
@@ -9568,20 +9605,25 @@ window.makeAST = function makeAST(tokens) {
                         type: "function",
                         value: name.value,
                         args: args || false,
-                        body: maybeExpr()
+                        body: maybeExpr(),
+                        pos: name.pos,
+                        line: name.line
                     };
                 }
             } else return look();
         } else {
             let save = "";
-            throw new SyntaxError(`Didn't recognize token at: ${save = tokens.map(r => r.value).join("")}\n${" ".repeat(24 + index - 1) + "---^-here"}`);
+            throw new SyntaxError(`Didn't recognize token.\n${constructArea(original, look().line, look().pos)}`);
         }
     }
 
     function parseExpr() {
+        let current = look();
         let obj = {
             type: "expression",
-            contents: makeAST(parseContents("(", ")"))
+            contents: makeAST(parseContents("(", ")"), original),
+            pos: current.pos,
+            line: current.line
         };
 
         if (next() && look().type === "punctuation" && precedence[look().value] && precedence[look().value] > current_prec) {
@@ -9598,19 +9640,25 @@ window.makeAST = function makeAST(tokens) {
         let arg = "_"
         if (look() && look().type === "variable") arg = look().value;
         next();
+        let current = look();
         let contents = parseContents("{", "}");
 
         return {
             type: "block",
             arg: arg,
-            contents: makeAST(contents)
+            contents: makeAST(contents, original),
+            pos: current.pos,
+            line: current.line
         };
     }
 
     function parseArray() {
+        let current = look();
         let obj = {
             type: "array",
-            contents: makeAST(parseContents("[", "]"))
+            contents: makeAST(parseContents("[", "]"), original),
+            pos: current.pos,
+            line: current.line
         };
 
         if (next() && look().type === "punctuation" && precedence[look().value] && precedence[look().value] > current_prec) {
@@ -9624,6 +9672,7 @@ window.makeAST = function makeAST(tokens) {
 
     function parseFix(arg = false) {
         let tok = look().value;
+        let current = look();
         let ret_obj;
 
         if (arg && isPunc("\\")) {
@@ -9652,7 +9701,9 @@ window.makeAST = function makeAST(tokens) {
                     value: tok,
                     fold_ops: args,
                     map_ops: block,
-                    arg: maybeExpr(true) || {type: "variable", value: "_"}
+                    arg: maybeExpr(true) || {type: "variable", value: "_"},
+                    pos: current.pos,
+                    line: current.line
                 }
             // Filter
             } else if (tok === "$") {
@@ -9663,7 +9714,9 @@ window.makeAST = function makeAST(tokens) {
                     type: "prefix",
                     value: tok,
                     block: contents,
-                    arg: maybeExpr(true) || {type: "variable", value: "_"}
+                    arg: maybeExpr(true) || {type: "variable", value: "_"},
+                    pos: current.pos,
+                    line: current.line
                 };
             // Any
             } else if (tok === "$:") {
@@ -9674,14 +9727,18 @@ window.makeAST = function makeAST(tokens) {
                     type: "prefix",
                     value: tok,
                     block: contents,
-                    arg: maybeExpr(true) || {type: "variable", value: "_"}
+                    arg: maybeExpr(true) || {type: "variable", value: "_"},
+                    pos: current.pos,
+                    line: current.line
                 };
             } else {
                 next();
                 ret_obj = {
                     type: "prefix",
                     value: tok,
-                    arg: maybeExpr(true) || {type: "variable", value: "_"}
+                    arg: maybeExpr(true) || {type: "variable", value: "_"},
+                    pos: current.pos,
+                    line: current.line
                 }
             }
         } else if (constants.infixes.includes(tok)) {
@@ -9696,14 +9753,18 @@ window.makeAST = function makeAST(tokens) {
                         value: tok,
                         arg: last(),
                         left: left || {type: "variable", value: "_"},
-                        right: maybeExpr(true, true) || {type: "variable", value: "_"}
+                        right: maybeExpr(true, true) || {type: "variable", value: "_"},
+                        pos: current.pos,
+                        line: current.line
                     }
                 } else {
                     ret_obj = {
                         type: "infix",
                         value: tok,
                         left: left || {type: "variable", value: "_"},
-                        right: maybeExpr(true, true) || {type: "variable", value: "_"}
+                        right: maybeExpr(true, true) || {type: "variable", value: "_"},
+                        pos: current.pos,
+                        line: current.line
                     }
                 }
             } else {
@@ -9711,7 +9772,9 @@ window.makeAST = function makeAST(tokens) {
                     type: "infix",
                     value: tok,
                     left: left || {type: "variable", value: "_"},
-                    right: maybeExpr(true, true) || {type: "variable", value: "_"}
+                    right: maybeExpr(true, true) || {type: "variable", value: "_"},
+                    pos: current.pos,
+                    line: current.line
                 };
             }
         } else if (constants.suffixes.includes(tok)) {
@@ -9724,13 +9787,17 @@ window.makeAST = function makeAST(tokens) {
                     type: "suffix",
                     value: ":_",
                     arg: left || {type: "variable", value: "_"},
-                    ops
+                    ops,
+                    pos: current.pos,
+                    line: current.line
                 };
             } else {
                 ret_obj = {
                     type: "suffix",
                     value: tok,
-                    arg: left || {type: "variable", value: "_"}
+                    arg: left || {type: "variable", value: "_"},
+                    pos: current.pos,
+                    line: current.line
                 };
             }
         } else {
@@ -9924,13 +9991,13 @@ class Sequence {
 
 var stdin = false;
 
-window.walkTree = function parse(tree, opts) {
+module.exports.walkTree = function parse(tree, opts, original) {
     function zip(...vals) {
         return vals[0].map((_, i) => vals.map(array => array[i]));
     }
     
     function zip_with(left, right, op, env) {
-        return zip(left, right).map(entry => evalNode(makeAST(tokenize(entry.map(r => stringify(r)).join(` ${op.value} `))), env));
+        return zip(left, right).map(entry => evalNode(makeAST(tokenize(entry.map(r => stringify(r)).join(` ${op.value} `)), original), env));
     }
 
     // Overhead for all the punctuation
@@ -9957,7 +10024,7 @@ window.walkTree = function parse(tree, opts) {
                 return Math.ceil(fix(evalNode(node.arg, env, true))).toString();
             case '++':
                 if (node.arg.type === "variable") {
-                    value = evalNode(env.get(node.arg.value), env, true);
+                    value = evalNode(env.get(node.arg.value, node.line, node.pos), env, true);
                     if (typeof value === "object") {
                         env.set(node.arg.value, {type: "array", contents: {type: "prog", contents: value.map(r => {return {type: "integer", value: ++r}})}});
                         return value.map(r => ++r);
@@ -9966,11 +10033,11 @@ window.walkTree = function parse(tree, opts) {
                         return value;
                     }
                 } else {
-                    return coerce(node, "int").plus(new BigNumber(1)).toString();
+                    return coerce(node, "int").plus(1).toString();
                 }
             case '--':
                 if (node.arg.type === "variable") {
-                    value = fix(evalNode(env.get(node.arg.value), env, true));
+                    value = fix(evalNode(env.get(node.arg.value, node.line, node.pos), env, true));
                     if (typeof value === "object") {
                         env.set(node.arg.value, {type: "array", contents: {type: "prog", contents: value.map(r => {return {type: "integer", value: --r}})}});
                         return value.map(r => --r);
@@ -9979,10 +10046,10 @@ window.walkTree = function parse(tree, opts) {
                         return value;
                     }
                 } else {
-                    return coerce(node, "int").minus(new BigNumber(1)).toString();
+                    return coerce(node, "int").minus(1).toString();
                 }
             case ':*':
-                return coerce(node, "int").exponentiatedBy(new BigNumber(2)).toString();
+                return coerce(node, "int").exponentiatedBy(2).toString();
             case ':/':
                 return coerce(node, "int").squareRoot().toString();
             case ':+':
@@ -10049,21 +10116,22 @@ window.walkTree = function parse(tree, opts) {
                     let repair_negatives = n => n.type === "integer" && +n.value < 0 ? n.value.replace(/\-/g, "(n_") + ")" : n.value;
                     if (val.length == 1) return val[0];
                     val = val.map(r => stringify(r));
-                    return evalNode(makeAST(tokenize(val.join(` ${fold_ops.map(r => repair_negatives(r)).join("")} `))), env, true);
+                    
+                    return evalNode(makeAST(tokenize(val.join(` ${fold_ops.map(r => repair_negatives(r)).join("")} `)), original), env, true);
                 }
                 else return val;
             case '~':
                 let range = [];
                 ind = 1;
                 let end = coerce(node, "int").toNumber();
-        
+    
                 for (ind; ind <= end; ind++) range.push(ind);
                 return range;
             case '?.':
                 let vec = coerce(node, "array");
                 return unpack(vec[Math.floor(Math.random() * vec.length)]);
             default:
-                throw new SyntaxError("Couldn't recognize prefix: " + node.value);
+                throw new SyntaxError("Couldn't recognize prefix.\n" + constructArea(original, node.line, node.pos));
         }
     }
     
@@ -10143,25 +10211,25 @@ window.walkTree = function parse(tree, opts) {
                 return coerce(node.left, "array").indexOf(coerce(node.right, "string")) > -1;
             case '@:':
                 let left = node.left;
-                if (left.type !== "variable") throw new SyntaxError("Cannot modify immutable item:", left);
+                if (left.type !== "variable") throw new SyntaxError("Cannot modify immutable item.\n" + constructArea(original, left.line, left.pos));
 
-                let obj = env.get(left.value);
+                let obj = env.get(left.value, left.line, left.pos);
                 let entry = coerce(obj, "array");
                 let index = entry.indexOf(coerce(node.right, "string"));
 
                 env.set(left.value, {type: "array", contents: {type: "prog", contents: [...entry.slice(0, index), ...entry.slice(index + 1)].map(r => {return {type: "string", value: r}})}});
 
-                return evalNode(env.get(left.value), env);
+                return evalNode(env.get(left.value, left.line, left.pos), env);
             case '?':
                 let arr = coerce(node.left, "array");
                 if (arr.get) return arr.get(coerce(node.right, "int"));
                 else return arr[coerce(node.right, "int")];
             default:
-                throw new SyntaxError("Couldn't recognize infix:", node);
+                throw new SyntaxError("Couldn't recognize infix.\n" + constructArea(original, node.line, node.pos));
         }
     }
     
-    function doBase(command, ops, item, length) {
+    function doBase(command, ops, item, length, node) {
         if (!command) return item;
         switch (command) {
             case 'b':
@@ -10174,18 +10242,18 @@ window.walkTree = function parse(tree, opts) {
                 console.log(item)
                 return item.toString(10);
             case 'O':
-                return doBase(ops[1], ops.slice(1), new BigNumber(item.toString(10), 8), length);
+                return doBase(ops[1], ops.slice(1), new BigNumber(item.toString(10), 8), length, node);
             case 'H':
-                return doBase(ops[1], ops.slice(1), new BigNumber(item.toString(10), 16), length);
+                return doBase(ops[1], ops.slice(1), new BigNumber(item.toString(10), 16), length, node);
             case 'B':
-                return doBase(ops[1], ops.slice(1), new BigNumber(item.toString(10), 2), length);
+                return doBase(ops[1], ops.slice(1), new BigNumber(item.toString(10), 2), length, node);
             default:
-                throw new SyntaxError("Issue with base parsing:", command, ops, item);
+                throw new SyntaxError("Issue with base parsing:", command, ops, item, `\n${constructArea(original, node.line, node.pos)}`);
         }
     }
     
     function evalSuffix(node, env) {
-        const coerce = (n, t) => cast(evalNode(n.arg, env), t);
+        const coerce = (n, t, f = false) => cast(evalNode(n.arg, env, f), t);
         
         switch (node.value) {
             case '#':
@@ -10203,8 +10271,8 @@ window.walkTree = function parse(tree, opts) {
                 } else {
                     command = ops[0];
                 }
-    
-                return doBase(command, ops, coerce(node, "int"), length);
+                
+                return doBase(command, ops, coerce(node, "int"), length, node);
             case '^*':
                 return coerce(node, "int") > 0 && Math.sqrt(coerce(node, "int")) % 1 === 0;
             case ':n':
@@ -10225,14 +10293,14 @@ window.walkTree = function parse(tree, opts) {
                 return arr.reduce((acc, val) => typeof acc === "object" ? (acc.filter(entry => entry[0] === val).length ? (acc[acc.indexOf(acc.filter(entry => entry[0] === val)[0])].push(val), acc) : (acc.push([val]), acc)) : [[val]]);
             case '.@':
                 let vec = coerce(node, "array", true);
-    
+
                 return zip(...vec);
             default:
-                throw new SyntaxError("Couldn't recognize suffix: " + node.value);
+                throw new SyntaxError("Couldn't recognize suffix.\n" + constructArea(original, node.line, node.pos));
         }
     }
 
-    var env = new Environment();
+    var env = new Environment(false, original);
     // Evaluates current node of tree
     function evalNode(node, env, fix = false) {
         let ret_val = "";
@@ -10284,8 +10352,8 @@ window.walkTree = function parse(tree, opts) {
                 env.create_func(node.value, node.args, node.body);
                 break;
             case "call":
-                let [arg_list, body] = env.get_func(node.value);
-                if (arg_list && arg_list.filter(r => r.type !== "variable").length > 0) throw new SyntaxError("Cannot pass non-variables as argument names to function: " + node.value);
+                let [arg_list, body] = env.get_func(node.value, node.line, node.pos);
+                if (arg_list && arg_list.filter(r => r.type !== "variable").length > 0) throw new SyntaxError("Cannot pass non-variables as argument names to function.\n" + constructArea(original, node.line, node.pos));
                 child_env = env.clone();
 
                 if (arg_list) for (let i in arg_list) {
@@ -10305,13 +10373,13 @@ window.walkTree = function parse(tree, opts) {
                 ret_val = evalSuffix(node, env, fix);
                 break;
             case "variable":
-                ret_val = evalNode(env.get(node.value), env, fix);
+                ret_val = evalNode(env.get(node.value, node.line, node.pos), env, fix);
                 break;
             case "javascript":
                 node.body(env);
                 break;
             default:
-                throw new SyntaxError("Unrecognized node in AST:", node);
+                throw new SyntaxError("Unrecognized node in AST:", JSON.stringify(node));
         }
 
         return ret_val;
@@ -10320,7 +10388,7 @@ window.walkTree = function parse(tree, opts) {
     if (opts.stdin) stdin = opts.stdin.toString().indexOf("\\n") > -1 ? opts.stdin.toString().split("\\n") : [opts.stdin.toString()];
 
     function define_func(name, args, fn) {
-        env.create_func(name, args, makeAST(tokenize(fn)));
+        env.create_func(name, args, makeAST(tokenize(fn), original));
     }
 
     function hardcode(name, args, fn) {
@@ -10353,7 +10421,7 @@ window.walkTree = function parse(tree, opts) {
     define_func("max", std, "(:<):{");
     define_func("min", std, "(:>):{");
     hardcode("out", std, (env) => printf(evalNode(env.get("_"), env, true)));
-    hardcode("in", [], (env) => stdin || rl.question("> "));
+    hardcode("in", [], (env) => stdin);
     define_func("intr", std.concat([{type: "variable", value: "sep"}]), "|\\ (@| sep)");
     define_func("fact", std, "*\\ 1=>");
     define_func("mean", std, "(+\\) / #");
@@ -10371,9 +10439,9 @@ window.run = (code, opts) => {
         return;
     }
 
-    printf(walkTree(makeAST(tokenize(code)), opts));
+    printf(walkTree(makeAST(tokenize(code), code), opts, code));
 }
 
 window.parse = (code, opts) => {
-    return walkTree(makeAST(tokenize(code)), opts);
+    return walkTree(makeAST(tokenize(code), code), opts, code);
 }

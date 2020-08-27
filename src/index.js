@@ -15,10 +15,10 @@ module.exports.run = (code, opts) => {
         return;
     }
     if (isPacked(code.replace(/\n/g, " ").replace(/\s{2,}/g, " "))) code = unpack(code);
-    printf(parse(to_ast(tokenize(code)), opts));
+    printf(parse(to_ast(tokenize(code), code), opts, code));
 }
 
 module.exports.parse = (code, opts) => {
     if (isPacked(code)) code = unpack(code);
-    return parse(to_ast(tokenize(code)), opts);
+    return parse(to_ast(tokenize(code), code), opts, code);
 }

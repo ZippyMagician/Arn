@@ -1,4 +1,5 @@
 const constants = require('./constants.js');
+const { constructArea } = require('./formatter.js');
 const precedence = constants.PRECEDENCE;
 
 function compare(original, partial) {
@@ -16,7 +17,7 @@ function getFoldLength(tokens, from) {
 }
 
 // Version 1 as of 8/6/2020 2:42 PM EST
-module.exports.makeAST = function makeAST(tokens) {
+module.exports.makeAST = function makeAST(tokens, original) {
     const stream = tokens;
     let index = -1;
     const last = () => stream[index - 1];
@@ -82,6 +83,7 @@ module.exports.makeAST = function makeAST(tokens) {
             if (isPunc("{", peek())) return false;
             else if (data = isFunction(look().value)[0]) {
                 let count = data[1];
+                let current = look();
                 // The first argument will be passed into the function through "." if it exists.
                 if (isPunc(".", last())) count -= 1;
                 let args = [];
@@ -94,14 +96,18 @@ module.exports.makeAST = function makeAST(tokens) {
                 return {
                     type: "call",
                     value: data[0],
-                    args
+                    args,
+                    pos: current.pos,
+                    line: current.line
                 };
             } else if (isPunc(":=", peek()) || (isPunc("(", peek()) && stream.filter(r => isPunc(':=', r)))) {
                 // The creation of a function
                 let name = look();
                 next();
                 let args;
+                let current;
                 if (isPunc("(")) {
+                    current = look();
                     args = parseContents("(", ")");
                     next();
                 }
@@ -111,7 +117,9 @@ module.exports.makeAST = function makeAST(tokens) {
                     index--;
                     if (args && args.length) return {
                         type: "expression",
-                        contents: makeAST(args)
+                        contents: makeAST(args, original),
+                        pos: current.pos,
+                        line: current.line
                     }; else return {};
                 } else {
                     next();
@@ -119,20 +127,25 @@ module.exports.makeAST = function makeAST(tokens) {
                         type: "function",
                         value: name.value,
                         args: args || false,
-                        body: maybeExpr()
+                        body: maybeExpr(),
+                        pos: name.pos,
+                        line: name.line
                     };
                 }
             } else return look();
         } else {
             let save = "";
-            throw new SyntaxError(`Didn't recognize token at: ${save = tokens.map(r => r.value).join("")}\n${" ".repeat(24 + index - 1) + "---^-here"}`);
+            throw new SyntaxError(`Didn't recognize token.\n${constructArea(original, look().line, look().pos)}`);
         }
     }
 
     function parseExpr() {
+        let current = look();
         let obj = {
             type: "expression",
-            contents: makeAST(parseContents("(", ")"))
+            contents: makeAST(parseContents("(", ")"), original),
+            pos: current.pos,
+            line: current.line
         };
 
         if (next() && look().type === "punctuation" && precedence[look().value] && precedence[look().value] > current_prec) {
@@ -149,19 +162,25 @@ module.exports.makeAST = function makeAST(tokens) {
         let arg = "_"
         if (look() && look().type === "variable") arg = look().value;
         next();
+        let current = look();
         let contents = parseContents("{", "}");
 
         return {
             type: "block",
             arg: arg,
-            contents: makeAST(contents)
+            contents: makeAST(contents, original),
+            pos: current.pos,
+            line: current.line
         };
     }
 
     function parseArray() {
+        let current = look();
         let obj = {
             type: "array",
-            contents: makeAST(parseContents("[", "]"))
+            contents: makeAST(parseContents("[", "]"), original),
+            pos: current.pos,
+            line: current.line
         };
 
         if (next() && look().type === "punctuation" && precedence[look().value] && precedence[look().value] > current_prec) {
@@ -175,6 +194,7 @@ module.exports.makeAST = function makeAST(tokens) {
 
     function parseFix(arg = false) {
         let tok = look().value;
+        let current = look();
         let ret_obj;
 
         if (arg && isPunc("\\")) {
@@ -203,7 +223,9 @@ module.exports.makeAST = function makeAST(tokens) {
                     value: tok,
                     fold_ops: args,
                     map_ops: block,
-                    arg: maybeExpr(true) || {type: "variable", value: "_"}
+                    arg: maybeExpr(true) || {type: "variable", value: "_"},
+                    pos: current.pos,
+                    line: current.line
                 }
             // Filter
             } else if (tok === "$") {
@@ -214,7 +236,9 @@ module.exports.makeAST = function makeAST(tokens) {
                     type: "prefix",
                     value: tok,
                     block: contents,
-                    arg: maybeExpr(true) || {type: "variable", value: "_"}
+                    arg: maybeExpr(true) || {type: "variable", value: "_"},
+                    pos: current.pos,
+                    line: current.line
                 };
             // Any
             } else if (tok === "$:") {
@@ -225,14 +249,18 @@ module.exports.makeAST = function makeAST(tokens) {
                     type: "prefix",
                     value: tok,
                     block: contents,
-                    arg: maybeExpr(true) || {type: "variable", value: "_"}
+                    arg: maybeExpr(true) || {type: "variable", value: "_"},
+                    pos: current.pos,
+                    line: current.line
                 };
             } else {
                 next();
                 ret_obj = {
                     type: "prefix",
                     value: tok,
-                    arg: maybeExpr(true) || {type: "variable", value: "_"}
+                    arg: maybeExpr(true) || {type: "variable", value: "_"},
+                    pos: current.pos,
+                    line: current.line
                 }
             }
         } else if (constants.infixes.includes(tok)) {
@@ -247,14 +275,18 @@ module.exports.makeAST = function makeAST(tokens) {
                         value: tok,
                         arg: last(),
                         left: left || {type: "variable", value: "_"},
-                        right: maybeExpr(true, true) || {type: "variable", value: "_"}
+                        right: maybeExpr(true, true) || {type: "variable", value: "_"},
+                        pos: current.pos,
+                        line: current.line
                     }
                 } else {
                     ret_obj = {
                         type: "infix",
                         value: tok,
                         left: left || {type: "variable", value: "_"},
-                        right: maybeExpr(true, true) || {type: "variable", value: "_"}
+                        right: maybeExpr(true, true) || {type: "variable", value: "_"},
+                        pos: current.pos,
+                        line: current.line
                     }
                 }
             } else {
@@ -262,7 +294,9 @@ module.exports.makeAST = function makeAST(tokens) {
                     type: "infix",
                     value: tok,
                     left: left || {type: "variable", value: "_"},
-                    right: maybeExpr(true, true) || {type: "variable", value: "_"}
+                    right: maybeExpr(true, true) || {type: "variable", value: "_"},
+                    pos: current.pos,
+                    line: current.line
                 };
             }
         } else if (constants.suffixes.includes(tok)) {
@@ -275,13 +309,17 @@ module.exports.makeAST = function makeAST(tokens) {
                     type: "suffix",
                     value: ":_",
                     arg: left || {type: "variable", value: "_"},
-                    ops
+                    ops,
+                    pos: current.pos,
+                    line: current.line
                 };
             } else {
                 ret_obj = {
                     type: "suffix",
                     value: tok,
-                    arg: left || {type: "variable", value: "_"}
+                    arg: left || {type: "variable", value: "_"},
+                    pos: current.pos,
+                    line: current.line
                 };
             }
         } else {

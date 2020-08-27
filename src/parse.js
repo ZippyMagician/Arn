@@ -4,19 +4,19 @@ const { tokenize } = require('./lexer.js');
 const dictionary = require('./dictionary');
 const rl = require('readline-sync');
 
-const { cast, printf, stringify, constructType } = require('./formatter.js');
+const { cast, printf, stringify, constructType, constructArea } = require('./formatter.js');
 const { Sequence } = require('./sequence.js');
 const { default: BigNumber } = require('bignumber.js');
 
 var stdin = false;
 
-module.exports.walkTree = function parse(tree, opts) {
+module.exports.walkTree = function parse(tree, opts, original) {
     function zip(...vals) {
         return vals[0].map((_, i) => vals.map(array => array[i]));
     }
     
     function zip_with(left, right, op, env) {
-        return zip(left, right).map(entry => evalNode(ast(tokenize(entry.map(r => stringify(r)).join(` ${op.value} `))), env));
+        return zip(left, right).map(entry => evalNode(ast(tokenize(entry.map(r => stringify(r)).join(` ${op.value} `)), original), env));
     }
 
     // Overhead for all the punctuation
@@ -43,7 +43,7 @@ module.exports.walkTree = function parse(tree, opts) {
                 return Math.ceil(fix(evalNode(node.arg, env, true))).toString();
             case '++':
                 if (node.arg.type === "variable") {
-                    value = evalNode(env.get(node.arg.value), env, true);
+                    value = evalNode(env.get(node.arg.value, node.line, node.pos), env, true);
                     if (typeof value === "object") {
                         env.set(node.arg.value, {type: "array", contents: {type: "prog", contents: value.map(r => {return {type: "integer", value: ++r}})}});
                         return value.map(r => ++r);
@@ -56,7 +56,7 @@ module.exports.walkTree = function parse(tree, opts) {
                 }
             case '--':
                 if (node.arg.type === "variable") {
-                    value = fix(evalNode(env.get(node.arg.value), env, true));
+                    value = fix(evalNode(env.get(node.arg.value, node.line, node.pos), env, true));
                     if (typeof value === "object") {
                         env.set(node.arg.value, {type: "array", contents: {type: "prog", contents: value.map(r => {return {type: "integer", value: --r}})}});
                         return value.map(r => --r);
@@ -136,7 +136,7 @@ module.exports.walkTree = function parse(tree, opts) {
                     if (val.length == 1) return val[0];
                     val = val.map(r => stringify(r));
                     
-                    return evalNode(ast(tokenize(val.join(` ${fold_ops.map(r => repair_negatives(r)).join("")} `))), env, true);
+                    return evalNode(ast(tokenize(val.join(` ${fold_ops.map(r => repair_negatives(r)).join("")} `)), original), env, true);
                 }
                 else return val;
             case '~':
@@ -150,7 +150,7 @@ module.exports.walkTree = function parse(tree, opts) {
                 let vec = coerce(node, "array");
                 return unpack(vec[Math.floor(Math.random() * vec.length)]);
             default:
-                throw new SyntaxError("Couldn't recognize prefix: " + node.value);
+                throw new SyntaxError("Couldn't recognize prefix.\n" + constructArea(original, node.line, node.pos));
         }
     }
     
@@ -230,25 +230,25 @@ module.exports.walkTree = function parse(tree, opts) {
                 return coerce(node.left, "array").indexOf(coerce(node.right, "string")) > -1;
             case '@:':
                 let left = node.left;
-                if (left.type !== "variable") throw new SyntaxError("Cannot modify immutable item:", left);
+                if (left.type !== "variable") throw new SyntaxError("Cannot modify immutable item.\n" + constructArea(original, left.line, left.pos));
 
-                let obj = env.get(left.value);
+                let obj = env.get(left.value, left.line, left.pos);
                 let entry = coerce(obj, "array");
                 let index = entry.indexOf(coerce(node.right, "string"));
 
                 env.set(left.value, {type: "array", contents: {type: "prog", contents: [...entry.slice(0, index), ...entry.slice(index + 1)].map(r => {return {type: "string", value: r}})}});
 
-                return evalNode(env.get(left.value), env);
+                return evalNode(env.get(left.value, left.line, left.pos), env);
             case '?':
                 let arr = coerce(node.left, "array");
                 if (arr.get) return arr.get(coerce(node.right, "int"));
                 else return arr[coerce(node.right, "int")];
             default:
-                throw new SyntaxError("Couldn't recognize infix:", node.value);
+                throw new SyntaxError("Couldn't recognize infix.\n" + constructArea(original, node.line, node.pos));
         }
     }
     
-    function doBase(command, ops, item, length) {
+    function doBase(command, ops, item, length, node) {
         if (!command) return item;
         switch (command) {
             case 'b':
@@ -261,13 +261,13 @@ module.exports.walkTree = function parse(tree, opts) {
                 console.log(item)
                 return item.toString(10);
             case 'O':
-                return doBase(ops[1], ops.slice(1), new BigNumber(item.toString(10), 8), length);
+                return doBase(ops[1], ops.slice(1), new BigNumber(item.toString(10), 8), length, node);
             case 'H':
-                return doBase(ops[1], ops.slice(1), new BigNumber(item.toString(10), 16), length);
+                return doBase(ops[1], ops.slice(1), new BigNumber(item.toString(10), 16), length, node);
             case 'B':
-                return doBase(ops[1], ops.slice(1), new BigNumber(item.toString(10), 2), length);
+                return doBase(ops[1], ops.slice(1), new BigNumber(item.toString(10), 2), length, node);
             default:
-                throw new SyntaxError("Issue with base parsing:", command, ops, item);
+                throw new SyntaxError("Issue with base parsing:", command, ops, item, `\n${constructArea(original, node.line, node.pos)}`);
         }
     }
     
@@ -291,7 +291,7 @@ module.exports.walkTree = function parse(tree, opts) {
                     command = ops[0];
                 }
                 
-                return doBase(command, ops, coerce(node, "int"), length);
+                return doBase(command, ops, coerce(node, "int"), length, node);
             case '^*':
                 return coerce(node, "int") > 0 && Math.sqrt(coerce(node, "int")) % 1 === 0;
             case ':n':
@@ -315,11 +315,11 @@ module.exports.walkTree = function parse(tree, opts) {
 
                 return zip(...vec);
             default:
-                throw new SyntaxError("Couldn't recognize suffix: " + node.value);
+                throw new SyntaxError("Couldn't recognize suffix.\n" + constructArea(original, node.line, node.pos));
         }
     }
 
-    var env = new Environment();
+    var env = new Environment(false, original);
     // Evaluates current node of tree
     function evalNode(node, env, fix = false) {
         let ret_val = "";
@@ -371,8 +371,8 @@ module.exports.walkTree = function parse(tree, opts) {
                 env.create_func(node.value, node.args, node.body);
                 break;
             case "call":
-                let [arg_list, body] = env.get_func(node.value);
-                if (arg_list && arg_list.filter(r => r.type !== "variable").length > 0) throw new SyntaxError("Cannot pass non-variables as argument names to function: " + node.value);
+                let [arg_list, body] = env.get_func(node.value, node.line, node.pos);
+                if (arg_list && arg_list.filter(r => r.type !== "variable").length > 0) throw new SyntaxError("Cannot pass non-variables as argument names to function.\n" + constructArea(original, node.line, node.pos));
                 child_env = env.clone();
 
                 if (arg_list) for (let i in arg_list) {
@@ -392,7 +392,7 @@ module.exports.walkTree = function parse(tree, opts) {
                 ret_val = evalSuffix(node, env, fix);
                 break;
             case "variable":
-                ret_val = evalNode(env.get(node.value), env, fix);
+                ret_val = evalNode(env.get(node.value, node.line, node.pos), env, fix);
                 break;
             case "javascript":
                 node.body(env);
@@ -407,7 +407,7 @@ module.exports.walkTree = function parse(tree, opts) {
     if (opts.long.length) stdin = opts.long;
 
     function define_func(name, args, fn) {
-        env.create_func(name, args, ast(tokenize(fn)));
+        env.create_func(name, args, ast(tokenize(fn), original));
     }
 
     function hardcode(name, args, fn) {

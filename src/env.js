@@ -1,8 +1,12 @@
+const { constructArea } = require("./formatter");
+
 class Environment {
-    constructor(parent) {
+    constructor(parent, code) {
         this.parent = parent;
         this.storage = [];
         this.func_storage = [];
+
+        this._code = code;
 
         if (this.parent) {
             for (let entry of this.parent.storage) {
@@ -23,11 +27,11 @@ class Environment {
         }
     }
 
-    get(name) {
+    get(name, line = 0, pos = 0) {
         if (this._exists(name)) {
             return this.storage.filter(r => r.name === name)[0].value;
         } else {
-            throw new SyntaxError("Unrecognized variable: " + name);
+            throw new SyntaxError("Unrecognized variable.\n" + constructArea(this._code, line, pos));
         }
     }
 
@@ -39,13 +43,13 @@ class Environment {
         this.func_storage.push({name, args, body});
     }
 
-    get_func(name) {
+    get_func(name, line = 0, pos = 0) {
         let filter = this.func_storage.filter(r => r.name === name);
 
         if (filter.length > 0) {
             return [filter[0].args, filter[0].body];
         } else {
-            throw new SyntaxError("Unrecognized function: " + name);
+            throw new SyntaxError("Unrecognized function.\n" + constructArea(this._code, line, pos));
         }
     }
 
@@ -58,7 +62,7 @@ class Environment {
     }
 
     clone() {
-        return new Environment(this);
+        return new Environment(this, this._code);
     }
 }
 
