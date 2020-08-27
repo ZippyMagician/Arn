@@ -10165,19 +10165,19 @@ window.walkTree = function parse(tree, opts) {
         if (!command) return item;
         switch (command) {
             case 'b':
-                return item.toNumber().toString(2).padStart(length, '0');
+                return item.toString(2).padStart(length, '0');
             case 'h':
-                return item.toNumber().toString(16).padStart(length, '0');
+                return item.toString(16).padStart(length, '0');
             case 'o':
-                return item.toNumber().toString(8).padStart(length, '0');
+                return item.toString(8).padStart(length, '0');
             case 'd':
-                return item.toNumber();
+                return item.toString(10);
             case 'O':
-                return doBase(ops[1], ops, new BigNumber(item.toNumber(), 8), length);
+                return doBase(ops[1], ops.slice(1), new BigNumber(item.toString(), 8), length);
             case 'H':
-                return doBase(ops[1], ops, new BigNumber(item.toNumber(), 16), length);
+                return doBase(ops[1], ops.slice(1), new BigNumber(item.toString(), 16), length);
             case 'B':
-                return doBase(ops[1], ops, new BigNumber(item.toNumber(), 2), length);
+                return doBase(ops[1], ops.slice(1), new BigNumber(item.toString(), 2), length);
             default:
                 throw new SyntaxError("Issue with base parsing:", command, ops, item);
         }
@@ -10190,7 +10190,8 @@ window.walkTree = function parse(tree, opts) {
             case '#':
                 return evalNode(node.arg, env, true).length;
             case ':_':
-                let ops = node.ops[0].split("");
+            case ';':
+                let ops = node.ops;
                 let length = 0;
                 let command;
     

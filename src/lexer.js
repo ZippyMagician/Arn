@@ -21,7 +21,7 @@ module.exports.tokenize = function tokenize(code) {
                 tokens.push({type: "punctuation", value: buffer[0]});
                 buffer = buffer.slice(1).trim();
             }
-        } else if (item = /^([0-9.]*e?[0-9.]+)/g.exec(buffer)) {
+        } else if (item = /^((?:[0-9]*\.?[0-9]+)*e?[0-9]*\.?[0-9]+)/g.exec(buffer)) {
             tokens.push({type: "integer", value: item[1]});
             buffer = buffer.slice(item[0].length).trim();
         } else if (item = /^([a-zA-Z_][a-zA-Z0-9_]*)/g.exec(buffer)) {
