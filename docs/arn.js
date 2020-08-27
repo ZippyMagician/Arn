@@ -9299,7 +9299,7 @@ window.stringify = val => {
 }
 
 window.constructArea = function constructArea(code, line, pos) {
-    let lines = code.split("\n").map((r, i) => `${line === i ? ` ${i} ` : "   "}|   ${r}`);
+    let lines = code.split("\n").map((r, i) => `${line === i ? ` ${i + 1} ` : "   "}|   ${r}`);
     lines = [...lines.slice(0, line + 1), "   |" + " ".repeat(pos + 3) + "^---here", ...lines.slice(line + 1)];
 
     return "   |\n" + lines.join("\n") + "\n   |";
@@ -9483,7 +9483,7 @@ function getFoldLength(tokens, from) {
 
 const precedence = constants.PRECEDENCE;
 
-window.makeAST = function makeAST(tokens, original) {
+window.makeAST = function makeAST(tokens, original, parent_ast = false) {
     const stream = tokens;
     let index = -1;
     const last = () => stream[index - 1];
@@ -9494,7 +9494,6 @@ window.makeAST = function makeAST(tokens, original) {
     let ast = {type: "prog", contents: []};
     // Stores precedence info
     let current_prec = false;
-    let cur_obj = false;
 
     function isPunc(char, val = false) {
         return (val || look()) && (val || look()).type === "punctuation" && (val || look()).value === char;
@@ -9508,6 +9507,7 @@ window.makeAST = function makeAST(tokens, original) {
     function isFunction(key) {
         let mapped = ast.contents.filter(r => r.type === "function").map(r => [r.value, r.args && r.args.length]);
         for (let key in constants.builtins) mapped.push([key, constants.builtins[key]]);
+        if (parent_ast) mapped = mapped.concat(parent_ast.contents.filter(r => r.type === "function").map(r => [r.value, r.args && r.args.length]));
         let res = mapped.filter(r => r[0] === key);
 
         return res.length !== 0 && res;
@@ -9583,7 +9583,7 @@ window.makeAST = function makeAST(tokens, original) {
                     index--;
                     if (args && args.length) return {
                         type: "expression",
-                        contents: makeAST(args, original),
+                        contents: makeAST(args, original, parent_ast || ast),
                         pos: current.pos,
                         line: current.line
                     }; else return {};
@@ -9609,7 +9609,7 @@ window.makeAST = function makeAST(tokens, original) {
         let current = look();
         let obj = {
             type: "expression",
-            contents: makeAST(parseContents("(", ")"), original),
+            contents: makeAST(parseContents("(", ")"), original, parent_ast || ast),
             pos: current.pos,
             line: current.line
         };
@@ -9634,7 +9634,7 @@ window.makeAST = function makeAST(tokens, original) {
         return {
             type: "block",
             arg: arg,
-            contents: makeAST(contents, original),
+            contents: makeAST(contents, original, parent_ast || ast),
             pos: current.pos,
             line: current.line
         };
@@ -9644,7 +9644,7 @@ window.makeAST = function makeAST(tokens, original) {
         let current = look();
         let obj = {
             type: "array",
-            contents: makeAST(parseContents("[", "]"), original),
+            contents: makeAST(parseContents("[", "]"), original, parent_ast || ast),
             pos: current.pos,
             line: current.line
         };
@@ -9768,7 +9768,6 @@ window.makeAST = function makeAST(tokens, original) {
         } else if (constants.suffixes.includes(tok)) {
             let left;
             if (validItem(ast.contents[ast.contents.length - 1])) left = ast.contents.pop();
-            // Both do the same thing, :_ kept for backwards compatability
             if (tok === ";") {
                 let ops = next().value.split("");
                 ret_obj = {
@@ -10230,7 +10229,6 @@ window.walkTree = function parse(tree, opts, original) {
             case 'o':
                 return item.toString(8).padStart(length, '0');
             case 'd':
-                console.log(item)
                 return item.toString(10);
             case 'O':
                 return doBase(ops[1], ops.slice(1), new BigNumber(item.toString(10), 8), length, node);

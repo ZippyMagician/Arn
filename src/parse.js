@@ -260,7 +260,6 @@ module.exports.walkTree = function parse(tree, opts, original) {
             case 'o':
                 return item.toString(8).padStart(length, '0');
             case 'd':
-                console.log(item)
                 return item.toString(10);
             case 'O':
                 return doBase(ops[1], ops.slice(1), new BigNumber(item.toString(10), 8), length, node);

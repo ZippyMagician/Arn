@@ -14,7 +14,7 @@ function getFoldLength(tokens, from) {
 }
 
 // Version 1 as of 8/6/2020 2:42 PM EST
-module.exports.makeAST = function makeAST(tokens, original) {
+module.exports.makeAST = function makeAST(tokens, original, parent_ast = false) {
     const stream = tokens;
     let index = -1;
     const last = () => stream[index - 1];
@@ -25,7 +25,6 @@ module.exports.makeAST = function makeAST(tokens, original) {
     let ast = {type: "prog", contents: []};
     // Stores precedence info
     let current_prec = false;
-    let cur_obj = false;
 
     function isPunc(char, val = false) {
         return (val || look()) && (val || look()).type === "punctuation" && (val || look()).value === char;
@@ -39,6 +38,7 @@ module.exports.makeAST = function makeAST(tokens, original) {
     function isFunction(key) {
         let mapped = ast.contents.filter(r => r.type === "function").map(r => [r.value, r.args && r.args.length]);
         for (let key in constants.builtins) mapped.push([key, constants.builtins[key]]);
+        if (parent_ast) mapped = mapped.concat(parent_ast.contents.filter(r => r.type === "function").map(r => [r.value, r.args && r.args.length]));
         let res = mapped.filter(r => r[0] === key);
 
         return res.length !== 0 && res;
@@ -114,7 +114,7 @@ module.exports.makeAST = function makeAST(tokens, original) {
                     index--;
                     if (args && args.length) return {
                         type: "expression",
-                        contents: makeAST(args, original),
+                        contents: makeAST(args, original, parent_ast || ast),
                         pos: current.pos,
                         line: current.line
                     }; else return {};
@@ -140,7 +140,7 @@ module.exports.makeAST = function makeAST(tokens, original) {
         let current = look();
         let obj = {
             type: "expression",
-            contents: makeAST(parseContents("(", ")"), original),
+            contents: makeAST(parseContents("(", ")"), original, parent_ast || ast),
             pos: current.pos,
             line: current.line
         };
@@ -165,7 +165,7 @@ module.exports.makeAST = function makeAST(tokens, original) {
         return {
             type: "block",
             arg: arg,
-            contents: makeAST(contents, original),
+            contents: makeAST(contents, original, parent_ast || ast),
             pos: current.pos,
             line: current.line
         };
@@ -175,7 +175,7 @@ module.exports.makeAST = function makeAST(tokens, original) {
         let current = look();
         let obj = {
             type: "array",
-            contents: makeAST(parseContents("[", "]"), original),
+            contents: makeAST(parseContents("[", "]"), original, parent_ast || ast),
             pos: current.pos,
             line: current.line
         };
