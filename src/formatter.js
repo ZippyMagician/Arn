@@ -63,7 +63,7 @@ module.exports.sprintf = function sprintf(item, nested = false) {
 module.exports.cast = function cast(value, type) {
     switch (type) {
         case "int":
-            return new BigNumber(typeof value === "object" ? value instanceof Sequence ? value.get(0) : value instanceof BigNumber ? value.toString() : value[0] : value);
+            return new BigNumber(typeof value === "object" ? value instanceof Sequence ? value.get(0) : value instanceof BigNumber ? value.toString() : value[0] : typeof value === "boolean" ? value ? 1 : 0 : value);
         case "string":
             return typeof value === "string" ? value : typeof value === "number" ? value.toString() : value instanceof Sequence ? value.get(0) : value[0];
         case "array":
