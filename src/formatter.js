@@ -1,5 +1,6 @@
 const { default: BigNumber } = require('bignumber.js');
 const { Sequence } = require('./sequence.js');
+require('colors');
 
 // Prints in a formatted way
 module.exports.printf = function printf(item, nested = false) {
@@ -100,8 +101,8 @@ module.exports.stringify = val => {
 }
 
 module.exports.constructArea = function constructArea(code, line, pos) {
-    let lines = code.split("\n").map((r, i) => `${line === i ? `  ${i}` : "   "}|   ${r}`);
-    lines = [...lines.slice(0, line + 1), "   |" + " ".repeat(pos + 3) + "^---here", ...lines.slice(line + 1)];
+    let lines = code.split("\n").map((r, i) => `${line === i ? ` ${i + 1} ` : "   "}` + `|   ${r}`.red);
+    lines = [...lines.slice(0, line + 1), "   |".red + " ".repeat(pos + 3) + "^---here", ...lines.slice(line + 1)];
 
-    return lines.join("\n");
+    return "   |\n".red + lines.join("\n") + "\n   |".red;
 }

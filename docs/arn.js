@@ -9298,10 +9298,10 @@ window.stringify = val => {
 }
 
 window.constructArea = function constructArea(code, line, pos) {
-    let lines = code.split("\n").map((r, i) => `${line === i ? `  ${i}` : "   "}|   ${r}`);
+    let lines = code.split("\n").map((r, i) => `${line === i ? ` ${i} ` : "   "}|   ${r}`);
     lines = [...lines.slice(0, line + 1), "   |" + " ".repeat(pos + 3) + "^---here", ...lines.slice(line + 1)];
 
-    return lines.join("\n");
+    return "   |\n" + lines.join("\n") + "\n   |";
 }
 
 const constants = {};
