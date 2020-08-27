@@ -258,13 +258,14 @@ module.exports.walkTree = function parse(tree, opts) {
             case 'o':
                 return item.toString(8).padStart(length, '0');
             case 'd':
+                console.log(item)
                 return item.toString(10);
             case 'O':
-                return doBase(ops[1], ops.slice(1), new BigNumber(item.toString(), 8), length);
+                return doBase(ops[1], ops.slice(1), new BigNumber(item.toString(10), 8), length);
             case 'H':
-                return doBase(ops[1], ops.slice(1), new BigNumber(item.toString(), 16), length);
+                return doBase(ops[1], ops.slice(1), new BigNumber(item.toString(10), 16), length);
             case 'B':
-                return doBase(ops[1], ops.slice(1), new BigNumber(item.toString(), 2), length);
+                return doBase(ops[1], ops.slice(1), new BigNumber(item.toString(10), 2), length);
             default:
                 throw new SyntaxError("Issue with base parsing:", command, ops, item);
         }
