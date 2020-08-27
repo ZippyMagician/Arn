@@ -9991,7 +9991,7 @@ class Sequence {
 
 var stdin = false;
 
-module.exports.walkTree = function parse(tree, opts, original) {
+window.walkTree = function parse(tree, opts, original) {
     function zip(...vals) {
         return vals[0].map((_, i) => vals.map(array => array[i]));
     }
