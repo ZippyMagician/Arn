@@ -9392,23 +9392,19 @@ function packBytes(bytes) {
 }
 
 window.unpack = (packed) => {
-    console.log(codePage)
-    let bytes = [...packed.toString()].map(r => (console.log("CHAR:", `"${r}"`), codePage.indexOf(r)));
+    let bytes = [...packed.toString()].map(r => codePage.indexOf(r));
 
     bytes = unpackBytes(bytes);
     return bytes.map(r => String.fromCharCode((r + 32n).toString())).join("");
 }
 
 function unpackBytes(bytes) {
-    console.log(bytes)
   let big = 0n;
   let result = [];
 
   for (let i = bytes.length - 1; i >= 0; i--) {
       big = big * 252n + BigInt(bytes[i]);
   }
-
-  console.log("HASH:", big);
 
   while (big > 0) {
       result.push(big % 95n);
@@ -9823,7 +9819,7 @@ window.makeAST = function makeAST(tokens, original, parent_ast = false) {
         let obj = maybeExpr();
         if (obj) ast.contents.push(obj);
     }
-
+    
     return ast;
 }
 
@@ -10163,7 +10159,7 @@ window.walkTree = function parse(tree, opts, original) {
                 return coerce(node.left, "int").modulo(mod_right).plus(mod_right).modulo(mod_right).toString();
             case '^':
                 let repeat;
-                console.log(env.get(node.left.value, node.left.line, node.left.pos))
+                
                 if (typeof (repeat = fix(evalNode(node.left, env))) === "string") {
                     return repeat.repeat(coerce(node.right, "int").toString());
                 } else {
