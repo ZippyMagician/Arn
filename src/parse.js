@@ -280,7 +280,7 @@ module.exports.walkTree = function parse(tree, opts, original) {
             case '#':
                 return evalNode(node.arg, env, true).length;
             case ':_':
-                return coerce(node, "array", true).flat();
+                return coerce(node, "array", true).flat(Infinity);
             case ';':
                 let ops = node.ops;
                 let length = 0;
