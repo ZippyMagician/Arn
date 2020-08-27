@@ -10225,6 +10225,8 @@ window.walkTree = function parse(tree, opts, original) {
                 let arr = coerce(node.left, "array");
                 if (arr.get) return arr.get(coerce(node.right, "int"));
                 else return arr[coerce(node.right, "int")];
+            case ',':
+                return [evalNode(node.left, env, true), evalNode(node.right, env, true)];
             default:
                 throw new SyntaxError("Couldn't recognize infix.\n" + constructArea(original, node.line, node.pos));
         }
