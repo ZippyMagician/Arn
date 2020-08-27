@@ -7,13 +7,10 @@ function compare(original, partial) {
 }
 
 function getFoldLength(tokens, from) {
-    let bIndex = from, fIndex = from;
+    let bIndex = from;
     while (!compare(tokens[bIndex--], {type: "punctuation", value: "{"}) && bIndex >= 0) {};
     bIndex += 1;
-    if (bIndex > 0) {
-        fIndex = 0;
-    }
-    return [fIndex, bIndex - fIndex];
+    return [0, bIndex];
 }
 
 // Version 1 as of 8/6/2020 2:42 PM EST

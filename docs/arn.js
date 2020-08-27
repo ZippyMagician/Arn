@@ -9474,23 +9474,10 @@ window.tokenize = function tokenize(code) {
 }
 
 function getFoldLength(tokens, from) {
-    let bIndex = from, fIndex = from;
+    let bIndex = from;
     while (!compare(tokens[bIndex--], {type: "punctuation", value: "{"}) && bIndex >= 0) {};
     bIndex += 1;
-    if (bIndex > 0) {
-        fIndex = 0;
-    }
-    return [fIndex, bIndex - fIndex];
-}
-
-function getFoldLength(tokens, from) {
-    let bIndex = from, fIndex = from;
-    while (!compare(tokens[bIndex--], {type: "punctuation", value: "{"}) && bIndex >= 0) {};
-    bIndex += 1;
-    if (bIndex > 0) {
-        fIndex = 0;
-    }
-    return [fIndex, bIndex - fIndex];
+    return [0, bIndex];
 }
 
 const precedence = constants.PRECEDENCE;
@@ -10002,7 +9989,7 @@ window.walkTree = function parse(tree, opts, original) {
 
     // Overhead for all the punctuation
     function evalPrefix(node, env, f = false) {
-        const coerce = (n, t) => cast(evalNode(n.arg, env), t);
+        const coerce = (n, t, f = false) => cast(evalNode(n.arg, env, f), t);
         const fix = item => /^\d+$/.test(item) ? +item : item;
         const unpack = (n) => n instanceof BigNumber ? fix(n.toString()) : n;
 
@@ -10096,7 +10083,7 @@ window.walkTree = function parse(tree, opts, original) {
                 let map_ops = node.map_ops;
                 let fold_ops = node.fold_ops;
     
-                let val = coerce(node, "array");
+                let val = coerce(node, "array", true);
     
                 if (map_ops) {
                     const prefix_map = v => {

@@ -11,7 +11,7 @@ module.exports.tokenize = function tokenize(code) {
     let line = 0;
     let buffer = fix(code.trim().replace(/\r\n/g, "\n"));
     // Need to do this multiple times in some cases
-    while (/\n[ \t]+\n/g.test(buffer)) buffer = buffer.replace(/\n[ \t]+\n/g, "\n\n")
+    while (/\n[ \t]+\n/g.test(buffer)) buffer = buffer.replace(/\n[ \t]+\n/g, "\n\n");
     let tokens = [];
     
     while (buffer.length) {
@@ -54,6 +54,6 @@ module.exports.tokenize = function tokenize(code) {
 
         buffer = buffer.trim();
     }
-
+    
     return tokens;
 }
