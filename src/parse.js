@@ -243,6 +243,8 @@ module.exports.walkTree = function parse(tree, opts, original) {
                 let arr = coerce(node.left, "array");
                 if (arr.get) return arr.get(coerce(node.right, "int"));
                 else return arr[coerce(node.right, "int")];
+            case ',':
+                return [evalNode(node.left, env, true), evalNode(node.right, env, true)];
             default:
                 throw new SyntaxError("Couldn't recognize infix.\n" + constructArea(original, node.line, node.pos));
         }
@@ -278,6 +280,7 @@ module.exports.walkTree = function parse(tree, opts, original) {
             case '#':
                 return evalNode(node.arg, env, true).length;
             case ':_':
+                return coerce(node, "array", true).flat();
             case ';':
                 let ops = node.ops;
                 let length = 0;
@@ -299,10 +302,18 @@ module.exports.walkTree = function parse(tree, opts, original) {
             case ':s':
                 return coerce(node, "string").split(" ");
             case ':{':
-                return coerce(node, "array")[0];
+                return coerce(node, "array", true)[0];
             case ':}':
-                let item = coerce(node, "array");
+                let item = coerce(node, "array", true);
                 return item[item.length - 1];
+            case '.}':
+                let drop_arr = coerce(node, "array", true);
+                drop_arr.pop();
+                return drop_arr;
+            case '.{':
+                let behead_arr = coerce(node, "array", true);
+                behead_arr.shift();
+                return behead_arr;
             case ':@':
                 const repair = entry => entry instanceof BigNumber ? entry.toNumber() : entry;
                 let arr = coerce(node, "array").map(repair);

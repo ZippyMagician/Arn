@@ -9313,7 +9313,7 @@ constants.punctuation = [
     '!!', ':v', ':^', '++', '--', ':*', ':/', ':>', ':<', '|:', '$:', 'n_', '?.',// Double-length prefixes
     ':+', ':-',                                                                  // More prefixes
     '<=', '>=', '!=', '||', '&&', ':|', '->', '=>', ':!', ':?', '::', '@:',      // Double-length infixes
-    '^*', ':_', ':{', ':}', ':@', '.@',                                          // Double-length suffixes
+    '^*', ':_', ':{', ':}', ':@', '.@', '.}', '.{',                              // Double-length suffixes
     '{', '}', '(', ')', '[', ']', ',', ':=', ':', ':n', ':s', ':i', ';'          // Other punctuation
 ];
 
@@ -9324,24 +9324,24 @@ constants.prefixes = [
 ];
 
 constants.infixes = [
-    '=', '<', '>', '+', '-', '*', '/', '%', '^', '|', '@', '.',
+    '=', '<', '>', '+', '-', '*', '/', '%', '^', '|', '@', '.', ',',
     '<=', '>=', '!=', '||', '&&', ':|', '->', '=>', ':!', ':?', '::', '@:',
     '?', ':=', ':', '&', ':i'
 ];
 
 constants.suffixes = [
     '#', ';',
-    '^*', ':_', ':n', ':s', ':}', ':{', ':@', '.@'
+    '^*', ':_', ':n', ':s', ':}', ':{', ':@', '.@', '.{', '.}'
 ];
 
 // The precedence of all operators
 constants.PRECEDENCE = {
     '.': 100,
     '^': 75, '*': 70, '/': 70, '%': 65, '@': 65, ':|': 60, ':!': 60,
-    '=>': 55, '->': 55, ':': 55, ':=': 55, '~': 55,
-    '+': 50, '-': 50,
-    '#': 45, ';': 45, ':_': 45, '.@': 45,
-    ':n': 40, ':s': 40, ':}': 40, ':{': 40, ':@': 40, '^*': 40, '|': 40,
+    ':': 55, ':=': 55,
+    '+': 50, '-': 50, ',': 50,
+    '=>': 45, '->': 45, '~': 45, '#': 45, ';': 45, ':_': 45, '.@': 45,
+    ':n': 40, ':s': 40, ':}': 40, ':{': 40, '.}': 40, '.{': 40, ':@': 40, '^*': 40, '|': 40,
     '!': 40, 'n_': 40, '$': 40, '\\': 40, '!!': 40, ':v': 40, ':^': 40, '++': 40, '--': 40, ':*': 40, ':/': 40,
     ':+': 40, ':-': 40, ':>': 40, ':<': 40, ':^': 40, ':v': 40, '|:': 40, '$:': 40, '?.': 40,
     '=': 30, '!=': 30, '<': 30, '<=': 30, '>': 30, '>=': 30,
@@ -9781,11 +9781,11 @@ window.makeAST = function makeAST(tokens, original) {
             let left;
             if (validItem(ast.contents[ast.contents.length - 1])) left = ast.contents.pop();
             // Both do the same thing, :_ kept for backwards compatability
-            if (tok === ":_" || tok === ";") {
+            if (tok === ";") {
                 let ops = next().value.split("");
                 ret_obj = {
                     type: "suffix",
-                    value: ":_",
+                    value: ";",
                     arg: left || {type: "variable", value: "_"},
                     ops,
                     pos: current.pos,
@@ -10176,7 +10176,8 @@ window.walkTree = function parse(tree, opts, original) {
                 return coerce(node.left, "int").modulo(mod_right).plus(mod_right).modulo(mod_right).toString();
             case '^':
                 let repeat;
-                if (typeof (repeat = evalNode(node.left, env)) === "string") {
+                console.log(env.get(node.left.value, node.left.line, node.left.pos))
+                if (typeof (repeat = fix(evalNode(node.left, env))) === "string") {
                     return repeat.repeat(coerce(node.right, "int").toString());
                 } else {
                     return coerce(node.left, "int").exponentiatedBy(coerce(node.right, "int")).toString();
@@ -10259,6 +10260,7 @@ window.walkTree = function parse(tree, opts, original) {
             case '#':
                 return evalNode(node.arg, env, true).length;
             case ':_':
+                return coerce(node, "array", true).flat();
             case ';':
                 let ops = node.ops;
                 let length = 0;
@@ -10280,10 +10282,18 @@ window.walkTree = function parse(tree, opts, original) {
             case ':s':
                 return coerce(node, "string").split(" ");
             case ':{':
-                return coerce(node, "array")[0];
+                return coerce(node, "array", true)[0];
             case ':}':
-                let item = coerce(node, "array");
+                let item = coerce(node, "array", true);
                 return item[item.length - 1];
+            case '.}':
+                let drop_arr = coerce(node, "array", true);
+                drop_arr.pop();
+                return drop_arr;
+            case '.{':
+                let behead_arr = coerce(node, "array", true);
+                behead_arr.shift();
+                return behead_arr;
             case ':@':
                 const repair = entry => entry instanceof BigNumber ? entry.toNumber() : entry;
                 let arr = coerce(node, "array").map(repair);

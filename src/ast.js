@@ -302,12 +302,11 @@ module.exports.makeAST = function makeAST(tokens, original) {
         } else if (constants.suffixes.includes(tok)) {
             let left;
             if (validItem(ast.contents[ast.contents.length - 1])) left = ast.contents.pop();
-            // Both do the same thing, :_ kept for backwards compatability
-            if (tok === ":_" || tok === ";") {
+            if (tok === ";") {
                 let ops = next().value.split("");
                 ret_obj = {
                     type: "suffix",
-                    value: ":_",
+                    value: ";",
                     arg: left || {type: "variable", value: "_"},
                     ops,
                     pos: current.pos,
