@@ -9275,6 +9275,7 @@ window.constructType = function constructType(value) {
         case 'string':
             return {type: "string", value: value};
         case 'number':
+        case 'boolean':
             return {type: "integer", value: +value};
         case 'object':
             if (value instanceof BigNumber) {
