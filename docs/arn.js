@@ -9163,7 +9163,7 @@ class Environment {
         if (this._exists(name)) {
             return this.storage.filter(r => r.name === name)[0].value;
         } else {
-            throw new SyntaxError("Unrecognized variable.\n" + constructArea(this._code, line, pos));
+            throw new ArnError("Unrecognized variable.", this._code, line, pos);
         }
     }
 
@@ -9181,7 +9181,7 @@ class Environment {
         if (filter.length > 0) {
             return [filter[0].args, filter[0].body];
         } else {
-            throw new SyntaxError("Unrecognized function.\n" + constructArea(this._code, line, pos));
+            throw new ArnError("Unrecognized function.", this._code, line, pos);
         }
     }
 
@@ -9303,6 +9303,12 @@ window.constructArea = function constructArea(code, line, pos) {
     lines = [...lines.slice(0, line + 1), "   |" + " ".repeat(pos + 3) + "^---here", ...lines.slice(line + 1)];
 
     return "   |\n" + lines.join("\n") + "\n   |";
+}
+
+window.ArnError = class ArnError {
+    constructor (msg, code, line, index) {
+        return msg + "\n" + constructArea(code, line, index);
+    }
 }
 
 const constants = {};
@@ -9455,7 +9461,7 @@ window.tokenize = function tokenize(code) {
             buffer = buffer.slice(item[0].length);
             pos += item[0].length + (buffer.length - buffer.trim().length);
         } else {
-            throw new Error("Did not recognize token in buffer.\n" + constructArea(code.trim(), line, tokens[tokens.length - 1].pos));
+            throw new ArnError("Did not recognize token in buffer.", code.trim(), line, tokens[tokens.length - 1].pos);
         }
         
         if ([...buffer].filter(r => r === "\n").length !== [...buffer.trim()].filter(r => r === "\n").length) {
@@ -9597,7 +9603,7 @@ window.makeAST = function makeAST(tokens, original, parent_ast = false) {
             } else return look();
         } else {
             let save = "";
-            throw new SyntaxError(`Didn't recognize token.\n${constructArea(original, look().line, look().pos)}`);
+            throw new ArnError("Couldn't recognize token", original, look().line, look().pos);
         }
     }
 
@@ -9693,6 +9699,7 @@ window.makeAST = function makeAST(tokens, original, parent_ast = false) {
             } else if (tok === "$") {
                 if (peek().type === "variable") next();
                 let contents = parseBlock();
+                if (!contents) throw new ArnError("Must provide block to prefix $", original, current.line, current.pos);
                 next();
                 ret_obj = {
                     type: "prefix",
@@ -9706,6 +9713,7 @@ window.makeAST = function makeAST(tokens, original, parent_ast = false) {
             } else if (tok === "$:") {
                 if (peek().type === "variable") next();
                 let contents = parseBlock();
+                if (!contents) throw new ArnError("Must provide block to prefix $:", original, current.line, current.pos);
                 next();
                 ret_obj = {
                     type: "prefix",
@@ -9819,7 +9827,7 @@ window.makeAST = function makeAST(tokens, original, parent_ast = false) {
         let obj = maybeExpr();
         if (obj) ast.contents.push(obj);
     }
-    
+
     return ast;
 }
 
@@ -10080,7 +10088,7 @@ window.walkTree = function parse(tree, opts, original) {
                 let fold_ops = node.fold_ops;
     
                 let val = coerce(node, "array", true);
-    
+                
                 if (map_ops) {
                     const prefix_map = v => {
                         let child_env = env.clone();
@@ -10114,7 +10122,7 @@ window.walkTree = function parse(tree, opts, original) {
                 let vec = coerce(node, "array");
                 return unpack(vec[Math.floor(Math.random() * vec.length)]);
             default:
-                throw new SyntaxError("Couldn't recognize prefix.\n" + constructArea(original, node.line, node.pos));
+                throw new ArnError("Couldn't recognize prefix.", original, node.line, node.pos);
         }
     }
     
@@ -10159,7 +10167,6 @@ window.walkTree = function parse(tree, opts, original) {
                 return coerce(node.left, "int").modulo(mod_right).plus(mod_right).modulo(mod_right).toString();
             case '^':
                 let repeat;
-                
                 if (typeof (repeat = fix(evalNode(node.left, env))) === "string") {
                     return repeat.repeat(coerce(node.right, "int").toString());
                 } else {
@@ -10195,7 +10202,7 @@ window.walkTree = function parse(tree, opts, original) {
                 return coerce(node.left, "array").indexOf(coerce(node.right, "string")) > -1;
             case '@:':
                 let left = node.left;
-                if (left.type !== "variable") throw new SyntaxError("Cannot modify immutable item.\n" + constructArea(original, left.line, left.pos));
+                if (left.type !== "variable") throw new ArnError("Cannot modify immutable value.", original, left.line, left.pos);
 
                 let obj = env.get(left.value, left.line, left.pos);
                 let entry = coerce(obj, "array");
@@ -10211,7 +10218,7 @@ window.walkTree = function parse(tree, opts, original) {
             case ',':
                 return [evalNode(node.left, env, true), evalNode(node.right, env, true)];
             default:
-                throw new SyntaxError("Couldn't recognize infix.\n" + constructArea(original, node.line, node.pos));
+                throw new ArnError("Couldn't recognize infix.", original, node.line, node.pos);
         }
     }
     
@@ -10233,7 +10240,7 @@ window.walkTree = function parse(tree, opts, original) {
             case 'B':
                 return doBase(ops[1], ops.slice(1), new BigNumber(item.toString(10), 2), length, node);
             default:
-                throw new SyntaxError("Issue with base parsing:", command, ops, item, `\n${constructArea(original, node.line, node.pos)}`);
+                throw new ArnError("Invalid base conversion.", original, node.line, node.pos);
         }
     }
     
@@ -10290,7 +10297,7 @@ window.walkTree = function parse(tree, opts, original) {
 
                 return zip(...vec);
             default:
-                throw new SyntaxError("Couldn't recognize suffix.\n" + constructArea(original, node.line, node.pos));
+                throw new ArnError("Couldn't recognize suffix.", original, node.line, node.pos);
         }
     }
 
@@ -10347,7 +10354,7 @@ window.walkTree = function parse(tree, opts, original) {
                 break;
             case "call":
                 let [arg_list, body] = env.get_func(node.value, node.line, node.pos);
-                if (arg_list && arg_list.filter(r => r.type !== "variable").length > 0) throw new SyntaxError("Cannot pass non-variables as argument names to function.\n" + constructArea(original, node.line, node.pos));
+                if (arg_list && arg_list.filter(r => r.type !== "variable").length > 0) throw new ArnError("Cannot pass non-variables as argument names to function.", original, node.line, node.pos);
                 child_env = env.clone();
 
                 if (arg_list) for (let i in arg_list) {
@@ -10373,7 +10380,7 @@ window.walkTree = function parse(tree, opts, original) {
                 node.body(env);
                 break;
             default:
-                throw new SyntaxError("Unrecognized node in AST:", JSON.stringify(node));
+                throw new Error("Unrecognized node in AST:", JSON.stringify(node));
         }
 
         return ret_val;

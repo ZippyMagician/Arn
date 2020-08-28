@@ -4,7 +4,8 @@ const { tokenize } = require('./lexer.js');
 const dictionary = require('./dictionary');
 const rl = require('readline-sync');
 
-const { cast, printf, stringify, constructType, constructArea } = require('./formatter.js');
+const { cast, printf, stringify, constructType } = require('./formatter.js');
+const { ArnError } = require('./errors.js');
 const { Sequence } = require('./sequence.js');
 const { default: BigNumber } = require('bignumber.js');
 
@@ -150,7 +151,7 @@ module.exports.walkTree = function parse(tree, opts, original) {
                 let vec = coerce(node, "array");
                 return unpack(vec[Math.floor(Math.random() * vec.length)]);
             default:
-                throw new SyntaxError("Couldn't recognize prefix.\n" + constructArea(original, node.line, node.pos));
+                throw new ArnError("Couldn't recognize prefix.", original, node.line, node.pos);
         }
     }
     
@@ -230,7 +231,7 @@ module.exports.walkTree = function parse(tree, opts, original) {
                 return coerce(node.left, "array").indexOf(coerce(node.right, "string")) > -1;
             case '@:':
                 let left = node.left;
-                if (left.type !== "variable") throw new SyntaxError("Cannot modify immutable item.\n" + constructArea(original, left.line, left.pos));
+                if (left.type !== "variable") throw new ArnError("Cannot modify immutable value.", original, left.line, left.pos);
 
                 let obj = env.get(left.value, left.line, left.pos);
                 let entry = coerce(obj, "array");
@@ -246,7 +247,7 @@ module.exports.walkTree = function parse(tree, opts, original) {
             case ',':
                 return [evalNode(node.left, env, true), evalNode(node.right, env, true)];
             default:
-                throw new SyntaxError("Couldn't recognize infix.\n" + constructArea(original, node.line, node.pos));
+                throw new ArnError("Couldn't recognize infix.", original, node.line, node.pos);
         }
     }
     
@@ -268,7 +269,7 @@ module.exports.walkTree = function parse(tree, opts, original) {
             case 'B':
                 return doBase(ops[1], ops.slice(1), new BigNumber(item.toString(10), 2), length, node);
             default:
-                throw new SyntaxError("Issue with base parsing:", command, ops, item, `\n${constructArea(original, node.line, node.pos)}`);
+                throw new ArnError("Invalid base conversion.", original, node.line, node.pos);
         }
     }
     
@@ -325,7 +326,7 @@ module.exports.walkTree = function parse(tree, opts, original) {
 
                 return zip(...vec);
             default:
-                throw new SyntaxError("Couldn't recognize suffix.\n" + constructArea(original, node.line, node.pos));
+                throw new ArnError("Couldn't recognize suffix.", original, node.line, node.pos);
         }
     }
 
@@ -382,7 +383,7 @@ module.exports.walkTree = function parse(tree, opts, original) {
                 break;
             case "call":
                 let [arg_list, body] = env.get_func(node.value, node.line, node.pos);
-                if (arg_list && arg_list.filter(r => r.type !== "variable").length > 0) throw new SyntaxError("Cannot pass non-variables as argument names to function.\n" + constructArea(original, node.line, node.pos));
+                if (arg_list && arg_list.filter(r => r.type !== "variable").length > 0) throw new ArnError("Cannot pass non-variables as argument names to function.", original, node.line, node.pos);
                 child_env = env.clone();
 
                 if (arg_list) for (let i in arg_list) {
@@ -408,7 +409,7 @@ module.exports.walkTree = function parse(tree, opts, original) {
                 node.body(env);
                 break;
             default:
-                throw new SyntaxError("Unrecognized node in AST:", JSON.stringify(node));
+                throw new Error("Unrecognized node in AST:", JSON.stringify(node));
         }
 
         return ret_val;

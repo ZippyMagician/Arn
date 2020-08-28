@@ -1,5 +1,5 @@
 const constants = require('./constants.js');
-const { constructArea } = require('./formatter.js');
+const { ArnError } = require('./errors.js');
 const precedence = constants.PRECEDENCE;
 
 function compare(original, partial) {
@@ -132,7 +132,7 @@ module.exports.makeAST = function makeAST(tokens, original, parent_ast = false) 
             } else return look();
         } else {
             let save = "";
-            throw new SyntaxError(`Didn't recognize token.\n${constructArea(original, look().line, look().pos)}`);
+            throw new ArnError("Couldn't recognize token", original, look().line, look().pos);
         }
     }
 
@@ -228,6 +228,7 @@ module.exports.makeAST = function makeAST(tokens, original, parent_ast = false) 
             } else if (tok === "$") {
                 if (peek().type === "variable") next();
                 let contents = parseBlock();
+                if (!contents) throw new ArnError("Must provide block to prefix $", original, current.line, current.pos);
                 next();
                 ret_obj = {
                     type: "prefix",
@@ -241,6 +242,7 @@ module.exports.makeAST = function makeAST(tokens, original, parent_ast = false) 
             } else if (tok === "$:") {
                 if (peek().type === "variable") next();
                 let contents = parseBlock();
+                if (!contents) throw new ArnError("Must provide block to prefix $:", original, current.line, current.pos);
                 next();
                 ret_obj = {
                     type: "prefix",

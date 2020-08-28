@@ -1,4 +1,5 @@
 const { constructArea } = require("./formatter");
+const { ArnError } = require('./errors.js');
 
 class Environment {
     constructor(parent, code) {
@@ -31,7 +32,7 @@ class Environment {
         if (this._exists(name)) {
             return this.storage.filter(r => r.name === name)[0].value;
         } else {
-            throw new SyntaxError("Unrecognized variable.\n" + constructArea(this._code, line, pos));
+            throw new ArnError("Unrecognized variable.", this._code, line, pos);
         }
     }
 
@@ -49,7 +50,7 @@ class Environment {
         if (filter.length > 0) {
             return [filter[0].args, filter[0].body];
         } else {
-            throw new SyntaxError("Unrecognized function.\n" + constructArea(this._code, line, pos));
+            throw new ArnError("Unrecognized function.", this._code, line, pos);
         }
     }
 
