@@ -44,7 +44,6 @@ module.exports.walkTree = function parse(tree, opts, original) {
             case '!!':
                 return [...coerce(node, "string")].reverse().join("");
             case '!':
-                const fix = item => /^\d+$/.test(item) ? +item : item;
                 return !fix(evalNode(node.arg, env, true)) ? 1 : 0;
             case ':v':
                 return Math.floor(fix(evalNode(node.arg, env, true))).toString();
