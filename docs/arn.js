@@ -9133,7 +9133,7 @@ window.decompress = (chars, all_cap = false) => {
 }
 
 window.listPrimes = function primeSieve(n) {
-    var a = Array(n = n / 2),
+    var a = Array(n = Math.ceil(n / 2)),
         t = (Math.sqrt(4 + 8 * n) - 2) / 4,
         u = 0,
         r = [];
