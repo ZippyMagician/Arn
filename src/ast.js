@@ -132,7 +132,7 @@ module.exports.makeAST = function makeAST(tokens, original, parent_ast = false) 
             } else return look();
         } else {
             let save = "";
-            throw new ArnError("Couldn't recognize token", original, look().line, look().pos);
+            throw ArnError("Couldn't recognize token", original, look().line, look().pos);
         }
     }
 
@@ -228,7 +228,7 @@ module.exports.makeAST = function makeAST(tokens, original, parent_ast = false) 
             } else if (tok === "$") {
                 if (peek().type === "variable") next();
                 let contents = parseBlock();
-                if (!contents) throw new ArnError("Must provide block to prefix $", original, current.line, current.pos);
+                if (!contents) throw ArnError("Must provide block to prefix $", original, current.line, current.pos);
                 next();
                 ret_obj = {
                     type: "prefix",
@@ -242,7 +242,7 @@ module.exports.makeAST = function makeAST(tokens, original, parent_ast = false) 
             } else if (tok === "$:") {
                 if (peek().type === "variable") next();
                 let contents = parseBlock();
-                if (!contents) throw new ArnError("Must provide block to prefix $:", original, current.line, current.pos);
+                if (!contents) throw ArnError("Must provide block to prefix $:", original, current.line, current.pos);
                 next();
                 ret_obj = {
                     type: "prefix",

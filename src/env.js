@@ -32,7 +32,7 @@ class Environment {
         if (this._exists(name)) {
             return this.storage.filter(r => r.name === name)[0].value;
         } else {
-            throw new ArnError("Unrecognized variable.", this._code, line, pos);
+            throw ArnError("Unrecognized variable.", this._code, line, pos);
         }
     }
 
@@ -50,7 +50,7 @@ class Environment {
         if (filter.length > 0) {
             return [filter[0].args, filter[0].body];
         } else {
-            throw new ArnError("Unrecognized function.", this._code, line, pos);
+            throw ArnError("Unrecognized function.", this._code, line, pos);
         }
     }
 

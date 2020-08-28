@@ -151,7 +151,7 @@ module.exports.walkTree = function parse(tree, opts, original) {
                 let vec = coerce(node, "array");
                 return unpack(vec[Math.floor(Math.random() * vec.length)]);
             default:
-                throw new ArnError("Couldn't recognize prefix.", original, node.line, node.pos);
+                throw ArnError("Couldn't recognize prefix.", original, node.line, node.pos);
         }
     }
     
@@ -231,7 +231,7 @@ module.exports.walkTree = function parse(tree, opts, original) {
                 return coerce(node.left, "array").indexOf(coerce(node.right, "string")) > -1;
             case '@:':
                 let left = node.left;
-                if (left.type !== "variable") throw new ArnError("Cannot modify immutable value.", original, left.line, left.pos);
+                if (left.type !== "variable") throw ArnError("Cannot modify immutable value.", original, left.line, left.pos);
 
                 let obj = env.get(left.value, left.line, left.pos);
                 let entry = coerce(obj, "array");
@@ -247,7 +247,7 @@ module.exports.walkTree = function parse(tree, opts, original) {
             case ',':
                 return [evalNode(node.left, env, true), evalNode(node.right, env, true)];
             default:
-                throw new ArnError("Couldn't recognize infix.", original, node.line, node.pos);
+                throw ArnError("Couldn't recognize infix.", original, node.line, node.pos);
         }
     }
     
@@ -269,7 +269,7 @@ module.exports.walkTree = function parse(tree, opts, original) {
             case 'B':
                 return doBase(ops[1], ops.slice(1), new BigNumber(item.toString(10), 2), length, node);
             default:
-                throw new ArnError("Invalid base conversion.", original, node.line, node.pos);
+                throw ArnError("Invalid base conversion.", original, node.line, node.pos);
         }
     }
     
@@ -326,7 +326,7 @@ module.exports.walkTree = function parse(tree, opts, original) {
 
                 return zip(...vec);
             default:
-                throw new ArnError("Couldn't recognize suffix.", original, node.line, node.pos);
+                throw ArnError("Couldn't recognize suffix.", original, node.line, node.pos);
         }
     }
 
