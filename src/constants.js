@@ -50,17 +50,28 @@ module.exports.ninfixes = [
     '=', '!=', '<', '>', '<=', '>=', '+', '-', '&'
 ]
 
-// Builtin functions and their definition (or marked as true if hardcoded)
+// Builtin functions and their definition variable count
 module.exports.builtins = {
     max: 1,
     min: 1,
     out: 1,
-    outl: 1,
     in: 0,
     intr: 2,
     fact: 1,
     mean: 1,
     mode: 1
+};
+
+// Shortened key
+module.exports.key = {
+    max: 'm',
+    min: 'mi',
+    out: 'o',
+    in: 'in',
+    intr: 'i',
+    fact: 'f',
+    mean: 'me',
+    mode: 'mo'
 }
 
 // Predefined variables

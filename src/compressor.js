@@ -5,10 +5,16 @@
 // Which was was I was doing before (it lead to an average compression rate of 11%, instead of this version's 17%)
 
 const codePage = `!"#$%&'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_\`abcdefghijklmnopqrstuvwxyz{|}~¡¢£¤¥¦§¨©ª«¬®¯°○■↑↓→←║═╔╗╚╝░▒►◄│─┌┐└┘├┤┴┬♦┼█▄▀▬±²³´µ¶·¸¹º»¼½¾¿ÀÁÂÃÄÅÆÇÈÉÊËÌÍÎÏÐÑÒÓÔÕÖ×ØÙÚÛÜÝÞßàáâãäåæçèéêëìíîïðñòóôõö÷øùúûüýþÿŒœŠšŸŽžƒƥʠˆ˜–—‘’‚“”„†‡•…‰‹›€™⁺⁻⁼`.split("");
+const shortKey = require('./constants.js').key;
+var longKey = {};
+for (let key in shortKey) {
+  longKey[shortKey[key]] = key;
+}
 
 module.exports.pack = (code) => {
-  let bytes = [...code].map(r => r.charCodeAt(0) - 32);
-
+  let bytes = code.split(/(\w+)|([^\w]+)/g).filter(r => r).map(r => shortKey[r] || r).join("");
+  bytes = [...bytes].map(r => r.charCodeAt(0) - 32);
+  
   bytes = packBytes(bytes);
   return bytes.map(r => codePage[r]).join("");
 }
@@ -33,7 +39,8 @@ module.exports.unpack = (packed) => {
   let bytes = [...packed].map(r => codePage.indexOf(r));
 
   bytes = unpackBytes(bytes);
-  return bytes.map(r => String.fromCharCode((r + 32n).toString())).join("");
+  let code = bytes.map(r => String.fromCharCode((r + 32n).toString())).join("");
+  return code.split(/(\w+)|([^\w]+)/g).filter(r => r).map(r => longKey[r] || r).join("");
 }
 
 function unpackBytes(bytes) {

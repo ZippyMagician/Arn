@@ -9378,10 +9378,28 @@ constants.builtins = {
     mode: 1
 }
 
-window.pack = (code) => {
-    //console.log(`PACK: "${code.toString()}"`);
-    let bytes = [...code.toString()].map(r => r.charCodeAt(0) - 32);
+constants.key = {
+    max: 'm',
+    min: 'mi',
+    out: 'o',
+    in: 'in',
+    intr: 'i',
+    fact: 'f',
+    mean: 'me',
+    mode: 'mo'
+}
 
+
+const shortKey = constants.key;
+var longKey = {};
+for (let key in shortKey) {
+  longKey[shortKey[key]] = key;
+}
+
+window.pack = (code) => {
+    let bytes = code.split(/(\w+)|([^\w]+)/g).filter(r => r).map(r => shortKey[r] || r).join("");
+    bytes = [...bytes].map(r => r.charCodeAt(0) - 32);
+  
     bytes = packBytes(bytes);
     return bytes.map(r => codePage[r]).join("");
 }
@@ -9403,26 +9421,27 @@ function packBytes(bytes) {
 }
 
 window.unpack = (packed) => {
-    let bytes = [...packed.toString()].map(r => codePage.indexOf(r));
+    let bytes = [...packed].map(r => codePage.indexOf(r));
 
     bytes = unpackBytes(bytes);
-    return bytes.map(r => String.fromCharCode((r + 32n).toString())).join("");
+    let code = bytes.map(r => String.fromCharCode((r + 32n).toString())).join("");
+    return code.split(/(\w+)|([^\w]+)/g).filter(r => r).map(r => longKey[r] || r).join("");
 }
 
 function unpackBytes(bytes) {
-  let big = 0n;
-  let result = [];
+    let big = 0n;
+    let result = [];
 
-  for (let i = bytes.length - 1; i >= 0; i--) {
-      big = big * 252n + BigInt(bytes[i]);
-  }
+    for (let i = bytes.length - 1; i >= 0; i--) {
+        big = big * 252n + BigInt(bytes[i]);
+    }
 
-  while (big > 0) {
-      result.push(big % 95n);
-      big /= 95n;
-  }
+    while (big > 0) {
+        result.push(big % 95n);
+        big /= 95n;
+    }
 
-  return result;
+    return result;
 }
 
 function fix(str) {
