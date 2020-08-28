@@ -9,7 +9,7 @@ module.exports.listPrimes = function primeSieve(n) {
         for (let j = i; j <= u; j++) a[i + j + 2 * i * j] = true;
     }
 
-    for (let i = 0; i <= n; i++) !a[i] && r.push(i * 2 + 1);
+    for (let i = 0; i <= n; i++) !a[i] && r.push((i * 2 + 1).toString());
 
     return r;
 }
