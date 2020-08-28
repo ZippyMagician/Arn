@@ -9,9 +9,17 @@ const { ArnError } = require('./errors.js');
 const { Sequence } = require('./sequence.js');
 const { default: BigNumber } = require('bignumber.js');
 
+const { listPrimes } = require('./math.js');
+
 var stdin = false;
+BigNumber.set({
+    ALPHABET: '0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ',
+    DECIMAL_PLACES: 25
+});
 
 module.exports.walkTree = function parse(tree, opts, original) {
+    if (opts.p || opts.precision) BigNumber.set({DECIMAL_PLACES: opts.precision || opts.p});
+    
     function zip(...vals) {
         return vals[0].map((_, i) => vals.map(array => array[i]));
     }
@@ -150,6 +158,8 @@ module.exports.walkTree = function parse(tree, opts, original) {
             case '?.':
                 let vec = coerce(node, "array");
                 return unpack(vec[Math.floor(Math.random() * vec.length)]);
+            case '#.':
+                return listPrimes(fix(coerce(node, "integer", true)));
             default:
                 throw ArnError("Couldn't recognize prefix.", original, node.line, node.pos);
         }

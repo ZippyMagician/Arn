@@ -9,13 +9,9 @@ require('colors');
 class Options {
     constructor(argv) {
         this.long = [];
-        this.stdin = [];
 
         this.long = argv._;
-        this.stdin = argv.stdin;
-        this.c = argv.c;
-        this.u = argv.u;
-        this.d = argv.d;
+        Object.assign(this, argv);
     }
 }
 
@@ -44,7 +40,7 @@ switch (opts.long[0]) {
         }
         break;
     case 'help':
-        console.log("Here is a list of commands:\n * run -> Runs a file, or program directly if passed the -u flag\n * help -> Gets a list of all commands/flags\n\nHere are a list of flags:\n * -u -> Take manually inputted program instead of file\n * -c -> Compiles the code instead of running it\n * -d -> Will print some debug information (will be expanded in the future)");
+        console.log("Here is a list of commands:\n * run -> Runs a file, or program directly if passed the -u flag\n * help -> Gets a list of all commands/flags\n\nHere are a list of flags:\n * -u -> Take manually inputted program instead of file\n * -c -> Compiles the code instead of running it\n * -d -> Will print some debug information (will be expanded in the future)\n * -p, --precision -> Sets the precision of Arn's BigNumbers. Default: 25 digits");
         break;
     default:
         let inp = rl.question(">> ");

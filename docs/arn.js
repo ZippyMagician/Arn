@@ -9132,6 +9132,22 @@ window.decompress = (chars, all_cap = false) => {
     return decomp;
 }
 
+window.listPrimes = function primeSieve(n) {
+    var a = Array(n = n / 2),
+        t = (Math.sqrt(4 + 8 * n) - 2) / 4,
+        u = 0,
+        r = [];
+    
+    for (let i = 1; i <= t; i++) {
+        u = (n - i) / (1 + 2 * i);
+        for (let j = i; j <= u; j++) a[i + j + 2 * i * j] = true;
+    }
+
+    for (let i = 0; i <= n; i++) !a[i] && r.push(i * 2 + 1);
+
+    return r;
+}
+
 class Environment {
     constructor(parent, code) {
         this.parent = parent;
@@ -9323,7 +9339,7 @@ constants.punctuation = [
     '=', '<', '>', '+', '-', '*', '/', '%', '^', '|', '@', '.', '@', '&',        // Single-length infixes
     '#', '?',                                                                    // Single-length suffixes
     '!!', ':v', ':^', '++', '--', ':*', ':/', ':>', ':<', '|:', '$:', 'n_', '?.',// Double-length prefixes
-    ':+', ':-',                                                                  // More prefixes
+    ':+', ':-', '#.',                                                            // More prefixes
     '<=', '>=', '!=', '||', '&&', ':|', '->', '=>', ':!', ':?', '::', '@:',      // Double-length infixes
     '^*', ':_', ':{', ':}', ':@', '.@', '.}', '.{',                              // Double-length suffixes
     '{', '}', '(', ')', '[', ']', ',', ':=', ':', ':n', ':s', ':i', ';'          // Other punctuation
@@ -9332,7 +9348,7 @@ constants.punctuation = [
 constants.prefixes = [
     'n_', '!', '$', '\\', '~',
     '!!', ':v', ':^', '++', '--', ':*', ':/', ':>', ':<', '|:',  '$:', '?.',
-    ':+', ':-'
+    ':+', ':-', '#.'
 ];
 
 constants.infixes = [
@@ -9349,15 +9365,18 @@ constants.suffixes = [
 // The precedence of all operators
 constants.PRECEDENCE = {
     '.': 100,
-    '^': 75, '*': 70, '/': 70, '%': 65, '@': 65, ':|': 60, ':!': 60,
-    ':': 55, ':=': 55,
+    '^': 75, 
+    '*': 70, '/': 70, 
+    '%': 65, '@': 65, 
+    ':|': 60, ':!': 60,
     '+': 50, '-': 50, ',': 50,
     '=>': 45, '->': 45, '~': 45, '#': 45, ';': 45, ':_': 45, '.@': 45,
     ':n': 40, ':s': 40, ':}': 40, ':{': 40, '.}': 40, '.{': 40, ':@': 40, '^*': 40, '|': 40,
     '!': 40, 'n_': 40, '$': 40, '\\': 40, '!!': 40, ':v': 40, ':^': 40, '++': 40, '--': 40, ':*': 40, ':/': 40,
-    ':+': 40, ':-': 40, ':>': 40, ':<': 40, ':^': 40, ':v': 40, '|:': 40, '$:': 40, '?.': 40,
+    ':+': 40, ':-': 40, ':>': 40, ':<': 40, ':^': 40, ':v': 40, '|:': 40, '$:': 40, '?.': 40, '#.': 40,
     '=': 30, '!=': 30, '<': 30, '<=': 30, '>': 30, '>=': 30,
-    '&&': 20, '||': 20
+    '&&': 20, '||': 20,
+    ':': 10, ':=': 10
 };
 
 // Infixes that cannot follow other infixes; they take priority
@@ -10007,6 +10026,11 @@ class Sequence {
 
 var stdin = false;
 
+BigNumber.set({
+    ALPHABET: '0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ',
+    DECIMAL_PLACES: 50
+});
+
 window.walkTree = function parse(tree, opts, original) {
     function zip(...vals) {
         return vals[0].map((_, i) => vals.map(array => array[i]));
@@ -10146,6 +10170,8 @@ window.walkTree = function parse(tree, opts, original) {
             case '?.':
                 let vec = coerce(node, "array");
                 return unpack(vec[Math.floor(Math.random() * vec.length)]);
+            case '#.':
+                return listPrimes(fix(coerce(node, "integer", true)));
             default:
                 throw ArnError("Couldn't recognize prefix.", original, node.line, node.pos);
         }
