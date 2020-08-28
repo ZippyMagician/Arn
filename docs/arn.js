@@ -10170,7 +10170,7 @@ window.walkTree = function parse(tree, opts, original) {
                 let vec = coerce(node, "array");
                 return unpack(vec[Math.floor(Math.random() * vec.length)]);
             case '#.':
-                return listPrimes(fix(coerce(node, "integer", true)));
+                return listPrimes(unpack(coerce(node, "int")));
             default:
                 throw ArnError("Couldn't recognize prefix.", original, node.line, node.pos);
         }
