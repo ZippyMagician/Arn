@@ -467,6 +467,7 @@ module.exports.walkTree = function parse(tree, opts, original) {
     define_func("fact", std, "*\\ 1=>");
     define_func("mean", std, "(+\\) / #");
     define_func("mode", std, "(:< :@) :{:{");
+    define_func("sdev", std, ":/mean(n{:*n-.mean}\\");
     
     return evalNode(tree, env);
 }

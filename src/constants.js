@@ -62,7 +62,8 @@ module.exports.builtins = {
     intr: 2,
     fact: 1,
     mean: 1,
-    mode: 1
+    mode: 1,
+    sdev: 1
 };
 
 // Shortened key
@@ -74,13 +75,14 @@ module.exports.key = {
     intr: 'i',
     fact: 'f',
     mean: 'me',
-    mode: 'mo'
+    mode: 'mo',
+    sdev: 's'
 }
 
 // Predefined variables
 // Out of date
 module.exports.vars = {
-    'c': '""',
+    c: '""',
     pi: new BigNumber('3.14159265358979323846'),
     e: new BigNumber('2.71828182845904523536')
 }

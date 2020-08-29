@@ -6,13 +6,42 @@
 
 const codePage = `!"#$%&'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_\`abcdefghijklmnopqrstuvwxyz{|}~¡¢£¤¥¦§¨©ª«¬®¯°○■↑↓→←║═╔╗╚╝░▒►◄│─┌┐└┘├┤┴┬♦┼█▄▀▬±²³´µ¶·¸¹º»¼½¾¿ÀÁÂÃÄÅÆÇÈÉÊËÌÍÎÏÐÑÒÓÔÕÖ×ØÙÚÛÜÝÞßàáâãäåæçèéêëìíîïðñòóôõö÷øùúûüýþÿŒœŠšŸŽžƒƥʠˆ˜–—‘’‚“”„†‡•…‰‹›€™⁺⁻⁼`.split("");
 const shortKey = require('./constants.js').key;
+const punc = require('./constants.js').punctuation;
 var longKey = {};
 for (let key in shortKey) {
   longKey[shortKey[key]] = key;
 }
 
+function split(code) {
+  let buffer = code;
+  let spt = [];
+  
+  while (buffer.length) {
+    let item = [];
+
+    if (punc.includes(buffer.substr(0, 1)) || punc.includes(buffer.substr(0, 2))) {
+      if (punc.includes(buffer.substr(0, 2))) {
+        spt.push(buffer.substr(0, 2));
+        buffer = buffer.substr(2);
+      } else {
+        spt.push(buffer.substr(0, 1));
+        buffer = buffer.substr(1);
+      }
+    } else if (item = /^(\w+)/g.exec(buffer)) {
+      spt.push(item[1]);
+      buffer = buffer.substr(item[1].length);
+    } else {
+      item = /^([^\w]+)/g.exec(buffer);
+      spt.push(item[1]);
+      buffer = buffer.substr(item[1].length);
+    }
+  }
+  
+  return spt;
+}
+
 module.exports.pack = (code) => {
-  let bytes = code.split(/(\w+)|([^\w]+)/g).filter(r => r).map(r => shortKey[r] || r).join("");
+  let bytes = split(code).map(r => shortKey[r] || r).join("");
   bytes = [...bytes].map(r => r.charCodeAt(0) - 32);
   
   bytes = packBytes(bytes);
@@ -40,7 +69,7 @@ module.exports.unpack = (packed) => {
 
   bytes = unpackBytes(bytes);
   let code = bytes.map(r => String.fromCharCode((r + 32n).toString())).join("");
-  return code.split(/(\w+)|([^\w]+)/g).filter(r => r).map(r => longKey[r] || r).join("");
+  return split(code).map(r => longKey[r] || r).join("");
 }
 
 function unpackBytes(bytes) {

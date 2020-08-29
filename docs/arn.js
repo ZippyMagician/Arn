@@ -9418,7 +9418,8 @@ constants.builtins = {
     intr: 2,
     fact: 1,
     mean: 1,
-    mode: 1
+    mode: 1,
+    sdev: 1
 }
 
 constants.key = {
@@ -9429,18 +9430,48 @@ constants.key = {
     intr: 'i',
     fact: 'f',
     mean: 'me',
-    mode: 'mo'
+    mode: 'mo',
+    sdev: 's'
 }
 
 
 const shortKey = constants.key;
+const punc = constants.punctuation;
 var longKey = {};
 for (let key in shortKey) {
   longKey[shortKey[key]] = key;
 }
 
+function split(code) {
+    let buffer = code;
+    let spt = [];
+    
+    while (buffer.length) {
+        let item = [];
+  
+        if (punc.includes(buffer.substr(0, 1)) || punc.includes(buffer.substr(0, 2))) {
+            if (punc.includes(buffer.substr(0, 2))) {
+                spt.push(buffer.substr(0, 2));
+                buffer = buffer.substr(2);
+            } else {
+                spt.push(buffer.substr(0, 1));
+                buffer = buffer.substr(1);
+            }
+        } else if (item = /^(\w+)/g.exec(buffer)) {
+            spt.push(item[1]);
+            buffer = buffer.substr(item[1].length);
+        } else {
+            item = /^([^\w]+)/g.exec(buffer);
+            spt.push(item[1]);
+            buffer = buffer.substr(item[1].length);
+        }
+    }
+    
+    return spt;
+}
+
 window.pack = (code) => {
-    let bytes = code.split(/(\w+)|([^\w]+)/g).filter(r => r).map(r => shortKey[r] || r).join("");
+    let bytes = split(code).map(r => shortKey[r] || r).join("");
     bytes = [...bytes].map(r => r.charCodeAt(0) - 32);
   
     bytes = packBytes(bytes);
@@ -9468,7 +9499,7 @@ window.unpack = (packed) => {
 
     bytes = unpackBytes(bytes);
     let code = bytes.map(r => String.fromCharCode((r + 32n).toString())).join("");
-    return code.split(/(\w+)|([^\w]+)/g).filter(r => r).map(r => longKey[r] || r).join("");
+    return split(code).map(r => longKey[r] || r).join("");
 }
 
 function unpackBytes(bytes) {
@@ -10503,6 +10534,7 @@ window.walkTree = function parse(tree, opts, original) {
     define_func("fact", std, "*\\ 1=>");
     define_func("mean", std, "(+\\) / #");
     define_func("mode", std, "(:< :@) :{:{");
+    define_func("sdev", std, ":/mean(n{:*n-.mean}\\");
     
     return evalNode(tree, env);
 }

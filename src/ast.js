@@ -266,7 +266,7 @@ module.exports.makeAST = function makeAST(tokens, original, parent_ast = false) 
             let left;
             if (validItem(ast.contents[ast.contents.length - 1])) left = ast.contents.pop();
             next();
-            if (tok === "." && peek().type !== "variable") throw ArnError("Cannot call dot infix on a non-function.", original, peek().line, peek().pos);
+            if (tok === "." && (!look() || look().type !== "variable")) throw ArnError("Cannot call dot infix on a non-function.", original, current.line, current.pos);
             if (tok === "@") {
                 if (look().type === "punctuation" && !isPunc("(") && !isPunc("[") && !isPunc("{")) {
                     next();
