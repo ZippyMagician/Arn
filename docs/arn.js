@@ -9301,7 +9301,7 @@ window.cast = function cast(value, type) {
         case "int":
             return new BigNumber(typeof value === "object" ? value instanceof Sequence ? value.get(0) : value instanceof BigNumber ? value.toString() : value[0] : typeof value === "boolean" ? +value : value);
         case "string":
-            return typeof value === "string" ? value : typeof value === "number" ? value.toString() : value instanceof Sequence ? value.get(0) : value[0];
+            return typeof value === "string" ? value : typeof value === "number" || value instanceof BigNumber ? value.toString() : value instanceof Sequence ? value.get(0) : value[0];
         case "array":
             return typeof value === "string" || typeof value === "number" ? value.toString().split(value.toString().indexOf(" ") > -1 ? " " : "") : value;
     }
@@ -9833,7 +9833,7 @@ window.makeAST = function makeAST(tokens, original, parent_ast = false) {
             let left;
             if (validItem(ast.contents[ast.contents.length - 1])) left = ast.contents.pop();
             next();
-            if (tok === "." && peek().type !== "variable") throw ArnError("Cannot call dot infix on a non-function.", original, peek().line, peek().pos);
+            if (tok === "." && (!look() || look().type !== "variable")) throw ArnError("Cannot call dot infix on a non-function.", original, current.line, current.pos);
             if (tok === "@") {
                 if (look().type === "punctuation" && !isPunc("(") && !isPunc("[") && !isPunc("{")) {
                     next();

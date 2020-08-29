@@ -66,7 +66,7 @@ module.exports.cast = function cast(value, type) {
         case "int":
             return new BigNumber(typeof value === "object" ? value instanceof Sequence ? value.get(0) : value instanceof BigNumber ? value.toString() : value[0] : typeof value === "boolean" ? +value : value);
         case "string":
-            return typeof value === "string" ? value : typeof value === "number" ? value.toString() : value instanceof Sequence ? value.get(0) : value[0];
+            return typeof value === "string" ? value : typeof value === "number" || value instanceof BigNumber ? value.toString() : value instanceof Sequence ? value.get(0) : value[0];
         case "array":
             return typeof value === "string" || typeof value === "number" ? value.toString().split(value.toString().indexOf(" ") > -1 ? " " : "") : value;
     }
