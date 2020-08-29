@@ -1,3 +1,5 @@
+const { factorize } = require("../src/math");
+
 const dictionary = [
     "the",
     "of",
@@ -9149,6 +9151,27 @@ window.listPrimes = function primeSieve(n) {
     return r;
 }
 
+window.factorize = function getFactors(num) {
+    let fac = [], 
+        i = 1, 
+        ind = 0;
+    
+    while (i <= Math.floor(Math.sqrt(num))) {
+        if (num % i === 0) {
+            fac.splice(ind, 0, i);
+            if (i != num / i) fac.splice(-ind, 0, num / i);
+            ind++;
+        }
+        i++;
+    }
+    
+    let temp = fac[fac.length - 1];
+    fac[fac.length - 1] = fac[0];
+    fac[0] = temp;
+    
+    return fac;
+}
+
 class Environment {
     constructor(parent, code) {
         this.parent = parent;
@@ -9340,7 +9363,7 @@ constants.punctuation = [
     '=', '<', '>', '+', '-', '*', '/', '%', '^', '|', '@', '.', '@', '&',        // Single-length infixes
     '#', '?',                                                                    // Single-length suffixes
     '!!', ':v', ':^', '++', '--', ':*', ':/', ':>', ':<', '|:', '$:', 'n_', '?.',// Double-length prefixes
-    ':+', ':-', '#.',                                                            // More prefixes
+    ':+', ':-', '#.', '*.',                                                      // More prefixes
     '<=', '>=', '!=', '||', '&&', ':|', '->', '=>', ':!', ':?', '::', '@:',      // Double-length infixes
     '^*', ':_', ':{', ':}', ':@', '.@', '.}', '.{',                              // Double-length suffixes
     '{', '}', '(', ')', '[', ']', ',', ':=', ':', ':n', ':s', ':i', ';'          // Other punctuation
@@ -9349,7 +9372,7 @@ constants.punctuation = [
 constants.prefixes = [
     'n_', '!', '$', '\\', '~',
     '!!', ':v', ':^', '++', '--', ':*', ':/', ':>', ':<', '|:',  '$:', '?.',
-    ':+', ':-', '#.'
+    ':+', ':-', '#.', '*.'
 ];
 
 constants.infixes = [
@@ -9374,7 +9397,7 @@ constants.PRECEDENCE = {
     '=>': 45, '->': 45, '~': 45, '#': 45, ';': 45, ':_': 45, '.@': 45,
     ':n': 40, ':s': 40, ':}': 40, ':{': 40, '.}': 40, '.{': 40, ':@': 40, '^*': 40, '|': 40,
     '!': 40, 'n_': 40, '$': 40, '\\': 40, '!!': 40, ':v': 40, ':^': 40, '++': 40, '--': 40, ':*': 40, ':/': 40,
-    ':+': 40, ':-': 40, ':>': 40, ':<': 40, ':^': 40, ':v': 40, '|:': 40, '$:': 40, '?.': 40, '#.': 40,
+    ':+': 40, ':-': 40, ':>': 40, ':<': 40, ':^': 40, ':v': 40, '|:': 40, '$:': 40, '?.': 40, '#.': 40, '*.': 40,
     '=': 30, '!=': 30, '<': 30, '<=': 30, '>': 30, '>=': 30,
     '&&': 20, '||': 20,
     ':': 10, ':=': 10
@@ -10172,6 +10195,8 @@ window.walkTree = function parse(tree, opts, original) {
                 return unpack(vec[Math.floor(Math.random() * vec.length)]);
             case '#.':
                 return listPrimes(unpack(coerce(node, "int")));
+            case '*.':
+                return factorize(unpack(coerce(node, "int")));
             default:
                 throw ArnError("Couldn't recognize prefix.", original, node.line, node.pos);
         }
