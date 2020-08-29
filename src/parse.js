@@ -336,6 +336,8 @@ module.exports.walkTree = function parse(tree, opts, original) {
                 let vec = coerce(node, "array", true);
 
                 return zip(...vec);
+            case '.|':
+                return coerce(node, "int").abs().toString();
             default:
                 throw ArnError("Couldn't recognize suffix.", original, node.line, node.pos);
         }
