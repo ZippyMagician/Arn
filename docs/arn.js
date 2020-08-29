@@ -9359,14 +9359,14 @@ window.ArnError = function (msg, code, line, index) {
 const constants = {};
 
 constants.punctuation = [
-    '!', '$', '#', '\\', '~',                                                    // Single-length prefixes
-    '=', '<', '>', '+', '-', '*', '/', '%', '^', '|', '@', '.', '@', '&',        // Single-length infixes
-    '#', '?',                                                                    // Single-length suffixes
-    '!!', ':v', ':^', '++', '--', ':*', ':/', ':>', ':<', '|:', '$:', 'n_', '?.',// Double-length prefixes
-    ':+', ':-', '#.', '*.',                                                      // More prefixes
-    '<=', '>=', '!=', '||', '&&', ':|', '->', '=>', ':!', ':?', '::', '@:',      // Double-length infixes
-    '^*', ':_', ':{', ':}', ':@', '.@', '.}', '.{',                              // Double-length suffixes
-    '{', '}', '(', ')', '[', ']', ',', ':=', ':', ':n', ':s', ':i', ';'          // Other punctuation
+    '!', '$', '#', '\\', '~',                                                           // Single-length prefixes
+    '=', '<', '>', '+', '-', '*', '/', '%', '^', '|', '@', '.', '@', '&',               // Single-length infixes
+    '#', '?',                                                                           // Single-length suffixes
+    '!!', ':v', ':^', '++', '--', ':*', ':/', ':>', ':<', '|:', '$:', 'n_', '?.',       // Double-length prefixes
+    ':+', ':-', '#.', '*.',                                                             // More prefixes
+    '<=', '>=', '!=', '||', '&&', ':|', '->', '=>', ':!', ':?', '::', '@:',             // Double-length infixes
+    '^*', ':_', ':{', ':}', ':@', '.@', '.}', '.{',                                     // Double-length suffixes
+    '{', '}', '(', ')', '[', ']', ',', ':=', ':', ':n', ':s', ':i', ';', '"', "'", '`'  // Other punctuation
 ];
 
 constants.prefixes = [
