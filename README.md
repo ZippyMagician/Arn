@@ -12,7 +12,7 @@ You can then run the command
 ```sh
 arn run PATH
 ```
-to run a file as an Arn program. You can also pass extra arguments to pass some user input to the program (example below). Use `arn --help` to get a full list of commands/flags.
+to run a file as an Arn program. You can also pass extra arguments to pass some user input to the program (example below). Use `arn help` to get a full list of commands/flags.
 ```sh
 arn run PATH 5 "Hello, World!"
 ```
