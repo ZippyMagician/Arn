@@ -1,5 +1,3 @@
-const { factorize } = require("../src/math");
-
 const dictionary = [
     "the",
     "of",
@@ -9442,7 +9440,7 @@ for (let key in shortKey) {
   longKey[shortKey[key]] = key;
 }
 
-function split(code) {
+window.c_split = function split(code) {
     let buffer = code;
     let spt = [];
     
@@ -9471,7 +9469,7 @@ function split(code) {
 }
 
 window.pack = (code) => {
-    let bytes = split(code).map(r => shortKey[r] || r).join("");
+    let bytes = c_split(code).map(r => shortKey[r] || r).join("");
     bytes = [...bytes].map(r => r.charCodeAt(0) - 32);
   
     bytes = packBytes(bytes);
@@ -9499,7 +9497,7 @@ window.unpack = (packed) => {
 
     bytes = unpackBytes(bytes);
     let code = bytes.map(r => String.fromCharCode((r + 32n).toString())).join("");
-    return split(code).map(r => longKey[r] || r).join("");
+    return c_split(code).map(r => longKey[r] || r).join("");
 }
 
 function unpackBytes(bytes) {
