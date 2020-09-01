@@ -10272,7 +10272,7 @@ window.walkTree = function parse(tree, opts, original) {
                 return coerce(node.left, "int").modulo(mod_right).plus(mod_right).modulo(mod_right).toString();
             case '^':
                 let repeat;
-                if (typeof (repeat = fix(evalNode(node.left, env))) === "string") {
+                if (typeof (repeat = fix(evalNode(node.left, env, true))) === "string") {
                     return repeat.repeat(coerce(node.right, "int").toString());
                 } else {
                     return coerce(node.left, "int").exponentiatedBy(coerce(node.right, "int")).toString();
