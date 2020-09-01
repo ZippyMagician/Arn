@@ -10233,7 +10233,7 @@ window.walkTree = function parse(tree, opts, original) {
     
     function evalInfix(node, env, f = false) {
         const coerce = (n, t) => cast(evalNode(n, env), t);
-        const fix = item => /^\-?\d+$/.test(item) ? +item : item;
+        const fix = item => !isNaN(+item) ? +item : item;
         
         switch (node.value) {
             case ':':
