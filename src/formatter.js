@@ -64,11 +64,11 @@ module.exports.sprintf = function sprintf(item, nested = false) {
 module.exports.cast = function cast(value, type) {
     switch (type) {
         case "int":
-            return new BigNumber(typeof value === "object" ? value instanceof Sequence ? value.get(0) : value instanceof BigNumber ? value.toString() : value[0] : typeof value === "boolean" ? +value : value);
+            return new BigNumber(typeof value === "object" ? value instanceof Sequence ? value.get(0) : value instanceof BigNumber ? value.toString() : value[0] : typeof value === "boolean" ? +value : isNaN(+value) ? +cast(value, "array")[0] : value);
         case "string":
             return typeof value === "string" ? value : typeof value === "number" || value instanceof BigNumber ? value.toString() : value instanceof Sequence ? value.get(0) : value[0];
         case "array":
-            return typeof value === "string" || typeof value === "number" ? value.toString().split(value.toString().indexOf(" ") > -1 ? " " : "") : value;
+            return typeof value === "string" || typeof value === "number" || value instanceof BigNumber ? value.toString().split(value.toString().indexOf(" ") > -1 ? " " : "") : value;
     }
 }
 
