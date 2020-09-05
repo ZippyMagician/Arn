@@ -10233,7 +10233,7 @@ window.walkTree = function parse(tree, opts, original) {
     
     function evalInfix(node, env, f = false) {
         const coerce = (n, t) => cast(evalNode(n, env), t);
-        const fix = item => /^\d+$/.test(item) ? +item : item;
+        const fix = item => !isNaN(+item) ? +item : item;
         
         switch (node.value) {
             case ':':
@@ -10272,7 +10272,7 @@ window.walkTree = function parse(tree, opts, original) {
                 return coerce(node.left, "int").modulo(mod_right).plus(mod_right).modulo(mod_right).toString();
             case '^':
                 let repeat;
-                if (typeof (repeat = fix(evalNode(node.left, env))) === "string") {
+                if (typeof (repeat = fix(evalNode(node.left, env, true))) === "string") {
                     return repeat.repeat(coerce(node.right, "int").toString());
                 } else {
                     return coerce(node.left, "int").exponentiatedBy(coerce(node.right, "int")).toString();
