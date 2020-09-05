@@ -288,24 +288,21 @@ module.exports.walkTree = function parse(tree, opts, original) {
         const coerce = (n, t, f = false) => cast(evalNode(n.arg, env, f), t);
         
         switch (node.value) {
+            case ';':
+                let ops = [ ...node.ops ];
+                let length = 0;
+                let command;
+        
+                if (/[0-9]/g.test(ops[0])) {
+                    length = +ops.shift();
+                    command = ops
+                }
+                command = ops[0];
+                return doBase(command, ops, coerce(node, "int"), length, node);
             case '#':
                 return evalNode(node.arg, env, true).length;
             case ':_':
                 return coerce(node, "array", true).flat(Infinity);
-            case ';':
-                let ops = node.ops;
-                let length = 0;
-                let command;
-    
-                if (/[0-9]/g.test(ops[0])) {
-                    length = +ops[0];
-                    command = ops[1];
-                    ops.shift();
-                } else {
-                    command = ops[0];
-                }
-                
-                return doBase(command, ops, coerce(node, "int"), length, node);
             case '^*':
                 return coerce(node, "int") > 0 && Math.sqrt(coerce(node, "int")) % 1 === 0;
             case ':n':
@@ -333,7 +330,7 @@ module.exports.walkTree = function parse(tree, opts, original) {
                     
                 return arr.reduce((acc, val) => typeof acc === "object" ? (acc.filter(entry => entry[0] === val).length ? (acc[acc.indexOf(acc.filter(entry => entry[0] === val)[0])].push(val), acc) : (acc.push([val]), acc)) : [[val]]);
             case '.@':
-                let vec = coerce(node, "array", true);
+                let vec = coerce(node, "array", true).map(r => cast(r, "array"));
 
                 return zip(...vec);
             case '.|':

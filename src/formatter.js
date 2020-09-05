@@ -97,7 +97,7 @@ module.exports.stringify = val => {
         if (val instanceof BigNumber) return `${val.toString()}`;
         else return `[${val.toString().replace(/,/g, " ")}]`;
     } else {
-        return +val;
+        return (+val).toString().replace(/-([0-9]+e?-?[0-9]*)/g, "(n_$1)");
     }
 }
 
