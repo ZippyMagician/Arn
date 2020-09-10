@@ -131,7 +131,6 @@ module.exports.walkTree = function parse(tree, opts, original) {
                         child_env.set(map_ops.arg, {type: "string", value: v});
                         let ret = evalNode(map_ops.contents, child_env, true);
                         env.update(child_env, map_ops.arg);
-
                         return ret;
                     }
                     
@@ -167,7 +166,7 @@ module.exports.walkTree = function parse(tree, opts, original) {
     }
     
     function evalInfix(node, env, f = false) {
-        const coerce = (n, t) => cast(evalNode(n, env), t);
+        const coerce = (n, t, c = false) => cast(evalNode(n, env, c), t);
         const fix = item => /^\d+$/.test(item) ? +item : item;
         
         switch (node.value) {
@@ -175,7 +174,7 @@ module.exports.walkTree = function parse(tree, opts, original) {
                 let varName = node.left.value;
                 let varValue = evalNode(node.right, env, true);
 
-                env.set(varName, node.right);
+                env.set(varName, constructType(varValue));
                 return varValue;
             case '=':
                 return evalNode(node.left, env, true) == evalNode(node.right, env, true);
@@ -239,14 +238,13 @@ module.exports.walkTree = function parse(tree, opts, original) {
                 node.right.args = [node.left, ...node.right.args];
                 return evalNode(node.right, env);
             case '&':
-                return coerce(node.left, "array").indexOf(coerce(node.right, "string")) > -1;
+                let arr_test = coerce(node.left, "array", true);
+                return arr_test.indexOf(coerce(node.right, "string")) > -1 || arr_test.indexOf(coerce(node.right, "int").toNumber()) > -1;
             case '@:':
                 let left = node.left;
                 if (left.type !== "variable") throw ArnError("Cannot modify immutable value.", original, left.line, left.pos);
-
-                let obj = env.get(left.value, left.line, left.pos);
-                let entry = coerce(obj, "array");
-                let index = entry.indexOf(coerce(node.right, "string"));
+                let entry = coerce(node.left, "array", true);
+                let index = entry.indexOf(evalNode(node.right, env, true));
 
                 env.set(left.value, {type: "array", contents: {type: "prog", contents: [...entry.slice(0, index), ...entry.slice(index + 1)].map(r => {return {type: "string", value: r}})}});
 

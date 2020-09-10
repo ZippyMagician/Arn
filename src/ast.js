@@ -8,7 +8,11 @@ function compare(original, partial) {
 
 function getFoldLength(tokens, from) {
     let bIndex = from;
-    while (!compare(tokens[bIndex--], {type: "punctuation", value: "{"}) && bIndex >= 0) {};
+    let counter = 0;
+    while (!compare(tokens[bIndex--], {type: "punctuation", value: "{"}) || counter > 0 && bIndex >= 0) {
+        if (tokens[bIndex].type === "punctuation" && tokens[bIndex].value === "}") counter++;
+        else if (tokens[bIndex].type === "punctuation" && tokens[bIndex].value === "{") counter--;
+    };
     bIndex += 1;
     return [0, bIndex];
 }
