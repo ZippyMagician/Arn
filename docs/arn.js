@@ -10496,7 +10496,7 @@ window.walkTree = function parse(tree, opts, original) {
         return ret_val;
     }
     
-    if (opts.stdin) stdin = opts.stdin.toString().indexOf("\\n") > -1 ? opts.stdin.toString().split("\\n") : [opts.stdin.toString()];
+    if (opts.stdin) stdin = opts.stdin;
 
     function define_func(name, args, fn) {
         env.create_func(name, args, makeAST(tokenize(fn), original));
