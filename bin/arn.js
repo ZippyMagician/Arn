@@ -18,12 +18,12 @@ class Options {
             if (/^[A-Z]:/g.test(file)) {
                 fs.readFile(file, 'utf8', (err, data) => {
                     let str = String.raw`${data}`;
-                    this.long.push(str);
+                    this.long.push(...str.split('\r\n'));
                 });
             } else {
                 fs.readFile(process.cwd() + '/' + file, 'utf8', (err, data) => {
                     let str = String.raw`${data}`;
-                    this.long.push(str);
+                    this.long.push(...str.split('\r\n'));
                 });
             }
         }
