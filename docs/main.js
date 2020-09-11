@@ -13,7 +13,7 @@ function runArn(t, inp) {
         for (let suite of inp) {
             output += `* Case ${count++}:\n`;
             try {
-                output += sprintf(parse(t, {stdin: suite || ""}));
+                output += sprintf(parse(t, {stdin: suite.split("\n") || ""}));
             } catch (error) {
                 output += t + "\n" + error;
             }
