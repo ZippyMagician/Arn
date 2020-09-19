@@ -1,0 +1,7 @@
+# Some Rust generated files
+/target
+Cargo.toml
+
+# Makefile artifacts
+/dist
+build.sh
