@@ -34,8 +34,8 @@ module.exports.tokenize = function tokenize(code) {
                 buffer = buffer.slice(1);
                 pos += 1 + (buffer.length - buffer.trim().length);
             }
-        } else if (item = /^((?:[0-9]*\.?[0-9]+)*e?[0-9]*\.?[0-9]+)/g.exec(buffer)) {
-            tokens.push({type: "integer", value: item[1], pos, line});
+        } else if (item = /^((?:_?[0-9]*\.?[0-9]+)*e?_?[0-9]*\.?[0-9]+)/g.exec(buffer)) {
+            tokens.push({type: "integer", value: item[1].replace(/_/g, "-"), pos, line});
             buffer = buffer.slice(item[0].length);
             pos += item[0].length + (buffer.length - buffer.trim().length);
         } else if (item = /^([a-zA-Z_][a-zA-Z0-9_]*)/g.exec(buffer)) {
