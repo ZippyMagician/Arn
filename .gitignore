@@ -1,6 +1,6 @@
 # Some Rust generated files
 /target
-Cargo.toml
+Cargo.lock
 
 # Makefile artifacts
 /dist
