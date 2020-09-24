@@ -9992,7 +9992,7 @@ class Sequence {
         
         if (compare(node, { type: 'variable', value: '_' })) {
             // idk why I have to do this, TODO: Look for fix
-            constructed = require('./formatter.js').constructType(this._built[this.cur_offset]);
+            constructed = constructType(this._built[this.cur_offset]);
             this.cur_offset -= 1;
         }
         
