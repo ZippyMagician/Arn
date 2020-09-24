@@ -313,11 +313,11 @@ module.exports.walkTree = function parse(tree, opts, original) {
                 let item = coerce(node, "array", true);
                 return item[item.length - 1];
             case '.}':
-                let drop_arr = coerce(node, "array", true);
+                let drop_arr = JSON.parse(JSON.stringify(coerce(node, "array", true)));
                 drop_arr.pop();
                 return drop_arr;
             case '.{':
-                let behead_arr = coerce(node, "array", true);
+                let behead_arr = JSON.parse(JSON.stringify(coerce(node, "array", true)));
                 behead_arr.shift();
                 return behead_arr;
             case ':@':
