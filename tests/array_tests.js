@@ -13,5 +13,5 @@ assert_eq(
 // Test 2
 assert_eq(
     sprintf(arn.parse("+\\[1 {+1} -> 10]", new Options())),
-    "64"
+    "55"
 );
