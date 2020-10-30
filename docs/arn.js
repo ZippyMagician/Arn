@@ -10023,6 +10023,7 @@ class Sequence {
 
     map(call) {
         let built = [];
+        this._reset();
         if (!this.len) throw new RangeError("Cannot map an infinite sequence");
         else {
             while (this._index < this.len) {
@@ -10035,6 +10036,7 @@ class Sequence {
     }
 
     filter(call) {
+        this._reset();
         let built = copy(this._built);
         if (!this.len) throw new RangeError("Cannot map an infinite sequence");
         else {
@@ -10051,21 +10053,21 @@ class Sequence {
     }
 
     forEach(call) {
+        this._reset();
         if (!this.len) {
             while (true) {
                 call(this._next());
             }
         } else {
-            while (this._index <= this.len) {
+            while (this._index < this.len) {
                 call(this._next());
             }
         }
-
-        this._reset();
     }
 
     take(count) {
         let constructed = [];
+        this._reset();
         if (!this.len) {
             while (this._index < count) {
                 constructed.push(this._next());
@@ -10075,7 +10077,7 @@ class Sequence {
                 constructed.push(this._next());
             }
         }
-        this._reset();
+        
         return constructed;
     }
 
@@ -10086,9 +10088,9 @@ class Sequence {
     }
 
     get(index) {
+        this._reset();
         while (index >= this._built.length) this._next();
         let ret = this._built[index];
-        this._reset();
         return ret;
     }
 }
