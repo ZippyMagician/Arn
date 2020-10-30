@@ -1,7 +1,8 @@
 # Arn
 [![Build Status](https://travis-ci.org/ZippyMagician/Arn.svg?branch=master)](https://travis-ci.org/ZippyMagician/Arn)
 
-A general-purpose function golfing language
+A general-purpose function golfing language.
+Currently taking a break to focus more on school. I will check occasionally for pull requests, but won't write any code myself for a while.
 
 ## Installation
 To install **Arn** you must have [Node.js](https://nodejs.org) installed on your system. Once installed, run
