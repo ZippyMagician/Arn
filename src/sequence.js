@@ -122,7 +122,7 @@ module.exports.Sequence = class Sequence {
                 call(this._next());
             }
         } else {
-            while (this._index <= this.len) {
+            while (this._index < this.len) {
                 call(this._next());
             }
         }
