@@ -423,6 +423,8 @@ module.exports.walkTree = function parse(tree, opts, original) {
         return ret_val;
     }
     
+    if (opts.t) stdin = [...Array(11).keys()].slice(1);
+    if (opts.h) stdin = [...Array(101).keys()].slice(1);
     if (opts.long.length) stdin = opts.long;
 
     function define_func(name, args, fn) {
@@ -465,6 +467,8 @@ module.exports.walkTree = function parse(tree, opts, original) {
     define_func("mean", std, "(+\\) / #");
     define_func("mode", std, "(:< :@) :{:{");
     define_func("sdev", std, ":/mean(n{:*n-.mean}\\");
+
+    if (opts.a) tree = { type: "prog", contents: [ { type: "array", contents: tree, pos: 0, line: 0 } ] };
     
     return evalNode(tree, env);
 }

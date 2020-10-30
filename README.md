@@ -2,7 +2,6 @@
 [![Build Status](https://travis-ci.org/ZippyMagician/Arn.svg?branch=master)](https://travis-ci.org/ZippyMagician/Arn)
 
 A general-purpose function golfing language.
-Currently taking a break to focus more on school. I will check occasionally for pull requests, but won't write any code myself for a while.
 
 ## Installation
 To install **Arn** you must have [Node.js](https://nodejs.org) installed on your system. Once installed, run
@@ -52,7 +51,6 @@ This format, however, may lead to instances where your program needs to be a few
 ### The future
 Arn is still very early in development (as of writing this, version `0.1`!). This means that all features in Arn are subject to change. Any advice, feedback, or pull requests that improve the language are welcome.
 Current features that will exist in the future:
- * ~~Sequences~~
- * Pattern matching?
- * If/Else (or some sort of ternary)
- * ~~Swap out integers for bignums~~
+ * Lots of command-line flags
+    - These will have options on the online version
+ * Rework text encoding

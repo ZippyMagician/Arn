@@ -6,6 +6,23 @@ const fs = require('fs');
 const rl = require('readline-sync');
 require('colors');
 
+const help_msg = `
+Use the command arn to open the cli version of Arn
+
+Here is a list of subcommands:
+ * run -> Runs a file, or program directly if passed the -u flag
+ * help -> Gets a list of all commands/flags
+
+Here are a list of flags:
+ * -u -> Take manually inputted program instead of file
+ * -c -> Compiles the code instead of running it
+ * -p, --precision -> Sets the precision of Arn's BigNumbers. Default: 25 digits
+ * --stdin -> Pass a file that contains STDIN. Useful if STDIN contains characters that may mess up when passed to the command
+ * -h -> Set STDIN to the range [1, 100)
+ * -t -> Set STDIN to the range [1, 10)
+ * -a -> Implicitly wrap program in array brackets
+`;
+
 class Options {
     constructor(argv) {
         this.long = [];
@@ -55,7 +72,7 @@ switch (opts.long[0]) {
         }
         break;
     case 'help':
-        console.log("Here is a list of commands:\n * run -> Runs a file, or program directly if passed the -u flag\n * help -> Gets a list of all commands/flags\n\nHere are a list of flags:\n * -u -> Take manually inputted program instead of file\n * -c -> Compiles the code instead of running it\n * -d -> Will print some debug information (will be expanded in the future)\n * -p, --precision -> Sets the precision of Arn's BigNumbers. Default: 25 digits\n * --stdin -> Pass a file that contains STDIN. Useful if STDIN contains characters that may mess up when passed to the command");
+        console.log(help_msg.trim());
         break;
     default:
         let inp = rl.question(">> ");

@@ -1,9 +1,12 @@
 // Newlines separate different test suites
-function runArn(t, inp) {
+function runArn(t, inp, flags = "") {
     inp = inp.split("\n").map(r => r.replace(/\[N\]/g, "\n"));
+
     if (inp.length === 1) {
         try {
-            return sprintf(parse(t, {stdin: inp[0].split("\n") || ""}));
+            let opts = { stdin: inp[0].split("\n") || "" };
+            for (key of flags.split("")) opts[key] = true;
+            return sprintf(parse(t, opts));
         } catch (error) {
             return error;
         }
@@ -13,7 +16,9 @@ function runArn(t, inp) {
         for (let suite of inp) {
             output += `* Case ${count++}:\n`;
             try {
-                output += sprintf(parse(t, {stdin: suite.split("\n") || ""}));
+                let opts = { stdin: suite.split("\n") || "" };
+                for (key of flags.split("")) opts[key] = true;
+                output += sprintf(parse(t, opts));
             } catch (error) {
                 output += t + "\n" + error;
             }

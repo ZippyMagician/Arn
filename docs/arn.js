@@ -10510,7 +10510,9 @@ window.walkTree = function parse(tree, opts, original) {
         return ret_val;
     }
     
-    if (opts.stdin) stdin = opts.stdin;
+    if (opts.t) stdin = [...Array(11).keys()].slice(1);
+    else if (opts.h) stdin = [...Array(101).keys()].slice(1);
+    else if (opts.stdin) stdin = opts.stdin;
 
     function define_func(name, args, fn) {
         env.create_func(name, args, makeAST(tokenize(fn), original));
@@ -10552,6 +10554,8 @@ window.walkTree = function parse(tree, opts, original) {
     define_func("mean", std, "(+\\) / #");
     define_func("mode", std, "(:< :@) :{:{");
     define_func("sdev", std, ":/mean(n{:*n-.mean}\\");
+
+    if (opts.a) tree = { type: "prog", contents: [ { type: "array", contents: tree, pos: 0, line: 0 } ] };
     
     return evalNode(tree, env);
 }
