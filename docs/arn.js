@@ -9276,7 +9276,7 @@ window.sprintf = function sprintf(item, nested = false) {
             if (item instanceof BigNumber) ret = item.toString();
             else if (nested) ret = item.join(" ");
             else {
-                if (item._evalNode && !item.length) return "[INFINITE SEQUENCE]" + "\n[FIRST 5 ENTRIES]: " + item.take(5);
+                if (item._evalNode && !item.len) return "[INFINITE SEQUENCE]" + "\n[FIRST 5 ENTRIES]: " + item.take(5);
                 item.forEach(entry => {
                     if (typeof entry === "object") {
                         if (entry instanceof BigNumber) {
