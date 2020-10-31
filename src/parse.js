@@ -426,6 +426,7 @@ module.exports.walkTree = function parse(tree, opts, original) {
     if (opts.t) stdin = [...Array(11).keys()].slice(1);
     if (opts.h) stdin = [...Array(101).keys()].slice(1);
     if (opts.long.length) stdin = opts.long;
+    if (opts.r) stdin = [...Array(+stdin[0] + 1).keys()].slice(1);
 
     function define_func(name, args, fn) {
         env.create_func(name, args, ast(tokenize(fn), original));
@@ -442,14 +443,12 @@ module.exports.walkTree = function parse(tree, opts, original) {
     env.set("pi", {type: "integer", value: "3.14159265358979323846264338327950288"});
     env.set("e", {type: "integer", value: "2.71828182845904523536028747135266249"});
     env.set("phi", {type: "integer", value: "1.61803398874989484820458683436563811"})
+
     env.set("_", {
         type: "array",
         contents: {
             type: "prog", 
-            contents: stdin ? stdin.map(str => {return {
-                type: "string",
-                value: str
-            }}) : [{type: "string", value: ""}]
+            contents: stdin ? stdin.map(str => opts.e ? ast(tokenize(str), original) : { type: "string", value: str }) : [{type: "string", value: ""}]
         }
     });
 

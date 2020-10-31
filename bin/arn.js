@@ -18,9 +18,12 @@ Here are a list of flags:
  * -c -> Compiles the code instead of running it
  * -p, --precision -> Sets the precision of Arn's BigNumbers. Default: 25 digits
  * --stdin -> Pass a file that contains STDIN. Useful if STDIN contains characters that may mess up when passed to the command
- * -h -> Set STDIN to the range [1, 100)
- * -t -> Set STDIN to the range [1, 10)
+ * -h -> Set STDIN to the range [1, 100]
+ * -t -> Set STDIN to the range [1, 10]
  * -a -> Implicitly wrap program in array brackets
+ * -e -> Evals STDIN as arn code
+ * -r -> Changes STDIN from N to the range [1, N]
+ * -m -> Wraps the program ... into {...}\\
 `;
 
 class Options {
@@ -44,6 +47,15 @@ class Options {
                 });
             }
         }
+    }
+
+    dummy() {
+        let opts = new Options({_:[]});
+        Object.assign(opts, this);
+        opts.long = [];
+        opts._ = [];
+
+        return opts;
     }
 }
 

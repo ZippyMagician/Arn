@@ -10513,6 +10513,7 @@ window.walkTree = function parse(tree, opts, original) {
     if (opts.t) stdin = [...Array(11).keys()].slice(1);
     else if (opts.h) stdin = [...Array(101).keys()].slice(1);
     else if (opts.stdin) stdin = opts.stdin;
+    if (opts.r) stdin = [...Array(+stdin[0] + 1).keys()].slice(1);
 
     function define_func(name, args, fn) {
         env.create_func(name, args, makeAST(tokenize(fn), original));
@@ -10533,10 +10534,7 @@ window.walkTree = function parse(tree, opts, original) {
         type: "array",
         contents: {
             type: "prog", 
-            contents: stdin ? stdin.map(str => {return {
-                type: "string",
-                value: str
-            }}) : [{type: "string", value: ""}]
+            contents: stdin ? stdin.map(str => opts.e ? makeAST(tokenize(str), original) : {type: "string", value: str}) : [{type: "string", value: ""}]
         }
     });
 
@@ -10573,5 +10571,6 @@ window.run = (code, opts) => {
 }
 
 window.parse = (code, opts) => {
+    if (opts.m) code = `{${code}}\\`;
     return walkTree(makeAST(tokenize(code), code), opts, code);
 }

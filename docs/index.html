@@ -140,7 +140,9 @@
             
             function stackTemplate() {
                 let comp = pack(code.value);
-                var header = "# [Arn](https://github.com/ZippyMagician/Arn), [" +
+                var header = "# [Arn](https://github.com/ZippyMagician/Arn)" +
+                    (flags.value.replace(/e/g, "") ? " `-" + flags.value.replace(/e/g, "") + "`" : "") +
+                    ", [" +
                     comp.length +
                     " bytes](https://github.com/ZippyMagician/Arn/wiki/Carn)\n\n";
                 var body = comp;

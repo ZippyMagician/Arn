@@ -14,11 +14,14 @@ module.exports.run = (code, opts) => {
         console.log("Packed:", pack(code));
         return;
     }
+
     if (isPacked(code.replace(/\n/g, " ").replace(/\s{2,}/g, " "))) code = unpack(code);
+    if (opts.m) code = `{${code}}\\`;
     printf(parse(to_ast(tokenize(code), code), opts, code));
 }
 
 module.exports.parse = (code, opts) => {
     if (isPacked(code)) code = unpack(code);
+    if (opts.m) code = `{${code}}\\`;
     return parse(to_ast(tokenize(code), code), opts, code);
 }
