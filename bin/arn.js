@@ -24,6 +24,9 @@ Here are a list of flags:
  * -e -> Evals STDIN as arn code
  * -r -> Changes STDIN from N to the range [1, N]
  * -m -> Wraps the program ... into {...}\\
+ * -s -> Returns length of yielded value
+ * -f -> First entry in yielded value
+ * -l -> Last entry in yielded value
 `;
 
 class Options {

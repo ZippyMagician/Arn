@@ -10555,7 +10555,14 @@ window.walkTree = function parse(tree, opts, original) {
 
     if (opts.a) tree = { type: "prog", contents: [ { type: "array", contents: tree, pos: 0, line: 0 } ] };
     
-    return evalNode(tree, env);
+    let result = evalNode(tree, env);
+    if (opts.f || opts.l) {
+        let c = cast(result, "array");
+        result = c instanceof Sequence ? (opts.f ? c.get(0) : (c.len ? c.get(c.len - 1) : "[CANT INDEX INFINITE SEQUENCE]")) : (opts.f ? c[0] : c[c.length - 1]);
+    }
+    
+    if (opts.s) result = result.length;
+    return result;
 }
 
 window.run = (code, opts) => {
