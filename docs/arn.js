@@ -9360,17 +9360,17 @@ constants.punctuation = [
     '!', '$', '#', '\\', '~',                                                           // Single-length prefixes
     '=', '<', '>', '+', '-', '*', '/', '%', '^', '|', '@', '.', '@', '&',               // Single-length infixes
     '#', '?',                                                                           // Single-length suffixes
-    '!!', ':v', ':^', '++', '--', ':*', ':/', ':>', ':<', '|:', '$:', 'n_', '?.',       // Double-length prefixes
+    '!!', ':v', ':^', '++', '--', ':*', ':/', ':>', ':<', '|:', '$:', 'n_', '?.', '&.', // Double-length prefixes
     ':+', ':-', '#.', '*.',                                                             // More prefixes
     '<=', '>=', '!=', '||', '&&', ':|', '->', '=>', ':!', ':?', '::', '@:',             // Double-length infixes
-    '^*', ':_', ':{', ':}', ':@', '.@', '.}', '.{', '.|',                               // Double-length suffixes
+    '^*', ':_', ':{', ':}', ':@', '.@', '.}', '.{', '.|', '.<',                         // Double-length suffixes
     '{', '}', '(', ')', '[', ']', ',', ':=', ':', ':n', ':s', ':i', ';', '"', "'", '`'  // Other punctuation
 ];
 
 constants.prefixes = [
     'n_', '!', '$', '\\', '~',
     '!!', ':v', ':^', '++', '--', ':*', ':/', ':>', ':<', '|:',  '$:', '?.',
-    ':+', ':-', '#.', '*.'
+    ':+', ':-', '#.', '*.', '&.'
 ];
 
 constants.infixes = [
@@ -9381,7 +9381,7 @@ constants.infixes = [
 
 constants.suffixes = [
     '#', ';',
-    '^*', ':_', ':n', ':s', ':}', ':{', ':@', '.@', '.{', '.}', '.|'
+    '^*', ':_', ':n', ':s', ':}', ':{', ':@', '.@', '.{', '.}', '.|', '.<'
 ];
 
 // The precedence of all operators
@@ -9392,8 +9392,8 @@ constants.PRECEDENCE = {
     '%': 65, '@': 65, 
     ':|': 60, ':!': 60,
     '+': 50, '-': 50, ',': 50,
-    '=>': 45, '->': 45, '~': 45, '#': 45, ';': 45, ':_': 45, '.@': 45, '.|': 45,
-    ':n': 40, ':s': 40, ':}': 40, ':{': 40, '.}': 40, '.{': 40, ':@': 40, '^*': 40, '|': 40,
+    '=>': 45, '->': 45, '~': 45, '#': 45, ';': 45, ':_': 45, '.@': 45, '.|': 45, '.<': 45,
+    ':n': 40, ':s': 40, ':}': 40, ':{': 40, '.}': 40, '.{': 40, ':@': 40, '^*': 40, '|': 40, '&.': 40,
     '!': 40, 'n_': 40, '$': 40, '\\': 40, '!!': 40, ':v': 40, ':^': 40, '++': 40, '--': 40, ':*': 40, ':/': 40,
     ':+': 40, ':-': 40, ':>': 40, ':<': 40, ':^': 40, ':v': 40, '|:': 40, '$:': 40, '?.': 40, '#.': 40, '*.': 40,
     '=': 30, '!=': 30, '<': 30, '<=': 30, '>': 30, '>=': 30,
@@ -9823,6 +9823,22 @@ window.makeAST = function makeAST(tokens, original, parent_ast = false) {
                     pos: current.pos,
                     line: current.line
                 };
+            } else if (tok === "&.") {
+                if (peek().type === "variable") next();
+                let contents = parseBlock();
+                if (!contents) throw ArnError("Must provide block to prefix &.", original, current.line, current.pos);
+                next();
+                let s = maybeExpr(true);
+                if (s) next();
+                else s = {type: "variable", value: "_"};
+                ret_obj = {
+                    type: "prefix",
+                    value: tok,
+                    block: contents,
+                    args: [ s, maybeExpr(true) || {type: "variable", value: "_"} ],
+                    pos: current.pos,
+                    line: current.lin
+                }
             } else {
                 next();
                 ret_obj = {
@@ -10230,6 +10246,20 @@ window.walkTree = function parse(tree, opts, original) {
                     return evalNode(makeAST(tokenize(val.join(` ${fold_ops.map(r => repair_negatives(r)).join("")} `)), original), env, true);
                 }
                 else return val;
+            case '&.':
+                let loop_block = node.block;
+    
+                let loop_val = evalNode(node.args[0], env, true);
+                let count = +evalNode(node.args[1], env, true);
+    
+                for (let i = 0; i < count; i++) {
+                    let child_env = env.clone();
+                    child_env.set(loop_block.arg, constructType(loop_val));
+                    loop_val = evalNode(loop_block, child_env, true);
+                    env.update(child_env, loop_block.arg);
+                }
+    
+                return loop_val;
             case '~':
                 let range = [];
                 ind = 1;
@@ -10420,6 +10450,10 @@ window.walkTree = function parse(tree, opts, original) {
                 return zip(...vec);
             case '.|':
                 return coerce(node, "int").abs().toString();
+            case '.<':
+                let rev_item = evalNode(node.arg, env, false);
+                if (typeof rev_item === "object" && !(rev_item instanceof BigNumber)) return rev_item.reverse();
+                else return rev_item.toString().split("").reverse().join("");
             default:
                 throw ArnError("Couldn't recognize suffix.", original, node.line, node.pos);
         }

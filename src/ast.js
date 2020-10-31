@@ -256,6 +256,22 @@ module.exports.makeAST = function makeAST(tokens, original, parent_ast = false) 
                     pos: current.pos,
                     line: current.line
                 };
+            } else if (tok === "&.") {
+                if (peek().type === "variable") next();
+                let contents = parseBlock();
+                if (!contents) throw ArnError("Must provide block to prefix &.", original, current.line, current.pos);
+                next();
+                let s = maybeExpr(true);
+                if (s) next();
+                else s = {type: "variable", value: "_"};
+                ret_obj = {
+                    type: "prefix",
+                    value: tok,
+                    block: contents,
+                    args: [ s, maybeExpr(true) || {type: "variable", value: "_"} ],
+                    pos: current.pos,
+                    line: current.lin
+                };
             } else {
                 next();
                 ret_obj = {

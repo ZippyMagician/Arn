@@ -146,6 +146,20 @@ module.exports.walkTree = function parse(tree, opts, original) {
                     return evalNode(ast(tokenize(val.join(` ${fold_ops.map(r => repair_negatives(r)).join("")} `)), original), env, true);
                 }
                 else return val;
+            case '&.':
+                let loop_block = node.block;
+
+                let loop_val = evalNode(node.args[0], env, true);
+                let count = +evalNode(node.args[1], env, true);
+
+                for (let i = 0; i < count; i++) {
+                    let child_env = env.clone();
+                    child_env.set(loop_block.arg, constructType(loop_val));
+                    loop_val = evalNode(loop_block, child_env, true);
+                    env.update(child_env, loop_block.arg);
+                }
+
+                return loop_val;
             case '~':
                 let range = [];
                 ind = 1;
@@ -333,6 +347,10 @@ module.exports.walkTree = function parse(tree, opts, original) {
                 return zip(...vec);
             case '.|':
                 return coerce(node, "int").abs().toString();
+            case '.<':
+                let rev_item = evalNode(node.arg, env, false);
+                if (typeof rev_item === "object" && !(rev_item instanceof BigNumber)) return rev_item.reverse();
+                else return rev_item.toString().split("").reverse().join("");
             default:
                 throw ArnError("Couldn't recognize suffix.", original, node.line, node.pos);
         }
