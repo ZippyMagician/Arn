@@ -10345,7 +10345,19 @@ window.walkTree = function parse(tree, opts, original) {
                     return coerce(node.left, "int").exponentiatedBy(coerce(node.right, "int")).toString();
                 }
             case '|':
-                return coerce(node.left, "string") + coerce(node.right, "string");
+                let left_coerce = evalNode(node.left, env, true);
+                let right_coerce = evalNode(node.right, env, true);
+                
+                if (typeof left_coerce === "object" && typeof right_coerce === "object") {
+                    left_coerce.concat(right_coerce);
+                } else if (typeof left_coerce === "object") {
+                    left_coerce.push(right_coerce);
+                    return left_coerce;
+                } else if (typeof right_coerce === "object") {
+                    return [left_coerce, ...right_coerce];
+                } else {
+                    return left_coerce.toString() + right_coerce.toString();
+                }
             case 'z':
                 if (node.arg) {
                     return zip_with(coerce(node.left, "array"), coerce(node.right, "array"), node.arg, env);
