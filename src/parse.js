@@ -128,7 +128,7 @@ module.exports.walkTree = function parse(tree, opts, original) {
                 if (map_ops) {
                     const prefix_map = v => {
                         let child_env = env.clone();
-                        child_env.set(map_ops.arg, {type: "string", value: v});
+                        child_env.set(map_ops.arg, constructType(v));
                         let ret = evalNode(map_ops.contents, child_env, true);
                         env.update(child_env, map_ops.arg);
                         return ret;
@@ -146,6 +146,18 @@ module.exports.walkTree = function parse(tree, opts, original) {
                     return evalNode(ast(tokenize(val.join(` ${fold_ops.map(r => repair_negatives(r)).join("")} `)), original), env, true);
                 }
                 else return val;
+            case '@':
+                let foreach_val = coerce(node, "array", true);
+
+                const foreach_map = v => {
+                    let child_env = env.clone();
+                    child_env.set("_", constructType(v));
+                    let ret = evalNode(node.fix, child_env, true);
+                    env.update(child_env, "_");
+                    return ret;
+                }
+
+                return foreach_val.map(foreach_map);
             case '&.':
                 let loop_block = node.block;
 
@@ -227,7 +239,7 @@ module.exports.walkTree = function parse(tree, opts, original) {
                 }
             case '|':
                 return coerce(node.left, "string") + coerce(node.right, "string");
-            case '@':
+            case 'z':
                 if (node.arg) {
                     return zip_with(coerce(node.left, "array"), coerce(node.right, "array"), node.arg, env);
                 } else {
@@ -479,7 +491,7 @@ module.exports.walkTree = function parse(tree, opts, original) {
     define_func("min", std, "(:>):{");
     hardcode("out", std, (env) => printf(evalNode(env.get("_"), env, true)));
     hardcode("in", [], (env) => stdin);
-    define_func("intr", std.concat([{type: "variable", value: "sep"}]), "|\\ (@| sep)");
+    define_func("intr", std.concat([{type: "variable", value: "sep"}]), "|\\ (z| sep)");
     define_func("fact", std, "*\\ 1=>");
     define_func("mean", std, "(+\\) / #");
     define_func("mode", std, "(:< :@) :{:{");

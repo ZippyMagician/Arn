@@ -9357,8 +9357,8 @@ window.ArnError = function (msg, code, line, index) {
 const constants = {};
 
 constants.punctuation = [
-    '!', '$', '#', '\\', '~',                                                           // Single-length prefixes
-    '=', '<', '>', '+', '-', '*', '/', '%', '^', '|', '@', '.', '@', '&',               // Single-length infixes
+    '!', '$', '#', '\\', '~', '@',                                                      // Single-length prefixes
+    '=', '<', '>', '+', '-', '*', '/', '%', '^', '|', '.', 'z', '&',                    // Single-length infixes
     '#', '?',                                                                           // Single-length suffixes
     '!!', ':v', ':^', '++', '--', ':*', ':/', ':>', ':<', '|:', '$:', 'n_', '?.', '&.', // Double-length prefixes
     ':+', ':-', '#.', '*.',                                                             // More prefixes
@@ -9370,11 +9370,11 @@ constants.punctuation = [
 constants.prefixes = [
     'n_', '!', '$', '\\', '~',
     '!!', ':v', ':^', '++', '--', ':*', ':/', ':>', ':<', '|:',  '$:', '?.',
-    ':+', ':-', '#.', '*.', '&.'
+    ':+', ':-', '#.', '*.', '&.', '@'
 ];
 
 constants.infixes = [
-    '=', '<', '>', '+', '-', '*', '/', '%', '^', '|', '@', '.', ',',
+    '=', '<', '>', '+', '-', '*', '/', '%', '^', '|', 'z', '.', ',',
     '<=', '>=', '!=', '||', '&&', ':|', '->', '=>', ':!', ':?', '::', '@:',
     '?', ':=', ':', '&', ':i'
 ];
@@ -9386,10 +9386,10 @@ constants.suffixes = [
 
 // The precedence of all operators
 constants.PRECEDENCE = {
-    '.': 100,
+    '.': 100, '@': 100,
     '^': 75, 
     '*': 70, '/': 70, 
-    '%': 65, '@': 65, 
+    '%': 65, 'z': 65,
     ':|': 60, ':!': 60,
     '+': 50, '-': 50, ',': 50,
     '=>': 45, '->': 45, '~': 45, '#': 45, ';': 45, ':_': 45, '.@': 45, '.|': 45, '.<': 45,
@@ -9760,7 +9760,7 @@ window.makeAST = function makeAST(tokens, original, parent_ast = false) {
         }
     }
 
-    function parseFix(arg = false) {
+    function parseFix(arg = false, lone = false) {
         let tok = look().value;
         let current = look();
         let ret_obj;
@@ -9839,6 +9839,18 @@ window.makeAST = function makeAST(tokens, original, parent_ast = false) {
                     pos: current.pos,
                     line: current.lin
                 }
+            } else if (tok === "@") {
+                next();
+                let fix = parseFix(true, true);
+                next();
+                ret_obj = {
+                    type: "prefix",
+                    value: tok,
+                    fix: fix,
+                    arg: {type: "variable", value: "_"},
+                    pos: current.pos,
+                    line: current.line
+                };
             } else {
                 next();
                 ret_obj = {
@@ -9854,7 +9866,7 @@ window.makeAST = function makeAST(tokens, original, parent_ast = false) {
             if (validItem(ast.contents[ast.contents.length - 1])) left = ast.contents.pop();
             next();
             if (tok === "." && (!look() || look().type !== "variable")) throw ArnError("Cannot call dot infix on a non-function.", original, current.line, current.pos);
-            if (tok === "@") {
+            if (tok === "z") {
                 if (look().type === "punctuation" && !isPunc("(") && !isPunc("[") && !isPunc("{")) {
                     next();
                     ret_obj = {
@@ -9911,7 +9923,7 @@ window.makeAST = function makeAST(tokens, original, parent_ast = false) {
         } else {
             return false;
         }
-        if (ret_obj && next() && precedence[look().value] && current_prec <= precedence[look().value]) {
+        if (!lone && ret_obj && next() && precedence[look().value] && current_prec <= precedence[look().value]) {
             ast.contents.push(ret_obj);
             ast.contents.push(parseFix(true));
             return ast.contents.pop();
@@ -10227,10 +10239,9 @@ window.walkTree = function parse(tree, opts, original) {
                 if (map_ops) {
                     const prefix_map = v => {
                         let child_env = env.clone();
-                        child_env.set(map_ops.arg, {type: "string", value: v});
+                        child_env.set(map_ops.arg, constructType(v));
                         let ret = evalNode(map_ops.contents, child_env, true);
                         env.update(child_env, map_ops.arg);
-
                         return ret;
                     }
                     
@@ -10246,19 +10257,31 @@ window.walkTree = function parse(tree, opts, original) {
                     return evalNode(makeAST(tokenize(val.join(` ${fold_ops.map(r => repair_negatives(r)).join("")} `)), original), env, true);
                 }
                 else return val;
+            case '@':
+                let foreach_val = coerce(node, "array", true);
+
+                const foreach_map = v => {
+                    let child_env = env.clone();
+                    child_env.set("_", constructType(v));
+                    let ret = evalNode(node.fix, child_env, true);
+                    env.update(child_env, "_");
+                    return ret;
+                }
+
+                return foreach_val.map(foreach_map);
             case '&.':
                 let loop_block = node.block;
-    
+
                 let loop_val = evalNode(node.args[0], env, true);
                 let count = +evalNode(node.args[1], env, true);
-    
+
                 for (let i = 0; i < count; i++) {
                     let child_env = env.clone();
                     child_env.set(loop_block.arg, constructType(loop_val));
                     loop_val = evalNode(loop_block, child_env, true);
                     env.update(child_env, loop_block.arg);
                 }
-    
+
                 return loop_val;
             case '~':
                 let range = [];
@@ -10327,7 +10350,7 @@ window.walkTree = function parse(tree, opts, original) {
                 }
             case '|':
                 return coerce(node.left, "string") + coerce(node.right, "string");
-            case '@':
+            case 'z':
                 if (node.arg) {
                     return zip_with(coerce(node.left, "array"), coerce(node.right, "array"), node.arg, env);
                 } else {
@@ -10400,24 +10423,21 @@ window.walkTree = function parse(tree, opts, original) {
         const coerce = (n, t, f = false) => cast(evalNode(n.arg, env, f), t);
         
         switch (node.value) {
-            case '#':
-                return evalNode(node.arg, env, true).length;
-            case ':_':
-                return coerce(node, "array", true).flat(Infinity);
             case ';':
                 let ops = [ ...node.ops ];
                 let length = 0;
                 let command;
-    
+        
                 if (/[0-9]/g.test(ops[0])) {
-                    length = +ops[0];
-                    command = ops[1];
-                    ops.shift();
-                } else {
-                    command = ops[0];
+                    length = +ops.shift();
+                    command = ops
                 }
-                
+                command = ops[0];
                 return doBase(command, ops, coerce(node, "int"), length, node);
+            case '#':
+                return evalNode(node.arg, env, true).length;
+            case ':_':
+                return coerce(node, "array", true).flat(Infinity);
             case '^*':
                 return coerce(node, "int") > 0 && Math.sqrt(coerce(node, "int")) % 1 === 0;
             case ':n':
@@ -10445,7 +10465,7 @@ window.walkTree = function parse(tree, opts, original) {
                     
                 return arr.reduce((acc, val) => typeof acc === "object" ? (acc.filter(entry => entry[0] === val).length ? (acc[acc.indexOf(acc.filter(entry => entry[0] === val)[0])].push(val), acc) : (acc.push([val]), acc)) : [[val]]);
             case '.@':
-                let vec = coerce(node, "array", true);
+                let vec = coerce(node, "array", true).map(r => cast(r, "array"));
 
                 return zip(...vec);
             case '.|':
@@ -10564,6 +10584,7 @@ window.walkTree = function parse(tree, opts, original) {
     env.set("pi", {type: "integer", value: "3.14159265358979323846264338327950288"});
     env.set("e", {type: "integer", value: "2.71828182845904523536028747135266249"});
     env.set("phi", {type: "integer", value: "1.61803398874989484820458683436563811"})
+
     env.set("_", {
         type: "array",
         contents: {
@@ -10581,7 +10602,7 @@ window.walkTree = function parse(tree, opts, original) {
     define_func("min", std, "(:>):{");
     hardcode("out", std, (env) => printf(evalNode(env.get("_"), env, true)));
     hardcode("in", [], (env) => stdin);
-    define_func("intr", std.concat([{type: "variable", value: "sep"}]), "|\\ (@| sep)");
+    define_func("intr", std.concat([{type: "variable", value: "sep"}]), "|\\ (z| sep)");
     define_func("fact", std, "*\\ 1=>");
     define_func("mean", std, "(+\\) / #");
     define_func("mode", std, "(:< :@) :{:{");
@@ -10594,21 +10615,8 @@ window.walkTree = function parse(tree, opts, original) {
         let c = cast(result, "array");
         result = c instanceof Sequence ? (opts.f ? c.get(0) : (c.len ? c.get(c.len - 1) : "[CANT INDEX INFINITE SEQUENCE]")) : (opts.f ? c[0] : c[c.length - 1]);
     }
-    
     if (opts.s) result = result.length;
     return result;
-}
-
-window.run = (code, opts) => {
-    if (opts.d) {
-        console.log("Program:", code);
-    }
-    if (opts.c) {
-        console.log("Packed:", pack(code));
-        return;
-    }
-
-    printf(walkTree(makeAST(tokenize(code), code), opts, code));
 }
 
 window.parse = (code, opts) => {

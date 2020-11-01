@@ -193,7 +193,7 @@ module.exports.makeAST = function makeAST(tokens, original, parent_ast = false) 
         }
     }
 
-    function parseFix(arg = false) {
+    function parseFix(arg = false, lone = false) {
         let tok = look().value;
         let current = look();
         let ret_obj;
@@ -272,6 +272,18 @@ module.exports.makeAST = function makeAST(tokens, original, parent_ast = false) 
                     pos: current.pos,
                     line: current.lin
                 };
+            } else if (tok === "@") {
+                next();
+                let fix = parseFix(true, true);
+                next();
+                ret_obj = {
+                    type: "prefix",
+                    value: tok,
+                    fix: fix,
+                    arg: {type: "variable", value: "_"},
+                    pos: current.pos,
+                    line: current.line
+                };
             } else {
                 next();
                 ret_obj = {
@@ -287,7 +299,7 @@ module.exports.makeAST = function makeAST(tokens, original, parent_ast = false) 
             if (validItem(ast.contents[ast.contents.length - 1])) left = ast.contents.pop();
             next();
             if (tok === "." && (!look() || look().type !== "variable")) throw ArnError("Cannot call dot infix on a non-function.", original, current.line, current.pos);
-            if (tok === "@") {
+            if (tok === "z") {
                 if (look().type === "punctuation" && !isPunc("(") && !isPunc("[") && !isPunc("{")) {
                     next();
                     ret_obj = {
@@ -344,7 +356,7 @@ module.exports.makeAST = function makeAST(tokens, original, parent_ast = false) 
         } else {
             return false;
         }
-        if (ret_obj && next() && precedence[look().value] && current_prec <= precedence[look().value]) {
+        if (!lone && ret_obj && next() && precedence[look().value] && current_prec <= precedence[look().value]) {
             ast.contents.push(ret_obj);
             ast.contents.push(parseFix(true));
             return ast.contents.pop();
