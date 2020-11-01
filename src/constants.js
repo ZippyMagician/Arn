@@ -34,7 +34,7 @@ module.exports.suffixes = [
 
 // The precedence of all operators
 module.exports.PRECEDENCE = {
-    '.': 100, '@': 100,
+    '.': 100,
     '^': 75, 
     '*': 70, '/': 70, 
     '%': 65, 'z': 65,
@@ -46,7 +46,7 @@ module.exports.PRECEDENCE = {
     ':+': 40, ':-': 40, ':>': 40, ':<': 40, ':^': 40, ':v': 40, '|:': 40, '$:': 40, '?.': 40, '#.': 40, '*.': 40,
     '=': 30, '!=': 30, '<': 30, '<=': 30, '>': 30, '>=': 30,
     '&&': 20, '||': 20,
-    ':': 10, ':=': 10
+    ':': 10, ':=': 10, '@': 10
 };
 
 // Infixes that cannot follow other infixes; they take priority
