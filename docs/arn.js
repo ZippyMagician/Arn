@@ -9357,11 +9357,12 @@ window.ArnError = function (msg, code, line, index) {
 const constants = {};
 
 constants.punctuation = [
-    '!', '$', '#', '\\', '~', '@',                                                      // Single-length prefixes
+    '!', '$', '#', '\\', '~',                                                           // Single-length prefixes
     '=', '<', '>', '+', '-', '*', '/', '%', '^', '|', '.', 'z', '&',                    // Single-length infixes
     '#', '?',                                                                           // Single-length suffixes
     '!!', ':v', ':^', '++', '--', ':*', ':/', ':>', ':<', '|:', '$:', 'n_', '?.', '&.', // Double-length prefixes
     ':+', ':-', '#.', '*.',                                                             // More prefixes
+    '@',                                                                                // Single-length infixes
     '<=', '>=', '!=', '||', '&&', ':|', '->', '=>', ':!', ':?', '::', '@:',             // Double-length infixes
     '^*', ':_', ':{', ':}', ':@', '.@', '.}', '.{', '.|', '.<',                         // Double-length suffixes
     '{', '}', '(', ')', '[', ']', ',', ':=', ':', ':n', ':s', ':i', ';', '"', "'", '`'  // Other punctuation
@@ -9370,13 +9371,13 @@ constants.punctuation = [
 constants.prefixes = [
     'n_', '!', '$', '\\', '~',
     '!!', ':v', ':^', '++', '--', ':*', ':/', ':>', ':<', '|:',  '$:', '?.',
-    ':+', ':-', '#.', '*.', '&.', '@'
+    ':+', ':-', '#.', '*.', '&.'
 ];
 
 constants.infixes = [
     '=', '<', '>', '+', '-', '*', '/', '%', '^', '|', 'z', '.', ',',
     '<=', '>=', '!=', '||', '&&', ':|', '->', '=>', ':!', ':?', '::', '@:',
-    '?', ':=', ':', '&', ':i'
+    '?', ':=', ':', '&', ':i', '@'
 ];
 
 constants.suffixes = [
@@ -9839,18 +9840,6 @@ window.makeAST = function makeAST(tokens, original, parent_ast = false) {
                     pos: current.pos,
                     line: current.lin
                 }
-            } else if (tok === "@") {
-                next();
-                let fix = parseFix(true, true);
-                next();
-                ret_obj = {
-                    type: "prefix",
-                    value: tok,
-                    fix: fix,
-                    arg: {type: "variable", value: "_"},
-                    pos: current.pos,
-                    line: current.line
-                };
             } else {
                 next();
                 ret_obj = {
@@ -9888,6 +9877,17 @@ window.makeAST = function makeAST(tokens, original, parent_ast = false) {
                         line: current.line
                     }
                 }
+            } else if (tok === "@") {
+                let fix = parseFix(true, true);
+                next();
+                ret_obj = {
+                    type: "infix",
+                    value: tok,
+                    fix: fix,
+                    left: left || {type: "variable", value: "_"},
+                    pos: current.pos,
+                    line: current.line
+                };
             } else {
                 ret_obj = {
                     type: "infix",
@@ -10257,18 +10257,6 @@ window.walkTree = function parse(tree, opts, original) {
                     return evalNode(makeAST(tokenize(val.join(` ${fold_ops.map(r => repair_negatives(r)).join("")} `)), original), env, true);
                 }
                 else return val;
-            case '@':
-                let foreach_val = coerce(node, "array", true);
-
-                const foreach_map = v => {
-                    let child_env = env.clone();
-                    child_env.set("_", constructType(v));
-                    let ret = evalNode(node.fix, child_env, true);
-                    env.update(child_env, "_");
-                    return ret;
-                }
-
-                return foreach_val.map(foreach_map);
             case '&.':
                 let loop_block = node.block;
 
@@ -10392,6 +10380,18 @@ window.walkTree = function parse(tree, opts, original) {
                 else return arr[coerce(node.right, "int")];
             case ',':
                 return [evalNode(node.left, env, true), evalNode(node.right, env, true)];
+            case '@':
+                let foreach_val = coerce(node.left, "array", true);
+
+                const foreach_map = v => {
+                    let child_env = env.clone();
+                    child_env.set("_", constructType(v));
+                    let ret = evalNode(node.fix, child_env, true);
+                    env.update(child_env, "_");
+                    return ret;
+                }
+        
+                return foreach_val.map(foreach_map);
             default:
                 throw ArnError("Couldn't recognize infix.", original, node.line, node.pos);
         }

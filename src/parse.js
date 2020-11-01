@@ -146,18 +146,6 @@ module.exports.walkTree = function parse(tree, opts, original) {
                     return evalNode(ast(tokenize(val.join(` ${fold_ops.map(r => repair_negatives(r)).join("")} `)), original), env, true);
                 }
                 else return val;
-            case '@':
-                let foreach_val = coerce(node, "array", true);
-
-                const foreach_map = v => {
-                    let child_env = env.clone();
-                    child_env.set("_", constructType(v));
-                    let ret = evalNode(node.fix, child_env, true);
-                    env.update(child_env, "_");
-                    return ret;
-                }
-
-                return foreach_val.map(foreach_map);
             case '&.':
                 let loop_block = node.block;
 
@@ -281,6 +269,18 @@ module.exports.walkTree = function parse(tree, opts, original) {
                 else return arr[coerce(node.right, "int")];
             case ',':
                 return [evalNode(node.left, env, true), evalNode(node.right, env, true)];
+            case '@':
+                let foreach_val = coerce(node.left, "array", true);
+    
+                const foreach_map = v => {
+                    let child_env = env.clone();
+                    child_env.set("_", constructType(v));
+                    let ret = evalNode(node.fix, child_env, true);
+                    env.update(child_env, "_");
+                    return ret;
+                }
+    
+                return foreach_val.map(foreach_map);
             default:
                 throw ArnError("Couldn't recognize infix.", original, node.line, node.pos);
         }

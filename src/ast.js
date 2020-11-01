@@ -272,18 +272,6 @@ module.exports.makeAST = function makeAST(tokens, original, parent_ast = false) 
                     pos: current.pos,
                     line: current.lin
                 };
-            } else if (tok === "@") {
-                next();
-                let fix = parseFix(true, true);
-                next();
-                ret_obj = {
-                    type: "prefix",
-                    value: tok,
-                    fix: fix,
-                    arg: {type: "variable", value: "_"},
-                    pos: current.pos,
-                    line: current.line
-                };
             } else {
                 next();
                 ret_obj = {
@@ -321,6 +309,17 @@ module.exports.makeAST = function makeAST(tokens, original, parent_ast = false) 
                         line: current.line
                     }
                 }
+            } else if (tok === "@") {
+                let fix = parseFix(true, true);
+                next();
+                ret_obj = {
+                    type: "infix",
+                    value: tok,
+                    fix: fix,
+                    left: left || {type: "variable", value: "_"},
+                    pos: current.pos,
+                    line: current.line
+                };
             } else {
                 ret_obj = {
                     type: "infix",
