@@ -9829,17 +9829,18 @@ window.makeAST = function makeAST(tokens, original, parent_ast = false) {
                 let contents = parseBlock();
                 if (!contents) throw ArnError("Must provide block to prefix &.", original, current.line, current.pos);
                 next();
-                let s = maybeExpr(true);
-                if (s) next();
-                else s = {type: "variable", value: "_"};
+                let first = maybeExpr(true);
+                next();
+                let second = maybeExpr(true);
+                
                 ret_obj = {
                     type: "prefix",
                     value: tok,
                     block: contents,
-                    args: [ s, maybeExpr(true) || {type: "variable", value: "_"} ],
+                    args: compare(first, second) ? first : [first, second],
                     pos: current.pos,
-                    line: current.lin
-                }
+                    line: current.line
+                };
             } else {
                 next();
                 ret_obj = {
@@ -10259,9 +10260,16 @@ window.walkTree = function parse(tree, opts, original) {
                 else return val;
             case '&.':
                 let loop_block = node.block;
+                let loop_val, count;
 
-                let loop_val = evalNode(node.args[0], env, true);
-                let count = +evalNode(node.args[1], env, true);
+                if (JSON.stringify(node.args).charAt(0) === "[") {
+                    loop_val = evalNode(node.args[0], env, true);
+                    count = +evalNode(node.args[1], env, true);
+                } else {
+                    let stored = cast(evalNode(node.args, env, true), "array");
+                    loop_val = stored[0];
+                    count = +stored[1];
+                }
 
                 for (let i = 0; i < count; i++) {
                     let child_env = env.clone();

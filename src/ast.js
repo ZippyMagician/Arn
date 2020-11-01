@@ -261,14 +261,15 @@ module.exports.makeAST = function makeAST(tokens, original, parent_ast = false) 
                 let contents = parseBlock();
                 if (!contents) throw ArnError("Must provide block to prefix &.", original, current.line, current.pos);
                 next();
-                let s = maybeExpr(true);
-                if (s) next();
-                else s = {type: "variable", value: "_"};
+                let first = maybeExpr(true);
+                next();
+                let second = maybeExpr(true);
+                
                 ret_obj = {
                     type: "prefix",
                     value: tok,
                     block: contents,
-                    args: [ s, maybeExpr(true) || {type: "variable", value: "_"} ],
+                    args: compare(first, second) ? first : [first, second],
                     pos: current.pos,
                     line: current.lin
                 };

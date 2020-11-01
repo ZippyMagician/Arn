@@ -148,9 +148,16 @@ module.exports.walkTree = function parse(tree, opts, original) {
                 else return val;
             case '&.':
                 let loop_block = node.block;
+                let loop_val, count;
 
-                let loop_val = evalNode(node.args[0], env, true);
-                let count = +evalNode(node.args[1], env, true);
+                if (JSON.stringify(node.args).charAt(0) === "[") {
+                    loop_val = evalNode(node.args[0], env, true);
+                    count = +evalNode(node.args[1], env, true);
+                } else {
+                    let stored = cast(evalNode(node.args, env, true), "array");
+                    loop_val = stored[0];
+                    count = +stored[1];
+                }
 
                 for (let i = 0; i < count; i++) {
                     let child_env = env.clone();
