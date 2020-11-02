@@ -524,5 +524,10 @@ module.exports.walkTree = function parse(tree, opts, original) {
         result = c instanceof Sequence ? (opts.f ? c.get(0) : (c.len ? c.get(c.len - 1) : "[CANT INDEX INFINITE SEQUENCE]")) : (opts.f ? c[0] : c[c.length - 1]);
     }
     if (opts.s) result = result.length;
+    if (opts.x) {
+        let child_env = env.clone();
+        env.set("_", constructType(result));
+        result = evalNode({type: "infix", value: "\\", fold_ops: [{type: "infix", value: "+"}], map_ops: [], arg: {type: "variable", value: "_"}}, child_env);
+    }
     return result;
 }
