@@ -10339,7 +10339,7 @@ window.walkTree = function parse(tree, opts, original) {
                 return coerce(node.left, "int").modulo(mod_right).plus(mod_right).modulo(mod_right).toString();
             case '^':
                 let repeat;
-                if (typeof (repeat = fix(evalNode(node.left, env, true))) === "string") {
+                if (typeof (repeat = evalNode(node.left, env)) === "string") {
                     return repeat.repeat(coerce(node.right, "int").toString());
                 } else {
                     return coerce(node.left, "int").exponentiatedBy(coerce(node.right, "int")).toString();
@@ -10636,6 +10636,11 @@ window.walkTree = function parse(tree, opts, original) {
         result = c instanceof Sequence ? (opts.f ? c.get(0) : (c.len ? c.get(c.len - 1) : "[CANT INDEX INFINITE SEQUENCE]")) : (opts.f ? c[0] : c[c.length - 1]);
     }
     if (opts.s) result = result.length;
+    if (opts.x) {
+        let child_env = env.clone();
+        env.set("_", constructType(result));
+        result = evalNode({type: "infix", value: "\\", fold_ops: [{type: "infix", value: "+"}], map_ops: [], arg: {type: "variable", value: "_"}}, child_env);
+    }
     return result;
 }
 
