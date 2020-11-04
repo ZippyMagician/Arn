@@ -9326,7 +9326,7 @@ window.constructType = function constructType(value) {
 }
 
 window.stringify = val => {
-    if (typeof val === "string" && isNaN(+val)) {
+    if (typeof val === "string") {
         return `"${val}"`;
     } else if (typeof val === "object") {
         if (val instanceof BigNumber) return `${val.toString()}`;
@@ -9361,9 +9361,9 @@ constants.punctuation = [
     '=', '<', '>', '+', '-', '*', '/', '%', '^', '|', '.', 'z', '&',                    // Single-length infixes
     '#', '?',                                                                           // Single-length suffixes
     '!!', ':v', ':^', '++', '--', ':*', ':/', ':>', ':<', '|:', '$:', 'n_', '?.', '&.', // Double-length prefixes
-    ':+', ':-', '#.', '*.',                                                             // More prefixes
+    ':+', ':-', '#.', '*.', '$.',                                                       // More prefixes
     '@',                                                                                // Single-length infixes
-    '<=', '>=', '!=', '||', '&&', ':|', '->', '=>', ':!', ':?', '::', '@:',             // Double-length infixes
+    '<=', '>=', '!=', '||', '&&', ':|', '->', '=>', ':!', ':?', '::', '@:', '.$',       // Double-length infixes
     '^*', ':_', ':{', ':}', ':@', '.@', '.}', '.{', '.|', '.<',                         // Double-length suffixes
     '{', '}', '(', ')', '[', ']', ',', ':=', ':', ':n', ':s', ':i', ';', '"', "'", '`'  // Other punctuation
 ];
@@ -9371,13 +9371,13 @@ constants.punctuation = [
 constants.prefixes = [
     'n_', '!', '$', '\\', '~',
     '!!', ':v', ':^', '++', '--', ':*', ':/', ':>', ':<', '|:',  '$:', '?.',
-    ':+', ':-', '#.', '*.', '&.'
+    ':+', ':-', '#.', '*.', '&.', '$.'
 ];
 
 constants.infixes = [
     '=', '<', '>', '+', '-', '*', '/', '%', '^', '|', 'z', '.', ',',
     '<=', '>=', '!=', '||', '&&', ':|', '->', '=>', ':!', ':?', '::', '@:',
-    '?', ':=', ':', '&', ':i', '@'
+    '?', ':=', ':', '&', ':i', '@', '.$'
 ];
 
 constants.suffixes = [
@@ -9392,11 +9392,12 @@ constants.PRECEDENCE = {
     '*': 70, '/': 70, 
     '%': 65, 'z': 65,
     ':|': 60, ':!': 60,
-    '+': 50, '-': 50, ',': 50,
+    '+': 50, '-': 50, ',': 50, '.$': 50,
     '=>': 45, '->': 45, '~': 45, '#': 45, ';': 45, ':_': 45, '.@': 45, '.|': 45, '.<': 45,
     ':n': 40, ':s': 40, ':}': 40, ':{': 40, '.}': 40, '.{': 40, ':@': 40, '^*': 40, '|': 40, '&.': 40, ':i': 40,
     '!': 40, 'n_': 40, '$': 40, '\\': 40, '!!': 40, ':v': 40, ':^': 40, '++': 40, '--': 40, ':*': 40, ':/': 40,
     ':+': 40, ':-': 40, ':>': 40, ':<': 40, ':^': 40, ':v': 40, '|:': 40, '$:': 40, '?.': 40, '#.': 40, '*.': 40,
+    '$.': 40,
     '=': 30, '!=': 30, '<': 30, '<=': 30, '>': 30, '>=': 30,
     '&&': 20, '||': 20,
     ':': 10, ':=': 10, '@': 10
@@ -10293,6 +10294,10 @@ window.walkTree = function parse(tree, opts, original) {
                 return listPrimes(unpack(coerce(node, "int")));
             case '*.':
                 return factorize(unpack(coerce(node, "int")));
+            case '$.':
+                let part_arr = coerce(node, "array");
+                let part_ind = Math.floor(part_arr.length / 2);
+                return [part_arr.slice(0, part_ind), part_arr.slice(part_ind)];
             default:
                 throw ArnError("Couldn't recognize prefix.", original, node.line, node.pos);
         }
@@ -10310,17 +10315,17 @@ window.walkTree = function parse(tree, opts, original) {
                 env.set(varName, constructType(varValue));
                 return varValue;
             case '=':
-                return evalNode(node.left, env, true) == evalNode(node.right, env, true);
+                return +(evalNode(node.left, env, true) == evalNode(node.right, env, true));
             case '<':
-                return coerce(node.left, "int").isLessThan(coerce(node.right, "int"));
+                return +(coerce(node.left, "int").isLessThan(coerce(node.right, "int")));
             case '>':
-                return coerce(node.left, "int").isGreaterThan(coerce(node.right, "int"));
+                return +(coerce(node.left, "int").isGreaterThan(coerce(node.right, "int")));
             case '<=':
-                return coerce(node.left, "int").isLessThanOrEqualTo(coerce(node.right, "int"));
+                return +(coerce(node.left, "int").isLessThanOrEqualTo(coerce(node.right, "int")));
             case '>=':
-                return coerce(node.left, "int").isGreaterThanOrEqualTo(coerce(node.right, "int"));
+                return +(coerce(node.left, "int").isGreaterThanOrEqualTo(coerce(node.right, "int")));
             case '!=':
-                return evalNode(node.left, env, true) != evalNode(node.right, env, true);
+                return +(evalNode(node.left, env, true) != evalNode(node.right, env, true));
             case '||':
                 return fix(evalNode(node.left, env, true)) || fix(evalNode(node.right, env, true));
             case '&&':
@@ -10412,6 +10417,11 @@ window.walkTree = function parse(tree, opts, original) {
                 }
         
                 return foreach_val.map(foreach_map);
+            case '.$':
+                let part_arr = coerce(node.left, "array");
+                let part_ind = +coerce(node.right, "int", true);
+    
+                return [part_arr.slice(0, part_ind), part_arr.slice(part_ind)];
             default:
                 throw ArnError("Couldn't recognize infix.", original, node.line, node.pos);
         }
@@ -10637,9 +10647,7 @@ window.walkTree = function parse(tree, opts, original) {
     }
     if (opts.s) result = result.length;
     if (opts.x) {
-        let child_env = env.clone();
-        env.set("_", constructType(result));
-        result = evalNode({type: "infix", value: "\\", fold_ops: [{type: "infix", value: "+"}], map_ops: [], arg: {type: "variable", value: "_"}}, child_env);
+        result = evalNode({type: "prefix", value: "\\", fold_ops: [{type: "punctuation", value: "+"}], map_ops: false, arg: constructType(result)}, env);
     }
     return result;
 }

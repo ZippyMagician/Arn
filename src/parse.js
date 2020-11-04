@@ -181,6 +181,10 @@ module.exports.walkTree = function parse(tree, opts, original) {
                 return math.listPrimes(unpack(coerce(node, "int")));
             case '*.':
                 return math.factorize(unpack(coerce(node, "int")));
+            case '$.':
+                let part_arr = coerce(node, "array");
+                let part_ind = Math.floor(part_arr.length / 2);
+                return [part_arr.slice(0, part_ind), part_arr.slice(part_ind)];
             default:
                 throw ArnError("Couldn't recognize prefix.", original, node.line, node.pos);
         }
@@ -198,17 +202,17 @@ module.exports.walkTree = function parse(tree, opts, original) {
                 env.set(varName, constructType(varValue));
                 return varValue;
             case '=':
-                return evalNode(node.left, env, true) == evalNode(node.right, env, true);
+                return +(evalNode(node.left, env, true) == evalNode(node.right, env, true));
             case '<':
-                return coerce(node.left, "int").isLessThan(coerce(node.right, "int"));
+                return +(coerce(node.left, "int").isLessThan(coerce(node.right, "int")));
             case '>':
-                return coerce(node.left, "int").isGreaterThan(coerce(node.right, "int"));
+                return +(coerce(node.left, "int").isGreaterThan(coerce(node.right, "int")));
             case '<=':
-                return coerce(node.left, "int").isLessThanOrEqualTo(coerce(node.right, "int"));
+                return +(coerce(node.left, "int").isLessThanOrEqualTo(coerce(node.right, "int")));
             case '>=':
-                return coerce(node.left, "int").isGreaterThanOrEqualTo(coerce(node.right, "int"));
+                return +(coerce(node.left, "int").isGreaterThanOrEqualTo(coerce(node.right, "int")));
             case '!=':
-                return evalNode(node.left, env, true) != evalNode(node.right, env, true);
+                return +(evalNode(node.left, env, true) != evalNode(node.right, env, true));
             case '||':
                 return fix(evalNode(node.left, env, true)) || fix(evalNode(node.right, env, true));
             case '&&':
@@ -300,6 +304,11 @@ module.exports.walkTree = function parse(tree, opts, original) {
                 }
     
                 return foreach_val.map(foreach_map);
+            case '.$':
+                let part_arr = coerce(node.left, "array");
+                let part_ind = +coerce(node.right, "int", true);
+
+                return [part_arr.slice(0, part_ind), part_arr.slice(part_ind)];
             default:
                 throw ArnError("Couldn't recognize infix.", original, node.line, node.pos);
         }
@@ -525,9 +534,7 @@ module.exports.walkTree = function parse(tree, opts, original) {
     }
     if (opts.s) result = result.length;
     if (opts.x) {
-        let child_env = env.clone();
-        env.set("_", constructType(result));
-        result = evalNode({type: "infix", value: "\\", fold_ops: [{type: "infix", value: "+"}], map_ops: [], arg: {type: "variable", value: "_"}}, child_env);
+        result = evalNode({type: "prefix", value: "\\", fold_ops: [{type: "punctuation", value: "+"}], map_ops: false, arg: constructType(result)}, env);
     }
     return result;
 }
