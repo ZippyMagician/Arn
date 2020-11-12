@@ -10197,9 +10197,13 @@ window.walkTree = function parse(tree, opts, original) {
             case ':-':
                 return coerce(node, "int").dividedBy(2).toString();
             case ':>':
-                return coerce(node, "array").map(r => unpack(r)).sort((a, b) => (typeof a === "object" ? a.length : a) - (typeof b === "object" ? b.length : b));
+                let descending_sort = evalNode(node.arg, env, true);
+                let descending_ret = cast(descending_sort, "array").map(r => unpack(r)).sort((a, b) => (typeof a === "object" ? a.length : a) - (typeof b === "object" ? b.length : b));
+                return typeof descending_sort === "object" ? descending_ret : descending_ret.join("");
             case ':<':
-                return coerce(node, "array").map(r => unpack(r)).sort((a, b) => (typeof b === "object" ? b.length : b) - (typeof a === "object" ? a.length : a));
+                let ascending_sort = evalNode(node.arg, env, true);
+                let ascending_ret = cast(ascending_sort, "array").map(r => unpack(r)).sort((a, b) => (typeof b === "object" ? b.length : b) - (typeof a === "object" ? a.length : a));
+                return typeof ascending_sort === "object" ? ascending_ret : ascending_ret.join("");
             case '$':
                 func = node.block.contents;
                 ind = node.block.arg;
