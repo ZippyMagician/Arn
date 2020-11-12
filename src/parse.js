@@ -41,8 +41,6 @@ module.exports.walkTree = function parse(tree, opts, original) {
         switch (node.value) {
             case 'n_':
                 return coerce(node, "int").multipliedBy(new BigNumber(-1)).toString();
-            case '!!':
-                return [...coerce(node, "string")].reverse().join("");
             case '!':
                 return !fix(evalNode(node.arg, env, true)) ? 1 : 0;
             case ':v':
