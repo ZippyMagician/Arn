@@ -371,7 +371,6 @@ module.exports.makeAST = function makeAST(tokens, original, parent_ast = false) 
             return false;
         }
 
-        //if (tok === "||" || tok === "&&") console.log(ret_obj, arg, lone, precedence[tok], current_prec, ast.contents);
         if (!lone && ret_obj && next() && precedence[look().value] && current_prec.last() <= precedence[look().value]) {
             ast.contents.push(ret_obj);
             // parseFix will push the token precedence, so we can omit that here
