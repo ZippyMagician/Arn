@@ -398,6 +398,13 @@ module.exports.walkTree = function parse(tree, opts, original) {
                 let rev_item = evalNode(node.arg, env, false);
                 if (typeof rev_item === "object" && !(rev_item instanceof BigNumber)) return rev_item.reverse();
                 else return rev_item.toString().split("").reverse().join("");
+            case '..':
+            case '.=':
+                let range = [];
+                let rangify = coerce(node, "array", true);
+                if (node.value === "..") for (let ind = rangify[0]; ind < rangify[1]; ind++) range.push(ind);
+                else for (let ind = rangify[0]; ind <= rangify[1]; ind++) range.push(ind);
+                return range;
             default:
                 throw ArnError("Couldn't recognize suffix.", original, node.line, node.pos);
         }

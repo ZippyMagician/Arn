@@ -9356,6 +9356,7 @@ window.ArnError = function (msg, code, line, index) {
 
 const constants = {};
 
+// All punctuation. It is stored so that different punctuation can go adjacent to one another, allowing for shorter programs.
 constants.punctuation = [
     '!', '$', '#', '\\', '~',                                                           // Single-length prefixes
     '=', '<', '>', '+', '-', '*', '/', '%', '^', '|', '.', 'z', '&',                    // Single-length infixes
@@ -9364,7 +9365,7 @@ constants.punctuation = [
     ':+', ':-', '#.', '*.', '$.',                                                       // More prefixes
     '@',                                                                                // Single-length infixes
     '<=', '>=', '!=', '||', '&&', ':|', '->', '=>', ':!', ':?', '::', '@:', '.$',       // Double-length infixes
-    '^*', ':_', ':{', ':}', ':@', '.@', '.}', '.{', '.|', '.<',                         // Double-length suffixes
+    '^*', ':_', ':{', ':}', ':@', '.@', '.}', '.{', '.|', '.<', '..', '.=',             // Double-length suffixes
     '{', '}', '(', ')', '[', ']', ',', ':=', ':', ':n', ':s', ':i', ';', '"', "'", '`'  // Other punctuation
 ];
 
@@ -9382,7 +9383,7 @@ constants.infixes = [
 
 constants.suffixes = [
     '#', ';',
-    '^*', ':_', ':n', ':s', ':}', ':{', ':@', '.@', '.{', '.}', '.|', '.<'
+    '^*', ':_', ':n', ':s', ':}', ':{', ':@', '.@', '.{', '.}', '.|', '.<', '..', '.='
 ];
 
 // The precedence of all operators
@@ -9393,7 +9394,7 @@ constants.PRECEDENCE = {
     '%': 65, 'z': 65,
     ':|': 60, ':!': 60,
     '+': 50, '-': 50, ',': 50, '.$': 50,
-    '=>': 45, '->': 45, '~': 45, '#': 45, ';': 45, ':_': 45, '.@': 45, '.|': 45, '.<': 45,
+    '=>': 45, '->': 45, '~': 45, '#': 45, ';': 45, ':_': 45, '.@': 45, '.|': 45, '.<': 45, '..': 45, '.=': 45,
     ':n': 40, ':s': 40, ':}': 40, ':{': 40, '.}': 40, '.{': 40, ':@': 40, '^*': 40, '|': 40, '&.': 40, ':i': 40,
     '!': 40, 'n_': 40, '$': 40, '\\': 40, '!!': 40, ':v': 40, ':^': 40, '++': 40, '--': 40, ':*': 40, ':/': 40,
     ':+': 40, ':-': 40, ':>': 40, ':<': 40, ':^': 40, ':v': 40, '|:': 40, '$:': 40, '?.': 40, '#.': 40, '*.': 40,
@@ -10513,6 +10514,13 @@ window.walkTree = function parse(tree, opts, original) {
                 let rev_item = evalNode(node.arg, env, false);
                 if (typeof rev_item === "object" && !(rev_item instanceof BigNumber)) return rev_item.reverse();
                 else return rev_item.toString().split("").reverse().join("");
+            case '..':
+            case '.=':
+                let range = [];
+                let rangify = coerce(node, "array", true);
+                if (node.value === "..") for (let ind = rangify[0]; ind < rangify[1]; ind++) range.push(ind);
+                else for (let ind = rangify[0]; ind <= rangify[1]; ind++) range.push(ind);
+                return range;
             default:
                 throw ArnError("Couldn't recognize suffix.", original, node.line, node.pos);
         }
