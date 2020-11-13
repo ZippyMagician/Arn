@@ -10134,6 +10134,11 @@ BigNumber.set({
 
 window.walkTree = function parse(tree, opts, original) {
     function zip(...vals) {
+        if (vals[0] instanceof Sequence) {
+            vals[0] = vals[0].take(vals[1].length);
+        } else if (vals[1] instanceof Sequence) {
+            vals[1] = vals[1].take(vals[0].length);
+        }
         return vals[0].map((_, i) => vals.map(array => array[i]));
     }
     
