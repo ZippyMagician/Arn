@@ -9395,10 +9395,11 @@ constants.PRECEDENCE = {
     ':|': 60, ':!': 60,
     '+': 50, '-': 50, ',': 50, '.$': 50,
     '=>': 45, '->': 45, '~': 45, '#': 45, ';': 45, ':_': 45, '.@': 45, '.|': 45, '.<': 45, '..': 45, '.=': 45,
-    ':n': 40, ':s': 40, ':}': 40, ':{': 40, '.}': 40, '.{': 40, ':@': 40, '^*': 40, '|': 40, '&.': 40, ':i': 40,
+    ':n': 40, ':s': 40, ':}': 40, ':{': 40, '.}': 40, '.{': 40, ':@': 40, '^*': 40, '&.': 40, ':i': 40,
     '!': 40, 'n_': 40, '$': 40, '\\': 40, '!!': 40, ':v': 40, ':^': 40, '++': 40, '--': 40, ':*': 40, ':/': 40,
     ':+': 40, ':-': 40, ':>': 40, ':<': 40, ':^': 40, ':v': 40, '|:': 40, '$:': 40, '?.': 40, '#.': 40, '*.': 40,
     '$.': 40,
+    '|': 35,
     '=': 30, '!=': 30, '<': 30, '<=': 30, '>': 30, '>=': 30,
     '&&': 20, '||': 20,
     ':': 10, ':=': 10, '@': 10
@@ -9721,7 +9722,7 @@ window.makeAST = function makeAST(tokens, original, parent_ast = false) {
 
         if (next() && look().type === "punctuation" && precedence[look().value] && precedence[look().value] > current_prec) {
             ast.contents.push(obj);
-            return parseFix(true);
+            return parseFix();
         } else {
             index--;
             return obj;
@@ -9756,7 +9757,7 @@ window.makeAST = function makeAST(tokens, original, parent_ast = false) {
 
         if (next() && look().type === "punctuation" && precedence[look().value] && precedence[look().value] > current_prec) {
             ast.contents.push(obj);
-            return parseFix(true);
+            return parseFix();
         } else {
             index--;
             return obj;
@@ -9855,7 +9856,7 @@ window.makeAST = function makeAST(tokens, original, parent_ast = false) {
             }
         } else if (constants.infixes.includes(tok)) {
             let left;
-            if (validItem(ast.contents[ast.contents.length - 1])) left = ast.contents.pop();
+            if (!arg && validItem(ast.contents[ast.contents.length - 1])) left = ast.contents.pop();
             next();
             if (tok === "." && (!look() || look().type !== "variable")) throw ArnError("Cannot call dot infix on a non-function.", original, current.line, current.pos);
             if (tok === "z") {

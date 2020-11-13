@@ -151,7 +151,7 @@ module.exports.makeAST = function makeAST(tokens, original, parent_ast = false) 
 
         if (next() && look().type === "punctuation" && precedence[look().value] && precedence[look().value] > current_prec) {
             ast.contents.push(obj);
-            return parseFix(true);
+            return parseFix();
         } else {
             index--;
             return obj;
@@ -186,7 +186,7 @@ module.exports.makeAST = function makeAST(tokens, original, parent_ast = false) 
 
         if (next() && look().type === "punctuation" && precedence[look().value] && precedence[look().value] > current_prec) {
             ast.contents.push(obj);
-            return parseFix(true);
+            return parseFix();
         } else {
             index--;
             return obj;
@@ -333,7 +333,7 @@ module.exports.makeAST = function makeAST(tokens, original, parent_ast = false) 
             }
         } else if (constants.suffixes.includes(tok)) {
             let left;
-            if (validItem(ast.contents[ast.contents.length - 1])) left = ast.contents.pop();
+            if (!arg && validItem(ast.contents[ast.contents.length - 1])) left = ast.contents.pop();
             if (tok === ";") {
                 let ops = next().value.split("");
                 ret_obj = {
