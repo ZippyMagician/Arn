@@ -248,7 +248,7 @@ module.exports.walkTree = function parse(tree, opts, original) {
                 let right_coerce = evalNode(node.right, env, true);
                 
                 if (typeof left_coerce === "object" && typeof right_coerce === "object") {
-                    left_coerce.concat(right_coerce);
+                    return left_coerce.concat(right_coerce);
                 } else if (typeof left_coerce === "object") {
                     left_coerce.push(right_coerce);
                     return left_coerce;
