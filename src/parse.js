@@ -402,8 +402,8 @@ module.exports.walkTree = function parse(tree, opts, original) {
             case '.=':
                 let range = [];
                 let rangify = coerce(node, "array", true);
-                if (node.value === "..") for (let ind = rangify[0]; ind < rangify[1]; ind++) range.push(ind);
-                else for (let ind = rangify[0]; ind <= rangify[1]; ind++) range.push(ind);
+                if (node.value === "..") for (let ind = +rangify[0]; ind < +rangify[1]; ind++) range.push(ind);
+                else for (let ind = +rangify[0]; ind <= +rangify[1]; ind++) range.push(ind);
                 return range;
             default:
                 throw ArnError("Couldn't recognize suffix.", original, node.line, node.pos);

@@ -9589,6 +9589,10 @@ function getFoldLength(tokens, from) {
 
 const precedence = constants.PRECEDENCE;
 
+Array.prototype.last = function () {
+    return this.length ? this[this.length - 1] : -100000;
+}
+
 window.makeAST = function makeAST(tokens, original, parent_ast = false) {
     const stream = tokens;
     let index = -1;
@@ -9599,7 +9603,7 @@ window.makeAST = function makeAST(tokens, original, parent_ast = false) {
 
     let ast = {type: "prog", contents: []};
     // Stores precedence info
-    let current_prec = false;
+    let current_prec = [];
 
     function isPunc(char, val = false) {
         return (val || look()) && (val || look()).type === "punctuation" && (val || look()).value === char;
@@ -9607,7 +9611,7 @@ window.makeAST = function makeAST(tokens, original, parent_ast = false) {
 
     // TODO: Make sure this will work for all edge cases
     function validItem(obj) {
-        return obj && obj.type !== "block" && obj.type !== "function" && (precedence[obj.value] && obj.type !== "string" ? precedence[obj.value] >= current_prec : true);// && obj.type !== "infix";
+        return obj && obj.type !== "block" && obj.type !== "function" && (precedence[obj.value] && obj.type !== "string" ? precedence[obj.value] >= current_prec.last() : true);// && obj.type !== "infix";
     }
 
     function isFunction(key) {
@@ -9720,13 +9724,18 @@ window.makeAST = function makeAST(tokens, original, parent_ast = false) {
             line: current.line
         };
 
-        if (next() && look().type === "punctuation" && precedence[look().value] && precedence[look().value] > current_prec) {
+        if (next() && look().type === "punctuation" && precedence[look().value] && precedence[look().value] > current_prec.last()) {
             ast.contents.push(obj);
+            current_prec.push(precedence[look().value])
             return parseFix();
+        } else if (look() && look().type === "punctuation" && precedence[look().value]) {
+            current_prec.push(precedence[look().value])
         } else {
-            index--;
-            return obj;
+            current_prec.pop();
         }
+
+        index--;
+        return obj;
     }
 
     // Called from index BEFORE "{"
@@ -9755,13 +9764,18 @@ window.makeAST = function makeAST(tokens, original, parent_ast = false) {
             line: current.line
         };
 
-        if (next() && look().type === "punctuation" && precedence[look().value] && precedence[look().value] > current_prec) {
+        if (next() && look().type === "punctuation" && precedence[look().value] && precedence[look().value] > current_prec.last()) {
             ast.contents.push(obj);
+            current_prec.push(precedence[look().value])
             return parseFix();
+        } else if (look() && look().type === "punctuation" && precedence[look().value]) {
+            current_prec.push(precedence[look().value])
         } else {
-            index--;
-            return obj;
+            current_prec.pop();
         }
+
+        index--;
+        return obj;
     }
 
     function parseFix(arg = false, lone = false) {
@@ -9773,7 +9787,7 @@ window.makeAST = function makeAST(tokens, original, parent_ast = false) {
             index--;
             return false;
         }
-        current_prec = precedence[tok];
+        current_prec.push(precedence[tok]);
         if (constants.prefixes.includes(tok)) {
             // Fold
             if (tok === "\\") {
@@ -9856,7 +9870,7 @@ window.makeAST = function makeAST(tokens, original, parent_ast = false) {
             }
         } else if (constants.infixes.includes(tok)) {
             let left;
-            if (!arg && validItem(ast.contents[ast.contents.length - 1])) left = ast.contents.pop();
+            if (validItem(ast.contents[ast.contents.length - 1])) left = ast.contents.pop();
             next();
             if (tok === "." && (!look() || look().type !== "variable")) throw ArnError("Cannot call dot infix on a non-function.", original, current.line, current.pos);
             if (tok === "z") {
@@ -9904,7 +9918,7 @@ window.makeAST = function makeAST(tokens, original, parent_ast = false) {
             }
         } else if (constants.suffixes.includes(tok)) {
             let left;
-            if (validItem(ast.contents[ast.contents.length - 1])) left = ast.contents.pop();
+            if (!arg && validItem(ast.contents[ast.contents.length - 1])) left = ast.contents.pop();
             if (tok === ";") {
                 let ops = next().value.split("");
                 ret_obj = {
@@ -9927,14 +9941,21 @@ window.makeAST = function makeAST(tokens, original, parent_ast = false) {
         } else {
             return false;
         }
-        if (!lone && ret_obj && next() && precedence[look().value] && current_prec <= precedence[look().value]) {
+
+        //if (tok === "||" || tok === "&&") console.log(ret_obj, arg, lone, precedence[tok], current_prec, ast.contents);
+        if (!lone && ret_obj && next() && precedence[look().value] && current_prec.last() <= precedence[look().value]) {
             ast.contents.push(ret_obj);
+            // parseFix will push the token precedence, so we can omit that here
             ast.contents.push(parseFix(true));
             return ast.contents.pop();
-        } else {
-            index--;
-            return ret_obj;
+        } else if (!lone && look() && precedence[look().value]) {
+            current_prec.push(precedence[look().value]);
+        } else if (!lone) {
+            current_prec.pop();
         }
+
+        index--;
+        return ret_obj;
     }
 
     function maybeExpr(arg = false, infix = false) {
@@ -10519,8 +10540,8 @@ window.walkTree = function parse(tree, opts, original) {
             case '.=':
                 let range = [];
                 let rangify = coerce(node, "array", true);
-                if (node.value === "..") for (let ind = rangify[0]; ind < rangify[1]; ind++) range.push(ind);
-                else for (let ind = rangify[0]; ind <= rangify[1]; ind++) range.push(ind);
+                if (node.value === "..") for (let ind = +rangify[0]; ind < +rangify[1]; ind++) range.push(ind);
+                else for (let ind = +rangify[0]; ind <= +rangify[1]; ind++) range.push(ind);
                 return range;
             default:
                 throw ArnError("Couldn't recognize suffix.", original, node.line, node.pos);

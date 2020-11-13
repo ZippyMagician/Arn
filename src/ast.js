@@ -17,6 +17,10 @@ function getFoldLength(tokens, from) {
     return [0, bIndex];
 }
 
+Array.prototype.last = function () {
+    return this.length ? this[this.length - 1] : -100000;
+}
+
 // Version 1 as of 8/6/2020 2:42 PM EST
 module.exports.makeAST = function makeAST(tokens, original, parent_ast = false) {
     const stream = tokens;
@@ -28,7 +32,7 @@ module.exports.makeAST = function makeAST(tokens, original, parent_ast = false) 
 
     let ast = {type: "prog", contents: []};
     // Stores precedence info
-    let current_prec = false;
+    let current_prec = [];
 
     function isPunc(char, val = false) {
         return (val || look()) && (val || look()).type === "punctuation" && (val || look()).value === char;
@@ -36,7 +40,7 @@ module.exports.makeAST = function makeAST(tokens, original, parent_ast = false) 
 
     // TODO: Make sure this will work for all edge cases
     function validItem(obj) {
-        return obj && obj.type !== "block" && obj.type !== "function" && (precedence[obj.value] && obj.type !== "string" ? precedence[obj.value] >= current_prec : true);// && obj.type !== "infix";
+        return obj && obj.type !== "block" && obj.type !== "function" && (precedence[obj.value] && obj.type !== "string" ? precedence[obj.value] >= current_prec.last() : true);// && obj.type !== "infix";
     }
 
     function isFunction(key) {
@@ -149,13 +153,18 @@ module.exports.makeAST = function makeAST(tokens, original, parent_ast = false) 
             line: current.line
         };
 
-        if (next() && look().type === "punctuation" && precedence[look().value] && precedence[look().value] > current_prec) {
+        if (next() && look().type === "punctuation" && precedence[look().value] && precedence[look().value] > current_prec.last()) {
             ast.contents.push(obj);
+            current_prec.push(precedence[look().value])
             return parseFix();
+        } else if (look() && look().type === "punctuation" && precedence[look().value]) {
+            current_prec.push(precedence[look().value])
         } else {
-            index--;
-            return obj;
+            current_prec.pop();
         }
+
+        index--;
+        return obj;
     }
 
     // Called from index BEFORE "{"
@@ -184,13 +193,18 @@ module.exports.makeAST = function makeAST(tokens, original, parent_ast = false) 
             line: current.line
         };
 
-        if (next() && look().type === "punctuation" && precedence[look().value] && precedence[look().value] > current_prec) {
+        if (next() && look().type === "punctuation" && precedence[look().value] && precedence[look().value] > current_prec.last()) {
             ast.contents.push(obj);
+            current_prec.push(precedence[look().value])
             return parseFix();
+        } else if (look() && look().type === "punctuation" && precedence[look().value]) {
+            current_prec.push(precedence[look().value])
         } else {
-            index--;
-            return obj;
+            current_prec.pop();
         }
+
+        index--;
+        return obj;
     }
 
     function parseFix(arg = false, lone = false) {
@@ -202,7 +216,7 @@ module.exports.makeAST = function makeAST(tokens, original, parent_ast = false) 
             index--;
             return false;
         }
-        current_prec = precedence[tok];
+        current_prec.push(precedence[tok]);
         if (constants.prefixes.includes(tok)) {
             // Fold
             if (tok === "\\") {
@@ -356,14 +370,21 @@ module.exports.makeAST = function makeAST(tokens, original, parent_ast = false) 
         } else {
             return false;
         }
-        if (!lone && ret_obj && next() && precedence[look().value] && current_prec <= precedence[look().value]) {
+
+        //if (tok === "||" || tok === "&&") console.log(ret_obj, arg, lone, precedence[tok], current_prec, ast.contents);
+        if (!lone && ret_obj && next() && precedence[look().value] && current_prec.last() <= precedence[look().value]) {
             ast.contents.push(ret_obj);
+            // parseFix will push the token precedence, so we can omit that here
             ast.contents.push(parseFix(true));
             return ast.contents.pop();
-        } else {
-            index--;
-            return ret_obj;
+        } else if (!lone && look() && precedence[look().value]) {
+            current_prec.push(precedence[look().value]);
+        } else if (!lone) {
+            current_prec.pop();
         }
+
+        index--;
+        return ret_obj;
     }
 
     function maybeExpr(arg = false, infix = false) {
