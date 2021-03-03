@@ -1,7 +1,3 @@
 # Some Rust generated files
 /target
 Cargo.lock
-
-# Makefile artifacts
-/dist
-build.sh
