@@ -73,7 +73,7 @@ pub fn tokenize(code: &mut String) -> Vec<Node> {
         }
 
         if buf == "\n" || buf == " " || buf == "\r" {
-            buf = String::new();
+            buf.clear();
         }
 
         // If the buffer is current a string
@@ -81,7 +81,7 @@ pub fn tokenize(code: &mut String) -> Vec<Node> {
             if tok == '"' {
                 buf.push(tok);
                 control.push(Node::String(buf.rev()));
-                buf = String::new();
+                buf.clear();
                 in_string = false
             } else {
                 buf.push(tok);
@@ -92,7 +92,7 @@ pub fn tokenize(code: &mut String) -> Vec<Node> {
             if tok.to_string().parse::<i128>().is_err() {
                 // Push the integer to the stack, reset the buffer, and push the new token
                 control.push(Node::Number(buf.parse().unwrap()));
-                buf = String::new();
+                buf.clear();
                 buf.push(tok);
             } else {
                 buf.push(tok);
@@ -126,8 +126,8 @@ pub fn tokenize(code: &mut String) -> Vec<Node> {
                     control.push(Node::Fix(op, left, right));
                 }
             }
-            operators.push(buf);
-            buf = String::new();
+            operators.push(buf.clone());
+            buf.clear();
             buf.push(tok);
         // If the buffer is a left paren
         } else if buf == "(" {
@@ -147,7 +147,7 @@ pub fn tokenize(code: &mut String) -> Vec<Node> {
             }
 
             operators.remove(end);
-            buf = String::new();
+            buf.clear();
             buf.push(tok);
         // Begin block
         } else if buf == "{" {
@@ -169,12 +169,12 @@ pub fn tokenize(code: &mut String) -> Vec<Node> {
 
             control.push(Node::Block(enum_block));
             operators.remove(end);
-            buf = String::new();
+            buf.clear();
             buf.push(tok);
         // The buffer is a right paren or right bracket
         } else if buf == ")" || buf == "}" {
-            operators.push(buf);
-            buf = String::new();
+            operators.push(buf.clone());
+            buf.clear();
             buf.push(tok);
         // The buffer is a variable name
         } else if buf.chars().all(char::is_alphanumeric) && !buf.is_empty() {
@@ -182,7 +182,7 @@ pub fn tokenize(code: &mut String) -> Vec<Node> {
             if !tok.is_alphanumeric() {
                 // Push to control stack and reset
                 control.push(Node::Variable(buf.rev()));
-                buf = String::new();
+                buf.clear();
             }
             buf.push(tok);
         // If it is identified by the symbol operator (":")
@@ -195,7 +195,7 @@ pub fn tokenize(code: &mut String) -> Vec<Node> {
                 let depth = buf.chars().filter(|c| *c == ':').count();
                 let num_ident = buf.trim_start_matches(|c| c == ':').parse::<u8>();
                 control.push(Node::Symbol(depth as u8, num_ident.unwrap_or(0)));
-                buf = String::new();
+                buf.clear();
                 buf.push(tok);
             }
         } else {
