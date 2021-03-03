@@ -30,7 +30,7 @@ impl Reversable for String {
 
 #[inline]
 fn push_args(
-    op: &String,
+    op: &str,
     left: &mut Vec<Node>,
     right: &mut Vec<Node>,
     control: &mut Vec<Node>,
@@ -50,7 +50,7 @@ fn push_args(
     }
 }
 
-pub fn tokenize<'a>(code: &'a mut String) -> Vec<Node> {
+pub fn tokenize(code: &mut String) -> Vec<Node> {
     let options: Operators = Operators::new();
     // This enables the parsing to work properly
     code.push('\n');
@@ -58,7 +58,6 @@ pub fn tokenize<'a>(code: &'a mut String) -> Vec<Node> {
     let bytes = unsafe { code.as_bytes_mut() };
     bytes.rotate_right(1);
     bytes.reverse();
-    let mut bytes = bytes.iter();
 
     let mut control: Vec<Node> = Vec::with_capacity(20);
     let mut operators: Vec<String> = Vec::with_capacity(20);
@@ -67,7 +66,7 @@ pub fn tokenize<'a>(code: &'a mut String) -> Vec<Node> {
 
     let mut in_string: bool = false;
 
-    while let Some(val) = bytes.next() {
+    for val in bytes {
         let tok = *val as char;
         if buf == "\"" {
             in_string = true;
@@ -88,9 +87,9 @@ pub fn tokenize<'a>(code: &'a mut String) -> Vec<Node> {
                 buf.push(tok);
             }
         // If the buffer is currently an integer
-        } else if let Ok(_) = buf.parse::<i128>() {
+        } else if buf.parse::<i128>().is_ok() {
             // And the top item of the stack is not an integer
-            if let Err(_) = tok.to_string().parse::<i128>() {
+            if tok.to_string().parse::<i128>().is_err() {
                 // Push the integer to the stack, reset the buffer, and push the new token
                 control.push(Node::Number(buf.parse().unwrap()));
                 buf = String::new();
@@ -132,9 +131,10 @@ pub fn tokenize<'a>(code: &'a mut String) -> Vec<Node> {
             buf.push(tok);
         // If the buffer is a left paren
         } else if buf == "(" {
-            let end = operators.iter().position(|c| c == ")").unwrap_or_else(|| {
-                panic!("Unmatched parenthesis. Expected matching ')' in the program")
-            });
+            let end = operators
+                .iter()
+                .position(|c| c == ")")
+                .expect("Unmatched parenthesis. Expected matching ')' in the program");
             let mut i = operators.len() - 1;
 
             while i > end && !operators.is_empty() {
@@ -151,9 +151,10 @@ pub fn tokenize<'a>(code: &'a mut String) -> Vec<Node> {
             buf.push(tok);
         // Begin block
         } else if buf == "{" {
-            let end = operators.iter().position(|c| c == "}").unwrap_or_else(|| {
-                panic!("Unmatched brackets. Expected '}' in the program to match '{'")
-            });
+            let end = operators
+                .iter()
+                .position(|c| c == "}")
+                .expect("Unmatched brackets. Expected '}' in the program to match '{'");
             let mut enum_block = Vec::with_capacity(10);
             let mut i = operators.len() - 1;
 
@@ -176,7 +177,7 @@ pub fn tokenize<'a>(code: &'a mut String) -> Vec<Node> {
             buf = String::new();
             buf.push(tok);
         // The buffer is a variable name
-        } else if buf.chars().all(char::is_alphanumeric) && buf.len() > 0 {
+        } else if buf.chars().all(char::is_alphanumeric) && !buf.is_empty() {
             // If it's the end of a variable identifier
             if !tok.is_alphanumeric() {
                 // Push to control stack and reset
@@ -185,17 +186,13 @@ pub fn tokenize<'a>(code: &'a mut String) -> Vec<Node> {
             }
             buf.push(tok);
         // If it is identified by the symbol operator (":")
-        } else if buf.chars().nth(0).unwrap_or(' ') == ':' {
+        } else if buf.chars().next().unwrap_or(' ') == ':' {
             // And the next character is also a symbol/integer
             if tok == ':' || tok.is_numeric() {
                 buf.push(tok);
             // Otherwise, the symbol is completed
             } else {
-                let depth = buf
-                    .chars()
-                    .filter(|c| *c == ':')
-                    .collect::<Vec<char>>()
-                    .len();
+                let depth = buf.chars().filter(|c| *c == ':').count();
                 let num_ident = buf.trim_start_matches(|c| c == ':').parse::<u8>();
                 control.push(Node::Symbol(depth as u8, num_ident.unwrap_or(0)));
                 buf = String::new();
