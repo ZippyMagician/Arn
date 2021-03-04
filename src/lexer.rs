@@ -189,7 +189,7 @@ pub fn tokenize(code: &mut String) -> Vec<Node> {
                 buf.push(tok);
             // Otherwise, the symbol is completed
             } else {
-                let depth = buf.chars().filter(|c| *c == ':').count();
+                let depth = buf.matches(':').count();
                 let num_ident = buf.trim_start_matches(|c| c == ':').parse::<u8>();
                 control.push(Node::Symbol(depth as u8, num_ident.unwrap_or(0)));
                 buf.clear();
