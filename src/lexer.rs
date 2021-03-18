@@ -1,5 +1,4 @@
-// Based on the Shunting Yard algorithm, modified to return an AST
-// in a non-recursive manner.
+// Based on the Shunting Yard algorithm
 
 use crate::tokens::Node;
 
@@ -13,7 +12,7 @@ operators! {
     ":=": 0; 1-1, "=:": 0; 1-1
 }
 
-// Adds a shorter method to reverse strings (since I use it a log)
+// Adds a shorter method to reverse strings (since I use it a lot)
 trait Reversable {
     type Reversed;
 
@@ -23,6 +22,7 @@ trait Reversable {
 impl Reversable for String {
     type Reversed = String;
 
+    #[inline(always)]
     fn rev(&mut self) -> Self::Reversed {
         self.chars().rev().collect()
     }
@@ -36,17 +36,14 @@ fn push_args(
     control: &mut Vec<Node>,
     options: &Operators,
 ) {
-    let mut li = 0;
-    let mut ri = 0;
+    let rank = options.rank.get(op).unwrap();
 
-    while li < options.rank.get(op).unwrap().0 {
+    for _ in 0..rank.0 {
         left.push(control.pop().unwrap_or(default!()));
-        li += 1;
     }
 
-    while ri < options.rank.get(op).unwrap().1 {
+    for _ in 0..rank.1 {
         right.push(control.pop().unwrap_or(default!()));
-        ri += 1;
     }
 }
 
@@ -193,7 +190,7 @@ pub fn tokenize(code: &mut String) -> Vec<Node> {
             // Otherwise, the symbol is completed
             } else {
                 let depth = buf.chars().filter(|c| *c == ':').count();
-                let num_ident = buf.trim_start_matches(|c| c == ':').parse::<u8>();
+                let num_ident = buf.trim_start_matches(':').parse::<u8>();
                 control.push(Node::Symbol(depth as u8, num_ident.unwrap_or(0)));
                 buf.clear();
                 buf.push(tok);
