@@ -50,21 +50,16 @@ fn push_args(
 pub fn tokenize(code: &mut String) -> Vec<Node> {
     let options: Operators = Operators::new();
     // This enables the parsing to work properly
-    code.push('\n');
-
-    let bytes = unsafe { code.as_bytes_mut() };
-    bytes.rotate_right(1);
-    bytes.reverse();
+    let bytes = code.chars().rev().chain(['\n']);
 
     let mut control: Vec<Node> = Vec::with_capacity(20);
     let mut operators: Vec<String> = Vec::with_capacity(20);
 
     let mut buf = String::new();
 
-    let mut in_string: bool = false;
+    let mut in_string = false;
 
-    for val in bytes {
-        let tok = *val as char;
+    for tok in bytes {
         if buf == "\"" {
             in_string = true;
         }
@@ -96,13 +91,12 @@ pub fn tokenize(code: &mut String) -> Vec<Node> {
             }
         // If the buffer is currently an operator
         } else if options.operators.iter().any(|i| *i == buf.rev()) {
-            // And the current entry is also an operator
-            if options.operators.iter().any(|i| *i == tok.to_string()) {
-                buf.push(tok);
-                // And the current entry + the buffer is not an operator
-                if !options.operators.iter().any(|i| *i == buf.rev()) {
-                    buf.pop();
-                }
+            buf.push(tok);
+            let mut consumed = true;
+            // See if the buffer + tok is an operator
+            if !options.operators.iter().any(|i| *i == buf.rev()) {
+                buf.pop();
+                consumed = false;
             }
             buf = buf.rev();
 
@@ -123,9 +117,12 @@ pub fn tokenize(code: &mut String) -> Vec<Node> {
                     control.push(Node::Fix(op, left, right));
                 }
             }
+            
             operators.push(buf.clone());
             buf.clear();
-            buf.push(tok);
+            if !consumed {
+                buf.push(tok);
+            }
         // If the buffer is a left paren
         } else if buf == "(" {
             let end = operators
@@ -183,13 +180,13 @@ pub fn tokenize(code: &mut String) -> Vec<Node> {
             }
             buf.push(tok);
         // If it is identified by the symbol operator (":")
-        } else if buf.chars().next().unwrap_or(' ') == ':' {
+        } else if buf.starts_with(':') {
             // And the next character is also a symbol/integer
             if tok == ':' || tok.is_numeric() {
                 buf.push(tok);
             // Otherwise, the symbol is completed
             } else {
-                let depth = buf.chars().filter(|c| *c == ':').count();
+                let depth = buf.matches(':').count();
                 let num_ident = buf.trim_start_matches(':').parse::<u8>();
                 control.push(Node::Symbol(depth as u8, num_ident.unwrap_or(0)));
                 buf.clear();
@@ -197,9 +194,6 @@ pub fn tokenize(code: &mut String) -> Vec<Node> {
             }
         } else {
             buf.push(tok);
-            if tok == '"' {
-                in_string = true;
-            }
         }
     }
 
