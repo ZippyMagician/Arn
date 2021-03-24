@@ -1,1 +1,1 @@
-"Fizz" ^ ! variable % 3
+"Fizz" ^ ! % 3
