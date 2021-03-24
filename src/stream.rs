@@ -70,10 +70,9 @@ pub fn insert_implied(prg: &str) -> String {
                     }
                 }
             }
-            construct.push(Node::Operator(
-                buf.clone(),
-                *OPTIONS.rank.get(&buf).unwrap(),
-            ));
+
+            construct.push(Node::Operator(buf.clone(), *rank));
+
             buf.clear();
             if !consumed {
                 buf.push(tok);
