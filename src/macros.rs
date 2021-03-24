@@ -3,7 +3,7 @@
 macro_rules! operators {
     ($($chr:literal : $prec:literal; $left_rank:literal - $right_rank:literal),*) => {
         #[derive(Clone)]
-        struct Operators {
+        pub struct Operators {
             pub precedence: std::collections::HashMap<String, i32>,
             pub operators: [String; len!($($chr),*)],
             pub rank: std::collections::HashMap<String, (i32, i32)>,
@@ -51,6 +51,7 @@ macro_rules! hashmap {
 
         hash
     }};
+
     ($type:ty, $($key:literal => $val:expr),*) => {{
         use std::collections::HashMap;
         let mut hash: HashMap<String, $type> = HashMap::new();
@@ -61,10 +62,4 @@ macro_rules! hashmap {
 
         hash
     }};
-}
-
-macro_rules! default {
-    () => {
-        Node::Empty
-    };
 }

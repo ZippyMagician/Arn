@@ -1,16 +1,6 @@
 // Based on the Shunting Yard algorithm
 
-use crate::tokens::Node;
-
-// Little macro I created to make the global Operators class much nicer.
-// First number is precedence, second is left # of args, third is right # of args
-operators! {
-    '!':  5; 0-1,
-    '^':  4; 1-1,
-    '*':  3; 1-1, '/':  3; 1-1,
-    '+':  2; 1-1, '-':  2; 1-1,
-    ":=": 0; 1-1, "=:": 0; 1-1
-}
+use crate::consts::OPTIONS;
 
 // Adds a shorter method to reverse strings (since I use it a lot)
 trait Reversable {
@@ -28,32 +18,13 @@ impl Reversable for String {
     }
 }
 
-#[inline]
-fn push_args(
-    op: &str,
-    left: &mut Vec<Node>,
-    right: &mut Vec<Node>,
-    control: &mut Vec<Node>,
-    options: &Operators,
-) {
-    let rank = options.rank.get(op).unwrap();
-
-    for _ in 0..rank.0 {
-        left.push(control.pop().unwrap_or(default!()));
-    }
-
-    for _ in 0..rank.1 {
-        right.push(control.pop().unwrap_or(default!()));
-    }
-}
-
-pub fn tokenize(code: &mut String) -> Vec<Node> {
-    let options: Operators = Operators::new();
+// Instead of parsing directly to an AST, I'll try this, which converts to postfix first. A second pass from another function that converts postfix to an ast is trivial.
+pub fn to_postfix(code: &str) -> String {
     // This enables the parsing to work properly
-    let bytes = code.chars().rev().chain(['\n']);
+    let bytes = code.chars().chain("\n".chars());
 
-    let mut control: Vec<Node> = Vec::with_capacity(20);
     let mut operators: Vec<String> = Vec::with_capacity(20);
+    let mut output = String::with_capacity(code.len());
 
     let mut buf = String::new();
 
@@ -64,7 +35,7 @@ pub fn tokenize(code: &mut String) -> Vec<Node> {
             in_string = true;
         }
 
-        if buf == "\n" || buf == " " || buf == "\r" {
+        if !in_string && (buf == "\n" || buf == " " || buf == "\r") {
             buf.clear();
         }
 
@@ -72,7 +43,8 @@ pub fn tokenize(code: &mut String) -> Vec<Node> {
         if in_string {
             if tok == '"' {
                 buf.push(tok);
-                control.push(Node::String(buf.rev()));
+                output.push_str(&buf);
+                output.push(' ');
                 buf.clear();
                 in_string = false
             } else {
@@ -80,63 +52,62 @@ pub fn tokenize(code: &mut String) -> Vec<Node> {
             }
         // If the buffer is currently an integer
         } else if buf.parse::<i128>().is_ok() {
-            // And the top item of the stack is not an integer
+            // And the top item of the stream is not an integer
             if tok.to_string().parse::<i128>().is_err() {
-                // Push the integer to the stack, reset the buffer, and push the new token
-                control.push(Node::Number(buf.parse().unwrap()));
+                // Push the integer to the output, reset the buffer, and push the new token
+                output.push_str(&buf);
+                output.push(' ');
                 buf.clear();
                 buf.push(tok);
             } else {
                 buf.push(tok);
             }
         // If the buffer is currently an operator
-        } else if options.operators.iter().any(|i| *i == buf.rev()) {
+        } else if OPTIONS.operators.iter().any(|i| *i == buf) {
             buf.push(tok);
             let mut consumed = true;
             // See if the buffer + tok is an operator
-            if !options.operators.iter().any(|i| *i == buf.rev()) {
+            if !OPTIONS.operators.iter().any(|i| *i == buf) {
                 buf.pop();
                 consumed = false;
             }
-            buf = buf.rev();
 
             while !operators.is_empty() {
-                let op = &operators[operators.len() - 1];
-                if options.precedence.get(&buf).is_none()
-                    || options.precedence.get(op).is_none()
-                    || options.precedence.get(&buf).unwrap() >= options.precedence.get(op).unwrap()
+                let op = operators.pop().unwrap();
+                if OPTIONS.precedence.get(&buf).is_none()
+                    || OPTIONS.precedence.get(&op).is_none()
+                    || OPTIONS.precedence.get(&buf).unwrap() >= OPTIONS.precedence.get(&op).unwrap()
+                    || OPTIONS.rank.get(&buf).unwrap().0 == 0
                 {
+                    operators.push(op);
                     break;
                 }
 
-                if options.operators.contains(op) {
-                    let op = operators.pop().unwrap();
-                    let mut left: Vec<Node> = vec![];
-                    let mut right: Vec<Node> = vec![];
-                    push_args(&op, &mut left, &mut right, &mut control, &options);
-                    control.push(Node::Fix(op, left, right));
+                if OPTIONS.operators.contains(&op) {
+                    output.push_str(&op);
+                    output.push(' ');
+                } else {
+                    operators.push(op);
                 }
             }
-            
+
             operators.push(buf.clone());
             buf.clear();
             if !consumed {
                 buf.push(tok);
             }
-        // If the buffer is a left paren
-        } else if buf == "(" {
+        // If the buffer is a right paren
+        } else if buf == ")" {
             let end = operators
                 .iter()
-                .position(|c| c == ")")
-                .expect("Unmatched parenthesis. Expected matching ')' in the program");
+                .position(|c| c == "(")
+                .expect("Unmatched parenthesis. Expected matching '(' in the program");
             let mut i = operators.len() - 1;
 
             while i > end && !operators.is_empty() {
                 let op = operators.pop().unwrap();
-                let mut left: Vec<Node> = vec![];
-                let mut right: Vec<Node> = vec![];
-                push_args(&op, &mut left, &mut right, &mut control, &options);
-                control.push(Node::Fix(op, left, right));
+                output.push_str(&op);
+                output.push(' ');
                 i -= 1;
             }
 
@@ -144,72 +115,60 @@ pub fn tokenize(code: &mut String) -> Vec<Node> {
             buf.clear();
             buf.push(tok);
         // Begin block
-        } else if buf == "{" {
+        } else if buf == "}" {
             let end = operators
                 .iter()
-                .position(|c| c == "}")
-                .expect("Unmatched brackets. Expected '}' in the program to match '{'");
-            let mut enum_block = Vec::with_capacity(10);
+                .position(|c| c == "{")
+                .expect("Unmatched brackets. Expected '{' in the program to match '}'");
             let mut i = operators.len() - 1;
 
             while i > end && !operators.is_empty() {
                 let op = operators.pop().unwrap();
-                let mut left: Vec<Node> = vec![];
-                let mut right: Vec<Node> = vec![];
-                push_args(&op, &mut left, &mut right, &mut control, &options);
-                enum_block.push(Node::Fix(op, left, right));
+                output.push_str(&op);
+                output.push(' ');
                 i -= 1;
             }
+            output.push_str("} ");
 
-            control.push(Node::Block(enum_block));
             operators.remove(end);
             buf.clear();
             buf.push(tok);
-        // The buffer is a right paren or right bracket
-        } else if buf == ")" || buf == "}" {
+        // The buffer is a left paren or bracket
+        } else if buf == "(" || buf == "{" {
             operators.push(buf.clone());
+            if buf == "{" {
+                output.push_str("{ ");
+            }
+
             buf.clear();
             buf.push(tok);
         // The buffer is a variable name
-        } else if buf.chars().all(char::is_alphanumeric) && !buf.is_empty() {
+        } else if buf.chars().all(|c| c.is_alphanumeric() || c == '_') && !buf.is_empty() {
             // If it's the end of a variable identifier
-            if !tok.is_alphanumeric() {
-                // Push to control stack and reset
-                control.push(Node::Variable(buf.rev()));
+            if !tok.is_alphanumeric() && tok != '_' {
+                // Push to output
+                output.push_str(&buf);
+                output.push(' ');
                 buf.clear();
             }
+
             buf.push(tok);
-        // If it is identified by the symbol operator (":")
-        } else if buf.starts_with(':') {
-            // And the next character is also a symbol/integer
-            if tok == ':' || tok.is_numeric() {
-                buf.push(tok);
-            // Otherwise, the symbol is completed
-            } else {
-                let depth = buf.matches(':').count();
-                let num_ident = buf.trim_start_matches(':').parse::<u8>();
-                control.push(Node::Symbol(depth as u8, num_ident.unwrap_or(0)));
-                buf.clear();
-                buf.push(tok);
-            }
         } else {
             buf.push(tok);
         }
     }
 
     while !operators.is_empty() {
-        if options.operators.contains(&operators[operators.len() - 1]) {
+        if OPTIONS.operators.contains(&operators[operators.len() - 1]) {
             let op = operators.pop().unwrap();
-            let mut left: Vec<Node> = vec![];
-            let mut right: Vec<Node> = vec![];
+            output.push_str(&op);
 
-            push_args(&op, &mut left, &mut right, &mut control, &options);
-            control.push(Node::Fix(op, left, right));
+            output.push(' ');
         } else {
             // Discard if invalid
             operators.pop();
         }
     }
 
-    control
+    output
 }
