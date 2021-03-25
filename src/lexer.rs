@@ -1,22 +1,6 @@
 // Based on the Shunting Yard algorithm
 
-use crate::consts::OPTIONS;
-
-// Adds a shorter method to reverse strings (since I use it a lot)
-trait Reversable {
-    type Reversed;
-
-    fn rev(&mut self) -> Self::Reversed;
-}
-
-impl Reversable for String {
-    type Reversed = String;
-
-    #[inline(always)]
-    fn rev(&mut self) -> Self::Reversed {
-        self.chars().rev().collect()
-    }
-}
+use crate::utils::consts::OPTIONS;
 
 // Instead of parsing directly to an AST, I'll try this, which converts to postfix first. A second pass from another function that converts postfix to an ast is trivial.
 pub fn to_postfix(code: &str) -> String {

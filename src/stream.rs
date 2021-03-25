@@ -1,10 +1,6 @@
-use crate::consts::OPTIONS;
-use crate::tokens::Node;
+use crate::utils::consts::OPTIONS;
+use crate::utils::tokens::Node;
 
-// TODO: This function will be modified once I need to implement `\`, `@`, and `;`.
-// This lexes as a first pass, so I just change how groups / blocks are parsed and then grab 
-// tokens for `\` to use (and others). I then need to represent it in string form in such a way 
-// that the postfix parser can recognize it (probably make fold-ops represented as a string arg)
 pub fn reformat_program(prg: &str) -> String {
     // Lets assume only 5 `_` will be inserted, this should help performance
     let mut construct: Vec<Node> = Vec::new();
@@ -13,14 +9,26 @@ pub fn reformat_program(prg: &str) -> String {
 
     let mut in_string = false;
     let mut in_group: bool = false;
+    let mut group_count: usize = 0;
+    let mut group_char: Option<char> = None;
 
-    for tok in prg.chars().chain("\n".chars()) {
+    let bytes = prg.chars().chain("\n".chars());
+
+    for tok in bytes {
         if buf == "\"" {
             in_string = true;
         }
 
         if !in_string && !in_group && (buf == "\n" || buf == " " || buf == "\r") {
             buf.clear();
+        }
+
+        if in_group && group_char.unwrap() == tok {
+            group_count += 1;
+        }
+
+        if !in_group && (buf == "{" || buf == "(") {
+            in_group = true;
         }
 
         if in_string {
@@ -34,15 +42,25 @@ pub fn reformat_program(prg: &str) -> String {
             }
         } else if in_group {
             if tok == ')' && buf.starts_with('(') {
-                buf.push(tok);
-                construct.push(Node::Literal(buf.clone()));
-                buf.clear();
-                in_group = false;
+                if group_count > 0 {
+                    group_count -= 1;
+                    buf.push(tok);
+                } else {
+                    buf.push(tok);
+                    construct.push(Node::Literal(reformat_program(&buf[1..buf.len() - 1]), '('));
+                    buf.clear();
+                    in_group = false;
+                }
             } else if tok == '}' && buf.starts_with('{') {
-                buf.push(tok);
-                construct.push(Node::Literal(buf.clone()));
-                buf.clear();
-                in_group = false;
+                if group_count > 0 {
+                    group_count -= 1;
+                    buf.push(tok);
+                } else {
+                    buf.push(tok);
+                    construct.push(Node::Literal(reformat_program(&buf[1..buf.len() - 1]), '{'));
+                    buf.clear();
+                    in_group = false;
+                }
             } else {
                 buf.push(tok);
             }
@@ -81,9 +99,6 @@ pub fn reformat_program(prg: &str) -> String {
             if !consumed {
                 buf.push(tok);
             }
-        } else if buf.starts_with(|c| c == '{' || c == '(') {
-            in_group = true;
-            buf.push(tok);
         } else if buf.chars().all(char::is_alphanumeric) && !buf.is_empty() {
             if !tok.is_alphanumeric() {
                 construct.push(Node::Variable(buf.clone()));
@@ -91,14 +106,32 @@ pub fn reformat_program(prg: &str) -> String {
             }
 
             buf.push(tok);
+        } else if tok == '{' || tok == '(' {
+            if tok == '{' {
+                group_char = Some('{');
+            } else {
+                group_char = Some('(');
+            }
+
+            buf.push_str(&format!("{} ", tok));
+            in_group = true;
+        // Not marked as group, need to do so
         } else {
             buf.push(tok);
         }
     }
 
     // If last op is missing args, push `_`
-    if let Some(Node::Operator(_, rank)) = construct.last() {
-        for _ in 0..rank.1 {
+    let pos = construct
+        .iter()
+        .rposition(|n| match n {
+            Node::Operator(_, _) => true,
+            _ => false,
+        })
+        .unwrap_or(0);
+    if let Some(Node::Operator(_, rank)) = construct.get(pos) {
+        let given: usize = construct.len() - pos - 1;
+        for _ in 0..rank.1 - given as i32 {
             construct.push(Node::Variable('_'.to_string()));
         }
     }

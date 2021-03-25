@@ -2,7 +2,7 @@
 
 use std::fmt;
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Node {
     /// A fix is any operation (usually denoted by punctuation)
     /// that takes in arguments on the left and/or right.
@@ -24,7 +24,7 @@ pub enum Node {
     Operator(String, (i32, i32)),
 
     /// Also used by stream::insert_implied
-    Literal(String),
+    Literal(String, char),
 
     /// An empty entry, to be removed
     Empty,
@@ -37,7 +37,13 @@ impl fmt::Display for Node {
             Node::Number(s) => write!(f, "{}", s),
             Node::Variable(s) => write!(f, "{}", s),
             Node::Operator(s, _) => write!(f, "{}", s),
-            Node::Literal(s) => write!(f, "{}", s),
+            Node::Literal(s, chr) => {
+                if *chr == '{' {
+                    write!(f, "{{{}}}", s)
+                } else {
+                    write!(f, "({})", s)
+                }
+            }
             _ => unimplemented!(),
         }
     }

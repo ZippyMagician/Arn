@@ -1,5 +1,4 @@
 // An easier way to create the precedence and operator global constants
-#[macro_export]
 macro_rules! operators {
     ($($chr:literal : $prec:literal; $left_rank:literal - $right_rank:literal),*) => {
         #[derive(Clone)]
@@ -62,4 +61,33 @@ macro_rules! hashmap {
 
         hash
     }};
+}
+
+// REWORKS/PATCHES NEEDED: `;`, `\`, `@`
+// REMOVED: `n_`
+// UNUSED: `!!`
+// NEEDS CHANGING: numbers
+
+// Little macro I created to make the global Operators class much nicer.
+// First number is precedence, second is left # of args, third is right # of args
+operators! {
+    '.': 11; 1-1,
+    '^': 10; 1-1,
+    '*': 9; 1-1, '/': 9; 1-1,
+    '%': 8; 1-1,
+    ":|": 7; 1-1, ":!": 7; 1-1,
+    '+': 6; 1-1, '-': 6; 1-1, ',': 6; 1-1, ".$": 6; 1-1,
+    "=>": 5; 1-1, "->": 5; 1-1, '~': 5; 0-1, '#': 5; 1-0, ":_": 5; 1-0, ".@": 5; 1-0, ".|": 5; 1-0, ".<": 5; 1-0, "..": 5; 1-0, ".=": 5; 1-0,
+    ":n": 4; 1-0, ":s": 4; 1-0, ":}": 4; 1-0, ":{": 4; 1-0, ".}": 4; 1-0, ".{": 4; 1-0, ":@": 4; 1-0, "^*": 4; 1-0, "&.": 4; 0-3, ":i": 4; 1-1,
+    '!': 4; 0-1, '$': 4; 0-2, ":v": 4; 0-1, ":^": 4; 0-1, "++": 4; 0-1, "--": 4; 0-1, ":*": 4; 0-1, ":/": 4; 0-1,
+    ":+": 4; 0-1, ":-": 4; 0-1, ":>": 4; 0-1, ":<": 4; 0-1, "|:": 4; 0-1, "$:": 4; 0-2, "?.": 4; 0-1, "#.": 4; 0-1, "*.": 4; 0-1,
+    "$.": 4; 0-1, 'z': 4; 1-1,
+    '|': 3; 1-1,
+    '=': 2; 1-1, "!=": 2; 1-1, '<': 2; 1-1, "<=": 2; 1-1, '>': 2; 1-1, ">=": 2; 1-1,
+    "&&": 1; 1-1, "||": 1; 1-1,
+    ':': 0; 1-1, ":=": 0; 1-1
+}
+
+lazy_static! {
+    pub static ref OPTIONS: Operators = Operators::new();
 }

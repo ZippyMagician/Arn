@@ -2,10 +2,8 @@ extern crate clap;
 #[macro_use]
 extern crate lazy_static;
 
-mod tokens;
 #[macro_use]
-mod macros;
-mod consts;
+mod utils;
 mod lexer;
 mod stream;
 
