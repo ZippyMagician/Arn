@@ -21,7 +21,7 @@ fn main() {
 
     if let Some(path) = matches.value_of("file") {
         let program = read_file(path);
-        println!("{}", lexer::to_postfix(&stream::insert_implied(&program)));
+        println!("{}", lexer::to_postfix(&stream::reformat_program(&program)));
     }
 }
 

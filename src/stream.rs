@@ -1,7 +1,11 @@
 use crate::consts::OPTIONS;
 use crate::tokens::Node;
 
-pub fn insert_implied(prg: &str) -> String {
+// TODO: This function will be modified once I need to implement `\`, `@`, and `;`.
+// This lexes as a first pass, so I just change how groups / blocks are parsed and then grab 
+// tokens for `\` to use (and others). I then need to represent it in string form in such a way 
+// that the postfix parser can recognize it (probably make fold-ops represented as a string arg)
+pub fn reformat_program(prg: &str) -> String {
     // Lets assume only 5 `_` will be inserted, this should help performance
     let mut construct: Vec<Node> = Vec::new();
     let mut output = String::with_capacity(prg.len() + 5);
