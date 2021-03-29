@@ -5,7 +5,6 @@ extern crate lazy_static;
 #[macro_use]
 mod utils;
 mod lexer;
-mod stream;
 
 use clap::{App, Arg};
 use std::fs;
@@ -19,12 +18,10 @@ fn main() {
 
     if let Some(path) = matches.value_of("file") {
         let program = read_file(path);
-        println!("{}", lexer::to_postfix(&stream::reformat_program(&program)));
+        println!("{:?}", lexer::expr_to_postfix(&lexer::lex(&program)));
     }
 }
 
 fn read_file(path: &str) -> String {
-    let err_msg = format!("\nFile '{}' does not exist.\n", path);
-
-    fs::read_to_string(path).expect(&*err_msg)
+    fs::read_to_string(path).expect(&format!("\nFile '{}' does not exist.\n", path))
 }

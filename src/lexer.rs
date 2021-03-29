@@ -1,153 +1,191 @@
-// Based on the Shunting Yard algorithm
-
 use crate::utils::consts::OPTIONS;
+use crate::utils::tokens::Token;
 
-// Instead of parsing directly to an AST, I'll try this, which converts to postfix first. A second pass from another function that converts postfix to an ast is trivial.
-pub fn to_postfix(code: &str) -> String {
-    // This enables the parsing to work properly
-    let bytes = code.chars().chain("\n".chars());
-
-    let mut operators: Vec<String> = Vec::with_capacity(20);
-    let mut output = String::with_capacity(code.len());
-
-    let mut buf = String::new();
+// Takes the inputted program and converts it into a stream of tokens
+// Inserts the implied variable `_` wherever it is used
+// TODO: This will handle literals used by `\` and `@` in the future - make modular instead of hardcode?
+pub fn lex(prg: &str) -> Vec<Token> {
+    // Lets assume only 5 `_` will be inserted, this should help performance
+    let mut construct: Vec<Token> = Vec::new();
+    let mut buf: String = String::new();
 
     let mut in_string = false;
+    let mut in_group: bool = false;
+    let mut group_count: usize = 0;
+    let mut group_char: Option<char> = None;
+
+    let bytes = prg.chars().chain("\n".chars());
 
     for tok in bytes {
         if buf == "\"" {
             in_string = true;
         }
 
-        if !in_string && (buf == "\n" || buf == " " || buf == "\r") {
+        if !in_string && !in_group && (buf == "\n" || buf == " " || buf == "\r") {
             buf.clear();
         }
 
-        // If the buffer is current a string
+        if in_group && group_char.unwrap() == tok {
+            group_count += 1;
+        }
+
+        if !in_group && (buf == "{" || buf == "(") {
+            in_group = true;
+        }
+
         if in_string {
             if tok == '"' {
                 buf.push(tok);
-                output.push_str(&buf);
-                output.push(' ');
+                construct.push(Token::String(buf.clone()));
                 buf.clear();
                 in_string = false
             } else {
                 buf.push(tok);
             }
-        // If the buffer is currently an integer
+        } else if in_group {
+            if tok == ')' && buf.starts_with('(') {
+                if group_count > 0 {
+                    group_count -= 1;
+                    buf.push(tok);
+                } else {
+                    buf.push(tok);
+                    construct.push(Token::Block(lex(&buf[1..buf.len() - 1]), '('));
+                    buf.clear();
+                    in_group = false;
+                }
+            } else if tok == '}' && buf.starts_with('{') {
+                if group_count > 0 {
+                    group_count -= 1;
+                    buf.push(tok);
+                } else {
+                    buf.push(tok);
+                    construct.push(Token::Block(lex(&buf[1..buf.len() - 1]), '{'));
+                    buf.clear();
+                    in_group = false;
+                }
+            } else {
+                buf.push(tok);
+            }
         } else if buf.parse::<i128>().is_ok() {
-            // And the top item of the stream is not an integer
             if tok.to_string().parse::<i128>().is_err() {
-                // Push the integer to the output, reset the buffer, and push the new token
-                output.push_str(&buf);
-                output.push(' ');
+                construct.push(Token::Number(buf.parse().unwrap()));
                 buf.clear();
                 buf.push(tok);
             } else {
                 buf.push(tok);
             }
-        // If the buffer is currently an operator
         } else if OPTIONS.operators.iter().any(|i| *i == buf) {
             buf.push(tok);
             let mut consumed = true;
-            // See if the buffer + tok is an operator
             if !OPTIONS.operators.iter().any(|i| *i == buf) {
                 buf.pop();
                 consumed = false;
             }
 
-            while !operators.is_empty() {
-                let op = operators.pop().unwrap();
-                if OPTIONS.precedence.get(&buf).is_none()
-                    || OPTIONS.precedence.get(&op).is_none()
-                    || OPTIONS.precedence.get(&buf).unwrap() >= OPTIONS.precedence.get(&op).unwrap()
-                    || OPTIONS.rank.get(&buf).unwrap().0 == 0
-                {
-                    operators.push(op);
-                    break;
-                }
-
-                if OPTIONS.operators.contains(&op) {
-                    output.push_str(&op);
-                    output.push(' ');
-                } else {
-                    operators.push(op);
+            let rank = OPTIONS.rank.get(&buf).unwrap();
+            if rank.0 > 0 {
+                if construct.is_empty() {
+                    for _ in 0..rank.0 {
+                        construct.push(Token::Variable('_'.to_string()));
+                    }
+                } else if let Some(Token::Operator(_, stack_rank)) = construct.last() {
+                    for _ in 0..stack_rank.1 {
+                        construct.push(Token::Variable('_'.to_string()));
+                    }
                 }
             }
 
-            operators.push(buf.clone());
+            construct.push(Token::Operator(buf.clone(), *rank));
+
             buf.clear();
             if !consumed {
                 buf.push(tok);
             }
-        // If the buffer is a right paren
-        } else if buf == ")" {
-            let end = operators
-                .iter()
-                .position(|c| c == "(")
-                .expect("Unmatched parenthesis. Expected matching '(' in the program");
-            let mut i = operators.len() - 1;
-
-            while i > end && !operators.is_empty() {
-                let op = operators.pop().unwrap();
-                output.push_str(&op);
-                output.push(' ');
-                i -= 1;
-            }
-
-            operators.remove(end);
-            buf.clear();
-            buf.push(tok);
-        // Begin block
-        } else if buf == "}" {
-            let end = operators
-                .iter()
-                .position(|c| c == "{")
-                .expect("Unmatched brackets. Expected '{' in the program to match '}'");
-            let mut i = operators.len() - 1;
-
-            while i > end && !operators.is_empty() {
-                let op = operators.pop().unwrap();
-                output.push_str(&op);
-                output.push(' ');
-                i -= 1;
-            }
-            output.push_str("} ");
-
-            operators.remove(end);
-            buf.clear();
-            buf.push(tok);
-        // The buffer is a left paren or bracket
-        } else if buf == "(" || buf == "{" {
-            operators.push(buf.clone());
-            if buf == "{" {
-                output.push_str("{ ");
-            }
-
-            buf.clear();
-            buf.push(tok);
-        // The buffer is a variable name
-        } else if buf.chars().all(|c| c.is_alphanumeric() || c == '_') && !buf.is_empty() {
-            // If it's the end of a variable identifier
-            if !tok.is_alphanumeric() && tok != '_' {
-                // Push to output
-                output.push_str(&buf);
-                output.push(' ');
+        } else if buf.chars().all(char::is_alphanumeric) && !buf.is_empty() {
+            if !tok.is_alphanumeric() {
+                construct.push(Token::Variable(buf.clone()));
                 buf.clear();
             }
 
             buf.push(tok);
+        } else if tok == '{' || tok == '(' {
+            if tok == '{' {
+                group_char = Some('{');
+            } else {
+                group_char = Some('(');
+            }
+
+            buf.push_str(&format!("{} ", tok));
+            in_group = true;
+        // Not marked as group, need to do so
         } else {
             buf.push(tok);
         }
     }
 
-    while !operators.is_empty() {
-        if OPTIONS.operators.contains(&operators[operators.len() - 1]) {
-            let op = operators.pop().unwrap();
-            output.push_str(&op);
+    // If last op is missing args, push `_`
+    let pos = construct
+        .iter()
+        .rposition(|n| matches!(n, Token::Operator(_, _)))
+        .unwrap_or(0);
+    if let Some(Token::Operator(_, rank)) = construct.get(pos) {
+        let given: usize = construct.len() - pos - 1;
+        for _ in 0..rank.1 - given as i32 {
+            construct.push(Token::Variable('_'.to_string()));
+        }
+    }
 
-            output.push(' ');
+    construct
+}
+
+// Instead of parsing directly to an AST, I'll try this, which converts to postfix first. A second pass from another function that converts postfix to an ast is trivial.
+// Uses the Shutning Yard Algorithm, parses a single expression
+pub fn expr_to_postfix(tokens: &[Token]) -> Vec<Token> {
+    // This enables the parsing to work properly
+    let mut operators: Vec<Token> = Vec::with_capacity(20);
+    let mut output = Vec::with_capacity(tokens.len());
+
+    for tok in tokens {
+        if let Token::Operator(left, rank) = tok {
+            while !operators.is_empty() {
+                let op = operators.pop().unwrap();
+                if let Token::Operator(ref right, _) = op {
+                    if OPTIONS.precedence.get(left).is_none()
+                        || OPTIONS.precedence.get(right).is_none()
+                        || OPTIONS.precedence.get(left).unwrap()
+                            >= OPTIONS.precedence.get(right).unwrap()
+                        || rank.0 == 0
+                    {
+                        operators.push(op);
+                        break;
+                    }
+                }
+
+                // The above will hold true
+                output.push(op)
+            }
+
+            operators.push(tok.clone());
+        } else if let Token::Block(body, ch) = tok {
+            output.push(Token::Punctuation(*ch));
+
+            for op in expr_to_postfix(&body) {
+                output.push(op);
+            }
+
+            output.push(Token::Punctuation(match ch {
+                '{' => '}',
+                '(' => ')',
+                _ => panic!("Unrecognized punc"),
+            }));
+        } else {
+            output.push(tok.clone());
+        }
+    }
+
+    while !operators.is_empty() {
+        if let Token::Operator(_, _) = operators.last().unwrap() {
+            output.push(operators.pop().unwrap());
         } else {
             // Discard if invalid
             operators.pop();

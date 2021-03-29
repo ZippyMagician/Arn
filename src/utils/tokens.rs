@@ -1,7 +1,26 @@
-#![allow(dead_code)]
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum Token {
+    /// String Node
+    String(String),
 
-use std::fmt;
+    /// Numeric Node
+    Number(i128),
 
+    /// Variable Node
+    Variable(String),
+
+    /// A block that contains some code
+    Block(Vec<Token>, char),
+
+    /// Operator
+    Operator(String, (i32, i32)),
+
+    /// Punctuation
+    Punctuation(char),
+}
+
+// Will be used by ast once implemented
+#[allow(dead_code)]
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Node {
     /// A fix is any operation (usually denoted by punctuation)
@@ -17,34 +36,6 @@ pub enum Node {
     /// Variable Node
     Variable(String),
 
-    /// A block that contains some code
-    Block(Vec<Node>),
-
-    /// Used by stream::insert_implied
-    Operator(String, (i32, i32)),
-
-    /// Also used by stream::insert_implied
-    Literal(String, char),
-
     /// An empty entry, to be removed
     Empty,
-}
-
-impl fmt::Display for Node {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        match self {
-            Node::String(s) => write!(f, "{}", s),
-            Node::Number(s) => write!(f, "{}", s),
-            Node::Variable(s) => write!(f, "{}", s),
-            Node::Operator(s, _) => write!(f, "{}", s),
-            Node::Literal(s, chr) => {
-                if *chr == '{' {
-                    write!(f, "{{{}}}", s)
-                } else {
-                    write!(f, "({})", s)
-                }
-            }
-            _ => unimplemented!(),
-        }
-    }
 }
