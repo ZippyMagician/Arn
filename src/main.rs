@@ -23,5 +23,5 @@ fn main() {
 }
 
 fn read_file(path: &str) -> String {
-    fs::read_to_string(path).expect(&format!("\nFile '{}' does not exist.\n", path))
+    fs::read_to_string(path).unwrap_or_else(|_| panic!("\nFile '{}' does not exist.\n", path))
 }

@@ -1,10 +1,12 @@
-#[derive(Debug, Clone, PartialEq, Eq)]
+use super::num::Num;
+
+#[derive(Debug, Clone, PartialEq)]
 pub enum Token {
     /// String Node
     String(String),
 
     /// Numeric Node
-    Number(i128),
+    Number(Num),
 
     /// Variable Node
     Variable(String),
