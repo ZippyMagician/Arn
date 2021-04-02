@@ -8,7 +8,7 @@ pub struct EmptyError();
 
 impl<T> From<T> for EmptyError
 where
-    T: std::error::Error
+    T: std::error::Error,
 {
     #[inline(always)]
     fn from(_: T) -> Self {
@@ -25,26 +25,30 @@ pub fn is_arn_num(string: &str) -> bool {
 
     for (i, chr) in string.chars().enumerate() {
         match chr {
-            '_' => if i > 0 && string.chars().nth(i - 1).unwrap() != 'e' {
+            '_' => {
+                if i > 0 && string.chars().nth(i - 1).unwrap() != 'e' {
                     return false;
                 }
+            }
 
-            'e' => if seen_e {
+            'e' => {
+                if seen_e {
                     return false;
                 } else {
                     seen_e = true;
                 }
+            }
 
-            '0'..='9' => {},
+            '0'..='9' => {}
 
-            _ => return false
+            _ => return false,
         }
     }
 
     if seen_e && string.matches('_').count() > 2 {
         return false;
-    } 
-    
+    }
+
     string.matches('_').count() <= 1
 }
 
@@ -55,7 +59,7 @@ pub fn parse_arn_num(string: &str) -> Result<Num, EmptyError> {
         match chr {
             '_' => {
                 if i > 0 && string.chars().nth(i - 1).unwrap() != 'e' {
-                        return Err(EmptyError());
+                    return Err(EmptyError());
                 }
                 num.push('-');
             }
@@ -69,7 +73,7 @@ pub fn parse_arn_num(string: &str) -> Result<Num, EmptyError> {
 
             '0'..='9' => num.push(chr),
 
-            _ => return Err(EmptyError())
+            _ => return Err(EmptyError()),
         }
     }
 

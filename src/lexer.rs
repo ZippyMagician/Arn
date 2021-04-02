@@ -1,6 +1,6 @@
 use crate::utils::consts::OPTIONS;
-use crate::utils::tokens::Token;
 use crate::utils::num;
+use crate::utils::tokens::Token;
 
 // Takes the inputted program and converts it into a stream of tokens
 // Inserts the implied variable `_` wherever it is used
@@ -71,7 +71,9 @@ pub fn lex(prg: &str) -> Vec<Token> {
             buf.push(tok);
             if !num::is_arn_num(&buf) {
                 buf.pop();
-                construct.push(Token::Number(num::parse_arn_num(&buf).expect("Error parsing number")));
+                construct.push(Token::Number(
+                    num::parse_arn_num(&buf).expect("Error parsing number"),
+                ));
                 buf.clear();
                 buf.push(tok);
             }
