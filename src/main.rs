@@ -4,8 +4,8 @@ extern crate lazy_static;
 
 #[macro_use]
 mod utils;
-mod lexer;
 mod ast;
+mod lexer;
 
 use clap::{App, Arg};
 use std::fs;
@@ -19,7 +19,10 @@ fn main() {
 
     if let Some(path) = matches.value_of("file") {
         let program = read_file(path);
-        println!("{:#?}", ast::to_ast(&lexer::expr_to_postfix(&lexer::lex(&program))));
+        println!(
+            "{:#?}",
+            ast::to_ast(&lexer::expr_to_postfix(&lexer::lex(&program)))
+        );
     }
 }
 

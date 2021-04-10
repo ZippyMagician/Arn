@@ -15,7 +15,7 @@ pub fn to_ast(postfix: &[Token]) -> Vec<Node> {
                 output.push(match *chr {
                     '{' => Node::Block(to_ast(body)),
                     '(' => Node::Group(to_ast(body)),
-                    _ => unimplemented!()
+                    _ => unimplemented!(),
                 });
             }
 
