@@ -1,6 +1,6 @@
 use rug::Float;
 
-pub const FLOAT_PRECISION: u32 = 100;
+pub const FLOAT_PRECISION: u32 = 50;
 pub type Num = Float;
 
 #[derive(Debug, Clone, Copy)]
