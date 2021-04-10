@@ -18,7 +18,8 @@ Current status of the Rust interpreter for Arn
 
 Current (found) issues
 - [x] Doesn't place `_` inside blocks
-- ~~[ ] Can only parse single expressions~~
+- [ ] Can only parse single expressions
+  * How to fix: make `,` an expression separator, `:` becomes pair operator. 99% of the time will not increase byte count and fixes the current issue in an easy way.
 
 ## Building
 See [here](https://docs.rs/gmp-mpfr-sys/1.4.4/gmp_mpfr_sys/index.html#building-on-gnulinux) for requirements. Once installed, run
@@ -28,6 +29,5 @@ cargo install --path path/to/repository
 
 ## Changes
 There were some changes made to the language to reduce bloat, as it is a golfing language at heart
-  - **Single Expressions**: Currently only capable of properly parsing 1 expression. Probably too lazy to change this, and I also never saw an instance where 2+ expressions were needed
   - **No More `:` or `:=`**: You can't assign variables or functions any more
   - **No More 2+ Arg Functions**: All functions are called with `<ARG> . <FN>`
