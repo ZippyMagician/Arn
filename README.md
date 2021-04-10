@@ -3,8 +3,10 @@ Current status of the Rust interpreter for Arn
 - [x] Place implied `_` into program -> first pass
 - [x] Convert input stream into postfix notation for very easy parsing -> second pass
 - [x] Change how numbers are parsed to match with Javascript version
-- [ ] Convert the postfix program stream into an AST -> third pass
-- [ ] Parser that takes in AST -> type variability will be tricky
+- [x] Convert the postfix program stream into an AST -> third pass
+- [ ] Struct that represents Arn's dynamic typing
+- [ ] Environment for storing variables and functions
+- [ ] Parser that takes in AST
 - [ ] Fix found issues
 - [ ] Fix bugs
  
