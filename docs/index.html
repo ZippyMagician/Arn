@@ -120,7 +120,7 @@
             function qstr(qs) {
                 var s = location.href.replace("?","?&").split("&");
                 for(i = 1; i < s.length; i++) {
-                    if(s[i].split("=")[0] == qs) return s[i].split("=")[1];
+                    if(s[i].split("=")[0] == qs) return s[i].split("=").slice(1).join("=");
                 }
                 return "";
             }
