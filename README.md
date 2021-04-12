@@ -20,8 +20,8 @@ Current status of the Rust interpreter for Arn
 
 Current (found) issues
 - [x] Doesn't place `_` inside blocks
-- [ ] Can only parse single expressions
-  * How to fix: make `,` an expression separator, `:` becomes pair operator. 99% of the time will not increase byte count and fixes the current issue in an easy way.
+- [x] Can only parse single expressions
+  * Expressions separated by `,`
 
 ## Building
 See [here](https://docs.rs/gmp-mpfr-sys/1.4.4/gmp_mpfr_sys/index.html#building-on-gnulinux) for requirements. Once installed, run

@@ -45,7 +45,7 @@ lazy_static! {
 fn main() {
     if let Some(path) = MATCHES.value_of("file") {
         let program = read_file(path);
-        parser::parse(&ast::to_ast(&lexer::expr_to_postfix(&lexer::lex(&program))));
+        parser::parse(&ast::to_ast(&lexer::to_postfix(&lexer::lex(&program))));
     }
 }
 

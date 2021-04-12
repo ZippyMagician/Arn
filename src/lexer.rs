@@ -122,6 +122,10 @@ pub fn lex(prg: &str) -> Vec<Token> {
             buf.push_str(&format!("{} ", tok));
             in_group = true;
         // Not marked as group, need to do so
+        } else if buf == "," {
+            construct.push(Token::Comma);
+            buf.clear();
+            buf.push(tok);
         } else {
             buf.push(tok);
         }
@@ -142,9 +146,21 @@ pub fn lex(prg: &str) -> Vec<Token> {
     construct
 }
 
+pub fn to_postfix(tokens: &[Token]) -> Vec<Token> {
+    let indexes = tokens.split(|t| t.clone() == Token::Comma);
+    let mut output = Vec::new();
+
+    for chunk in indexes {
+        output.push(expr_to_postfix(chunk));
+    }
+
+    output.join(&[][..])
+}
+
 // Instead of parsing directly to an AST, I'll try this, which converts to postfix first. A second pass from another function that converts postfix to an ast is trivial.
-// Uses the Shutning Yard Algorithm, parses a single expression
-pub fn expr_to_postfix(tokens: &[Token]) -> Vec<Token> {
+// Uses the Shunting Yard Algorithm, parses a single expression
+#[inline]
+fn expr_to_postfix(tokens: &[Token]) -> Vec<Token> {
     // This enables the parsing to work properly
     let mut operators: Vec<Token> = Vec::with_capacity(20);
     let mut output = Vec::with_capacity(tokens.len());

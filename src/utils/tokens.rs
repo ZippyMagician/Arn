@@ -16,6 +16,9 @@ pub enum Token {
 
     /// Operator
     Operator(String, (i32, i32)),
+
+    /// Comma
+    Comma,
 }
 
 // Will be used by ast once implemented

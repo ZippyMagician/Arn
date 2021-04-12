@@ -72,7 +72,7 @@ pub fn parse_op(env: &mut Environment, op: &str, left: &[Node], right: &[Node]) 
             left.mutate_num(|n| n - parse_node(env, &right[0]).literal_num())
         }
 
-        "," => todo!("Sequences needed"),
+        ":" => todo!("Sequences needed"),
 
         ".$" => todo!("Sequences needed"),
 
@@ -303,7 +303,10 @@ pub fn parse(ast: &[Node]) {
         ),
     );
 
-    env.define_fn("inc", |d| Dynamic::from(d.literal_num() + 1));
+    env.define_fn("out", |d| {
+        println!("{}", d);
+        d
+    });
 
     for node in &ast[..ast.len() - 1] {
         parse_node(&mut env, node);
