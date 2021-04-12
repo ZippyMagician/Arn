@@ -5,7 +5,7 @@ Current status of the Rust interpreter for Arn
 - [x] Change how numbers are parsed to match with Javascript version
 - [x] Convert the postfix program stream into an AST -> third pass
 - [x] Struct that represents Arn's dynamic typing
-- [ ] Environment for storing variables and functions
+- [x] Environment for storing variables and functions
 - [ ] Parser that takes in AST
 - [ ] Fix found issues
 - [ ] Fix bugs
