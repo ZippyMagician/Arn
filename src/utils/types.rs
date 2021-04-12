@@ -105,6 +105,30 @@ impl Dynamic {
         }
     }
 
+    #[inline]
+    pub fn literal_num(self) -> Num {
+        match self.val {
+            Val::Number(n) => n,
+            _ => self.into_num().literal_num(),
+        }
+    }
+
+    #[inline]
+    pub fn literal_string(self) -> String {
+        match self.val {
+            Val::String(s) => s,
+            _ => self.into_string().literal_string(),
+        }
+    }
+
+    #[inline]
+    pub fn literal_bool(self) -> bool {
+        match self.val {
+            Val::Boolean(b) => b,
+            _ => self.into_bool().literal_bool(),
+        }
+    }
+
     // Mutate inner `Val::String`
     pub fn mutate_string<T: FnOnce(String) -> String>(&mut self, f: T) {
         match &self.val {
@@ -150,25 +174,33 @@ impl Display for Dynamic {
 
 impl<'a> From<&'a str> for Dynamic {
     fn from(v: &'a str) -> Self {
-        Self { val: Val::String(v.to_owned()) }
+        Self {
+            val: Val::String(v.to_owned()),
+        }
     }
 }
 
 impl From<String> for Dynamic {
     fn from(v: String) -> Self {
-        Self { val: Val::String(v) }
+        Self {
+            val: Val::String(v),
+        }
     }
 }
 
 impl From<Num> for Dynamic {
     fn from(v: Num) -> Self {
-        Self { val: Val::Number(v) }
+        Self {
+            val: Val::Number(v),
+        }
     }
 }
 
 impl From<bool> for Dynamic {
     fn from(v: bool) -> Self {
-        Self { val: Val::Boolean(v) }
+        Self {
+            val: Val::Boolean(v),
+        }
     }
 }
 

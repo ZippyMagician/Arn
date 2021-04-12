@@ -34,8 +34,6 @@ pub fn to_ast(postfix: &[Token]) -> Vec<Node> {
 
                 output.push(Node::Op(ident.clone(), left, right));
             }
-
-            _ => panic!("Unrecognized node"),
         }
     }
 

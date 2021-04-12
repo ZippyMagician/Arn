@@ -170,17 +170,8 @@ pub fn expr_to_postfix(tokens: &[Token]) -> Vec<Token> {
 
             operators.push(tok.clone());
         } else if let Token::Block(body, ch) = tok {
-            output.push(Token::Punctuation(*ch));
-
-            for op in expr_to_postfix(&body) {
-                output.push(op);
-            }
-
-            output.push(Token::Punctuation(match ch {
-                '{' => '}',
-                '(' => ')',
-                _ => panic!("Unrecognized punc"),
-            }));
+            let new = expr_to_postfix(&body);
+            output.push(Token::Block(new, *ch));
         } else {
             output.push(tok.clone());
         }

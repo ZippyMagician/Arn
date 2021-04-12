@@ -16,9 +16,6 @@ pub enum Token {
 
     /// Operator
     Operator(String, (i32, i32)),
-
-    /// Punctuation
-    Punctuation(char),
 }
 
 // Will be used by ast once implemented
