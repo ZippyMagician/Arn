@@ -6,7 +6,7 @@ Current status of the Rust interpreter for Arn
 - [x] Convert the postfix program stream into an AST -> third pass
 - [x] Struct that represents Arn's dynamic typing
 - [x] Environment for storing variables and functions
-- [ ] Parser that takes in AST
+- [x] Parser that takes in AST
 - [ ] Fix found issues
 - [ ] Fix bugs
  
