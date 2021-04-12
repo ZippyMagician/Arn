@@ -18,16 +18,16 @@ pub enum Val {
 }
 
 // Struct that represents types in Arn
-#[repr(transparent)]
 #[derive(Clone, Debug, PartialEq)]
 #[allow(clippy::clippy::wrong_self_convention)]
 pub struct Dynamic {
     val: Val,
+    cur: u8
 }
 
 impl Dynamic {
     pub fn empty() -> Self {
-        Self { val: Val::Empty }
+        Self { val: Val::Empty, cur: 0 }
     }
 
     #[inline]
@@ -52,14 +52,17 @@ impl Dynamic {
 
             Val::Number(n) => Self {
                 val: Val::String(n.to_string()),
+                cur: 1
             },
 
             Val::Boolean(b) => Self {
                 val: Val::String(b.to_string()),
+                cur: 1
             },
 
             Val::Empty => Self {
                 val: Val::String(Default::default()),
+                cur: 1
             },
         }
     }
@@ -72,16 +75,19 @@ impl Dynamic {
                     FLOAT_PRECISION,
                     Num::parse(s).unwrap_or_else(|_| Num::parse("0").unwrap()),
                 )),
+                cur: 2
             },
 
             Val::Number(_) => self.clone(),
 
             Val::Boolean(b) => Self {
                 val: Val::Number(Num::with_val(FLOAT_PRECISION, if *b { 1 } else { 0 })),
+                cur: 2
             },
 
             Val::Empty => Self {
                 val: Val::Number(Num::with_val(FLOAT_PRECISION, 0)),
+                cur: 2
             },
         }
     }
@@ -91,16 +97,19 @@ impl Dynamic {
         match &self.val {
             Val::String(s) => Self {
                 val: Val::Boolean(!s.is_empty()),
+                cur: 3
             },
 
             Val::Number(n) => Self {
                 val: Val::Boolean(*n != 0),
+                cur: 3
             },
 
             Val::Boolean(_) => self.clone(),
 
             Val::Empty => Self {
                 val: Val::Boolean(false),
+                cur: 3
             },
         }
     }
@@ -127,6 +136,21 @@ impl Dynamic {
             Val::Boolean(b) => b,
             _ => self.into_bool().literal_bool(),
         }
+    }
+
+    #[inline]
+    pub fn is_string(&self) -> bool {
+        self.cur == 1
+    }
+
+    #[inline]
+    pub fn is_num(&self) -> bool {
+        self.cur == 2
+    }
+
+    #[inline]
+    pub fn is_bool(&self) -> bool {
+        self.cur == 3
     }
 
     // Mutate inner `Val::String`
@@ -180,6 +204,7 @@ impl<'a> From<&'a str> for Dynamic {
     fn from(v: &'a str) -> Self {
         Self {
             val: Val::String(v.to_owned()),
+            cur: 1
         }
     }
 }
@@ -188,6 +213,7 @@ impl From<String> for Dynamic {
     fn from(v: String) -> Self {
         Self {
             val: Val::String(v),
+            cur: 1
         }
     }
 }
@@ -196,6 +222,7 @@ impl From<Num> for Dynamic {
     fn from(v: Num) -> Self {
         Self {
             val: Val::Number(v),
+            cur: 2
         }
     }
 }
@@ -204,6 +231,7 @@ impl From<bool> for Dynamic {
     fn from(v: bool) -> Self {
         Self {
             val: Val::Boolean(v),
+            cur: 3
         }
     }
 }

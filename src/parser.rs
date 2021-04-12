@@ -17,17 +17,23 @@ pub fn parse_op(env: &mut Environment, op: &str, left: &[Node], right: &[Node]) 
         }
 
         "^" => {
-            let mut left = parse_node(env, &left[0]).literal_num();
-            let o = left.clone();
-            let right = parse_node(env, &right[0]).literal_num();
-            for _ in 1..right
-                .to_u32_saturating_round(rug::float::Round::Down)
-                .unwrap()
-            {
-                left *= o.clone();
-            }
+            let mut left = parse_node(env, &left[0]);
+            if !left.is_string() {
+                let mut left = left.literal_num();
+                let o = left.clone();
+                let right = parse_node(env, &right[0]).literal_num();
+                for _ in 1..right
+                    .to_u32_saturating_round(rug::float::Round::Down)
+                    .unwrap()
+                {
+                    left *= o.clone();
+                }
 
-            Dynamic::from(left)
+                Dynamic::from(left)
+            } else {
+                left.mutate_string(|s| s.repeat(parse_node(env, &right[0]).literal_num().to_u32_saturating_round(rug::float::Round::Down).unwrap() as usize));
+                left
+            }
         }
 
         "*" => {

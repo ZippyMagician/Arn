@@ -15,11 +15,13 @@ pub fn lex(prg: &str) -> Vec<Token> {
     let mut group_count: usize = 0;
     let mut group_char: Option<char> = None;
 
-    let bytes = prg.chars().chain("\n".chars());
+    // Mark end of program with `→` (as that character is not supported in decompressed code)
+    let bytes = prg.chars().chain("→".chars());
 
     for tok in bytes {
         if buf == "\"" {
             in_string = true;
+            buf.clear();
         }
 
         if !in_string && !in_group && (buf == "\n" || buf == " " || buf == "\r") {
@@ -35,8 +37,7 @@ pub fn lex(prg: &str) -> Vec<Token> {
         }
 
         if in_string {
-            if tok == '"' {
-                buf.push(tok);
+            if tok == '"' || tok == '→' {
                 construct.push(Token::String(buf.clone()));
                 buf.clear();
                 in_string = false
@@ -44,7 +45,7 @@ pub fn lex(prg: &str) -> Vec<Token> {
                 buf.push(tok);
             }
         } else if in_group {
-            if tok == ')' && buf.starts_with('(') {
+            if (tok == ')' || tok == '→') && buf.starts_with('(') {
                 if group_count > 0 {
                     group_count -= 1;
                     buf.push(tok);
@@ -54,7 +55,7 @@ pub fn lex(prg: &str) -> Vec<Token> {
                     buf.clear();
                     in_group = false;
                 }
-            } else if tok == '}' && buf.starts_with('{') {
+            } else if (tok == '}' || tok == '→') && buf.starts_with('{') {
                 if group_count > 0 {
                     group_count -= 1;
                     buf.push(tok);
