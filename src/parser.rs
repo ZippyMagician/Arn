@@ -31,7 +31,14 @@ pub fn parse_op(env: &mut Environment, op: &str, left: &[Node], right: &[Node]) 
 
                 Dynamic::from(left)
             } else {
-                left.mutate_string(|s| s.repeat(parse_node(env, &right[0]).literal_num().to_u32_saturating_round(rug::float::Round::Down).unwrap() as usize));
+                left.mutate_string(|s| {
+                    s.repeat(
+                        parse_node(env, &right[0])
+                            .literal_num()
+                            .to_u32_saturating_round(rug::float::Round::Down)
+                            .unwrap() as usize,
+                    )
+                });
                 left
             }
         }
