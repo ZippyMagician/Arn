@@ -1,9 +1,6 @@
 use rug::Float;
 
-// Internal precision
-pub const FLOAT_PRECISION: u32 = 100;
-// Precision of printed numbers
-pub const PRINT_PRECISION: usize = 3;
+use crate::FLOAT_PRECISION;
 
 // Alias
 pub type Num = Float;
@@ -84,6 +81,6 @@ pub fn parse_arn_num(string: &str) -> Result<Num, EmptyError> {
 
     Ok({
         let num = Num::parse(&num)?;
-        Num::with_val(FLOAT_PRECISION, num)
+        Num::with_val(*FLOAT_PRECISION, num)
     })
 }

@@ -1,5 +1,6 @@
-use crate::utils::num::{Num, FLOAT_PRECISION};
+use crate::utils::num::Num;
 use crate::utils::{env::Environment, tokens::Node, types::*};
+use crate::FLOAT_PRECISION;
 
 lazy_static! {
     static ref DEFAULT: Node = Node::String(Default::default());
@@ -209,6 +210,58 @@ pub fn parse_op(env: &mut Environment, op: &str, left: &[Node], right: &[Node]) 
 
         "=" => Dynamic::from(parse_node(env, &left[0]) == parse_node(env, &right[0])),
 
+        "!=" => Dynamic::from(parse_node(env, &left[0]) != parse_node(env, &right[0])),
+
+        "<" => Dynamic::from(
+            parse_node(env, &left[0]).literal_num() < parse_node(env, &right[0]).literal_num(),
+        ),
+
+        "<=" => Dynamic::from(
+            parse_node(env, &left[0]).literal_num() <= parse_node(env, &right[0]).literal_num(),
+        ),
+
+        ">" => Dynamic::from(
+            parse_node(env, &left[0]).literal_num() > parse_node(env, &right[0]).literal_num(),
+        ),
+
+        ">=" => Dynamic::from(
+            parse_node(env, &left[0]).literal_num() >= parse_node(env, &right[0]).literal_num(),
+        ),
+
+        "&&" => {
+            let left = parse_node(env, &left[0]);
+            let right = parse_node(env, &right[0]);
+
+            if left.is_bool() {
+                if right.is_bool() {
+                    Dynamic::from(left.literal_bool() && right.literal_bool())
+                } else if left.clone().literal_bool() && right.clone().literal_bool() {
+                    right
+                } else {
+                    left
+                }
+            } else if right.is_bool() {
+                Dynamic::from(left.literal_bool() && right.literal_bool())
+            } else if left.clone().literal_bool() && right.clone().literal_bool() {
+                right
+            } else {
+                left
+            }
+        }
+
+        "||" => {
+            let left = parse_node(env, &left[0]);
+            let right = parse_node(env, &right[0]);
+
+            if left.clone().literal_bool() {
+                left
+            } else if right.clone().literal_bool() {
+                right
+            } else {
+                Dynamic::from(false)
+            }
+        }
+
         _ => unimplemented!(),
     }
 }
@@ -245,7 +298,7 @@ pub fn parse(ast: &[Node]) {
     env.define_var(
         "E",
         Num::with_val(
-            FLOAT_PRECISION,
+            *FLOAT_PRECISION,
             Num::parse("2.7182818284590452353602874713527").unwrap(),
         ),
     );

@@ -2,7 +2,8 @@
 
 use std::fmt::{self, Display, Formatter};
 
-use super::num::{Num, FLOAT_PRECISION, PRINT_PRECISION};
+use super::num::Num;
+use crate::{FLOAT_PRECISION, OUTPUT_PRECISION};
 
 // Inner value enum for dynamic type
 #[derive(Clone, Debug, PartialEq)]
@@ -75,7 +76,7 @@ impl Dynamic {
         match &self.val {
             Val::String(s) => Self {
                 val: Val::Number(Num::with_val(
-                    FLOAT_PRECISION,
+                    *FLOAT_PRECISION,
                     Num::parse(s).unwrap_or_else(|_| Num::parse("0").unwrap()),
                 )),
                 cur: 2,
@@ -84,12 +85,12 @@ impl Dynamic {
             Val::Number(_) => self.clone(),
 
             Val::Boolean(b) => Self {
-                val: Val::Number(Num::with_val(FLOAT_PRECISION, if *b { 1 } else { 0 })),
+                val: Val::Number(Num::with_val(*FLOAT_PRECISION, if *b { 1 } else { 0 })),
                 cur: 2,
             },
 
             Val::Empty => Self {
-                val: Val::Number(Num::with_val(FLOAT_PRECISION, 0)),
+                val: Val::Number(Num::with_val(*FLOAT_PRECISION, 0)),
                 cur: 2,
             },
         }
@@ -193,7 +194,7 @@ impl Display for Dynamic {
             Val::Number(n) => write!(
                 f,
                 "{}",
-                n.to_string_radix_round(10, Some(PRINT_PRECISION), rug::float::Round::Nearest)
+                n.to_string_radix_round(10, Some(*OUTPUT_PRECISION), rug::float::Round::Nearest)
             ),
 
             Val::Boolean(b) => write!(f, "{}", if *b { 1 } else { 0 }),
@@ -210,7 +211,7 @@ impl PartialEq for Dynamic {
             Val::String(s) => match &other.val {
                 Val::String(o) => s == o,
                 Val::Number(n) => match Num::parse(s) {
-                    Ok(s) => Num::with_val(FLOAT_PRECISION, s) == n.clone(),
+                    Ok(s) => Num::with_val(*FLOAT_PRECISION, s) == n.clone(),
                     Err(_) => false,
                 },
                 Val::Boolean(b) => {
@@ -225,7 +226,7 @@ impl PartialEq for Dynamic {
 
             Val::Number(n) => match &other.val {
                 Val::String(s) => match Num::parse(s) {
-                    Ok(s) => Num::with_val(FLOAT_PRECISION, s) == n.clone(),
+                    Ok(s) => Num::with_val(*FLOAT_PRECISION, s) == n.clone(),
                     Err(_) => false,
                 },
                 Val::Number(o) => n == o,
