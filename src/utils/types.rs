@@ -148,6 +148,30 @@ impl Display for Dynamic {
     }
 }
 
+impl<'a> From<&'a str> for Dynamic {
+    fn from(v: &'a str) -> Self {
+        Self { val: Val::String(v.to_owned()) }
+    }
+}
+
+impl From<String> for Dynamic {
+    fn from(v: String) -> Self {
+        Self { val: Val::String(v) }
+    }
+}
+
+impl From<Num> for Dynamic {
+    fn from(v: Num) -> Self {
+        Self { val: Val::Number(v) }
+    }
+}
+
+impl From<bool> for Dynamic {
+    fn from(v: bool) -> Self {
+        Self { val: Val::Boolean(v) }
+    }
+}
+
 #[cfg(test)]
 mod typing_tests {
     use super::*;
