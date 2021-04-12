@@ -32,7 +32,8 @@ impl Environment {
     }
 
     pub fn attempt_call(&mut self, name: &String, arg: Dynamic) -> Dynamic {
-        let f = self.funcs
+        let f = self
+            .funcs
             .get_mut(name)
             .unwrap_or_else(|| panic!("Unrecognized function {}", name));
 

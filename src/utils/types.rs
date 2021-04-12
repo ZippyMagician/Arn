@@ -2,7 +2,7 @@
 
 use std::fmt::{self, Display, Formatter};
 
-use super::num::{Num, FLOAT_PRECISION};
+use super::num::{Num, FLOAT_PRECISION, PRINT_PRECISION};
 
 // Inner value enum for dynamic type
 #[derive(Clone, Debug, PartialEq)]
@@ -163,7 +163,11 @@ impl Display for Dynamic {
         match &self.val {
             Val::String(s) => write!(f, "{}", s),
 
-            Val::Number(n) => write!(f, "{}", n),
+            Val::Number(n) => write!(
+                f,
+                "{}",
+                n.to_string_radix_round(10, Some(PRINT_PRECISION), rug::float::Round::Nearest)
+            ),
 
             Val::Boolean(b) => write!(f, "{}", if *b { 1 } else { 0 }),
 

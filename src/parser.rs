@@ -20,7 +20,10 @@ pub fn parse_op(env: &mut Environment, op: &str, left: &[Node], right: &[Node]) 
             let mut left = parse_node(env, &left[0]).literal_num();
             let o = left.clone();
             let right = parse_node(env, &right[0]).literal_num();
-            for _ in 0..right.to_u32_saturating_round(rug::float::Round::Down).unwrap() {
+            for _ in 1..right
+                .to_u32_saturating_round(rug::float::Round::Down)
+                .unwrap()
+            {
                 left *= o.clone();
             }
 
@@ -111,7 +114,10 @@ pub fn parse_op(env: &mut Environment, op: &str, left: &[Node], right: &[Node]) 
         "&." => {
             if let Node::Block(_) = right[0] {
                 let mut loop_arg = parse_node(env, &right[1]);
-                let count = parse_node(env, &right[2]).literal_num().to_u32_saturating_round(rug::float::Round::Down).unwrap();
+                let count = parse_node(env, &right[2])
+                    .literal_num()
+                    .to_u32_saturating_round(rug::float::Round::Down)
+                    .unwrap();
                 for _ in 0..count {
                     let mut child_env = env.clone();
                     child_env.define_var("_", loop_arg);
