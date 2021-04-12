@@ -7,7 +7,7 @@ Current status of the Rust interpreter for Arn
 - [x] Struct that represents Arn's dynamic typing
 - [x] Environment for storing variables and functions
 - [x] Parser that takes in AST
-- [ ] Fix found issues
+- [x] Fix found issues
 - [ ] Fix bugs
  
  MILESTONE: move to `Arn` repository in new branch
