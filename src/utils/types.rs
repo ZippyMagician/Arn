@@ -18,7 +18,7 @@ pub enum Val {
 }
 
 // Struct that represents types in Arn
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug)]
 #[allow(clippy::clippy::wrong_self_convention)]
 pub struct Dynamic {
     val: Val,
@@ -157,29 +157,29 @@ impl Dynamic {
     }
 
     // Mutate inner `Val::String`
-    pub fn mutate_string<T: FnOnce(String) -> String>(&mut self, f: T) {
+    pub fn mutate_string<T: FnOnce(String) -> String>(&self, f: T) -> Self {
         match &self.val {
-            Val::String(s) => self.val = Val::String(f(s.clone())),
+            Val::String(s) => Self::from(f(s.clone())),
 
-            _ => panic!("Attempt to mutate non-string value"),
+            _ => self.into_string().mutate_string(f),
         }
     }
 
     // Mutate inner `Val::Number`
-    pub fn mutate_num<T: FnOnce(Num) -> Num>(&mut self, f: T) {
+    pub fn mutate_num<T: FnOnce(Num) -> Num>(&self, f: T) -> Self {
         match &self.val {
-            Val::Number(n) => self.val = Val::Number(f(n.clone())),
+            Val::Number(n) => Self::from(f(n.clone())),
 
-            _ => panic!("Attempt to mutate non-number value"),
+            _ => self.into_num().mutate_num(f),
         }
     }
 
     // Mutate inner `Val::Boolean`
-    pub fn mutate_bool<T: FnOnce(bool) -> bool>(&mut self, f: T) {
+    pub fn mutate_bool<T: FnOnce(bool) -> bool>(&self, f: T) -> Self {
         match &self.val {
-            Val::Boolean(b) => self.val = Val::Boolean(f(*b)),
+            Val::Boolean(b) => Self::from(f(*b)),
 
-            _ => panic!("Attempt to mutate non-boolean value"),
+            _ => self.into_bool().mutate_bool(f),
         }
     }
 }
@@ -199,6 +199,59 @@ impl Display for Dynamic {
             Val::Boolean(b) => write!(f, "{}", if *b { 1 } else { 0 }),
 
             Val::Empty => write!(f, ""),
+        }
+    }
+}
+
+impl PartialEq for Dynamic {
+    #[inline]
+    fn eq(&self, other: &Self) -> bool {
+        match &self.val {
+            Val::String(s) => match &other.val {
+                Val::String(o) => s == o,
+                Val::Number(n) => match Num::parse(s) {
+                    Ok(s) => Num::with_val(FLOAT_PRECISION, s) == n.clone(),
+                    Err(_) => false,
+                },
+                Val::Boolean(b) => {
+                    if *b {
+                        s == "1"
+                    } else {
+                        s == "0"
+                    }
+                }
+                _ => false,
+            },
+
+            Val::Number(n) => match &other.val {
+                Val::String(s) => match Num::parse(s) {
+                    Ok(s) => Num::with_val(FLOAT_PRECISION, s) == n.clone(),
+                    Err(_) => false,
+                },
+                Val::Number(o) => n == o,
+                Val::Boolean(b) => {
+                    if *b {
+                        n.clone() == 1
+                    } else {
+                        n.is_zero()
+                    }
+                }
+                _ => false,
+            },
+
+            Val::Boolean(b) => match &other.val {
+                Val::Number(n) => {
+                    if *b {
+                        n.clone() == 1
+                    } else {
+                        n.is_zero()
+                    }
+                }
+                Val::Boolean(n) => b == n,
+                _ => false,
+            },
+
+            Val::Empty => other.val == Val::Empty,
         }
     }
 }

@@ -1,7 +1,11 @@
 use rug::Float;
 
+// Internal precision
 pub const FLOAT_PRECISION: u32 = 100;
-pub const PRINT_PRECISION: usize = 10;
+// Precision of printed numbers
+pub const PRINT_PRECISION: usize = 3;
+
+// Alias
 pub type Num = Float;
 
 #[derive(Debug, Clone, Copy)]

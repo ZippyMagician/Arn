@@ -17,7 +17,7 @@ pub fn parse_op(env: &mut Environment, op: &str, left: &[Node], right: &[Node]) 
         }
 
         "^" => {
-            let mut left = parse_node(env, &left[0]);
+            let left = parse_node(env, &left[0]);
             if !left.is_string() {
                 let mut left = left.literal_num();
                 let o = left.clone();
@@ -38,27 +38,23 @@ pub fn parse_op(env: &mut Environment, op: &str, left: &[Node], right: &[Node]) 
                             .to_u32_saturating_round(rug::float::Round::Down)
                             .unwrap() as usize,
                     )
-                });
-                left
+                })
             }
         }
 
         "*" => {
-            let mut left = parse_node(env, &left[0]).into_num();
-            left.mutate_num(|n| n * parse_node(env, &right[0]).literal_num());
-            left
+            let left = parse_node(env, &left[0]);
+            left.mutate_num(|n| n * parse_node(env, &right[0]).literal_num())
         }
 
         "/" => {
-            let mut left = parse_node(env, &left[0]).into_num();
-            left.mutate_num(|n| n / parse_node(env, &right[0]).literal_num());
-            left
+            let left = parse_node(env, &left[0]);
+            left.mutate_num(|n| n / parse_node(env, &right[0]).literal_num())
         }
 
         "%" => {
-            let mut left = parse_node(env, &left[0]).into_num();
-            left.mutate_num(|n| n % parse_node(env, &right[0]).literal_num());
-            left
+            let left = parse_node(env, &left[0]);
+            left.mutate_num(|n| n % parse_node(env, &right[0]).literal_num())
         }
 
         ":|" => todo!("Sequences needed"),
@@ -66,15 +62,13 @@ pub fn parse_op(env: &mut Environment, op: &str, left: &[Node], right: &[Node]) 
         ":!" => todo!("Sequences needed"),
 
         "+" => {
-            let mut left = parse_node(env, &left[0]).into_num();
-            left.mutate_num(|n| n + parse_node(env, &right[0]).literal_num());
-            left
+            let left = parse_node(env, &left[0]);
+            left.mutate_num(|n| n + parse_node(env, &right[0]).literal_num())
         }
 
         "-" => {
-            let mut left = parse_node(env, &left[0]).into_num();
-            left.mutate_num(|n| n - parse_node(env, &right[0]).literal_num());
-            left
+            let left = parse_node(env, &left[0]);
+            left.mutate_num(|n| n - parse_node(env, &right[0]).literal_num())
         }
 
         "," => todo!("Sequences needed"),
@@ -94,9 +88,8 @@ pub fn parse_op(env: &mut Environment, op: &str, left: &[Node], right: &[Node]) 
         ".@" => todo!("Sequences needed"),
 
         ".|" => {
-            let mut left = parse_node(env, &left[0]).into_num();
-            left.mutate_num(|n| n.abs());
-            left
+            let left = parse_node(env, &left[0]);
+            left.mutate_num(|n| n.abs())
         }
 
         ".<" => todo!("Sequences needed"),
@@ -142,6 +135,79 @@ pub fn parse_op(env: &mut Environment, op: &str, left: &[Node], right: &[Node]) 
                 panic!("First argument to `&.` must be Node::Block")
             }
         }
+
+        ":i" => todo!("Sequences needed"),
+
+        "!" => Dynamic::from(!parse_node(env, &right[0]).literal_bool()),
+
+        "$" => todo!("Sequences needed"),
+
+        ":v" => {
+            let right = parse_node(env, &right[0]);
+            right.mutate_num(|n| n.floor())
+        }
+
+        ":^" => {
+            let right = parse_node(env, &right[0]);
+            right.mutate_num(|n| n.floor())
+        }
+
+        "++" => {
+            if let Node::Variable(name) = &right[0] {
+                let val = env.vars.get_mut(name).expect("Variable not recognized");
+                *val = val.mutate_num(|n| n + 1);
+                val.clone()
+            } else {
+                let right = parse_node(env, &right[0]);
+                right.mutate_num(|n| n + 1)
+            }
+        }
+
+        "--" => {
+            if let Node::Variable(name) = &right[0] {
+                let val = env.vars.get_mut(name).expect("Variable not recognized");
+                *val = val.mutate_num(|n| n - 1);
+                val.clone()
+            } else {
+                let right = parse_node(env, &right[0]);
+                right.mutate_num(|n| n - 1)
+            }
+        }
+
+        ":*" => parse_node(env, &right[0]).mutate_num(|n| n.square()),
+
+        ":/" => parse_node(env, &right[0]).mutate_num(|n| n.sqrt()),
+
+        ":+" => parse_node(env, &right[0]).mutate_num(|n| n * 2),
+
+        ":-" => parse_node(env, &right[0]).mutate_num(|n| n / 2),
+
+        ":>" => todo!("Sequences needed"),
+
+        ":<" => todo!("Sequences needed"),
+
+        "|:" => todo!("Sequences needed"),
+
+        "$:" => todo!("Sequences needed"),
+
+        "?." => todo!("Sequences needed"),
+
+        "#." => todo!("Sequences needed"),
+
+        "*." => todo!("Sequences needed"),
+
+        "$." => todo!("Sequences needed"),
+
+        "z" => todo!("Sequences needed"),
+
+        "|" => {
+            // TODO: special case if concatenating to array
+            let mut left = parse_node(env, &left[0]).literal_string();
+            left.push_str(&parse_node(env, &right[0]).literal_string());
+            Dynamic::from(left)
+        }
+
+        "=" => Dynamic::from(parse_node(env, &left[0]) == parse_node(env, &right[0])),
 
         _ => unimplemented!(),
     }
