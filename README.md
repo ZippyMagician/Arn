@@ -13,6 +13,7 @@ Current status of the Rust interpreter for Arn
  MILESTONE: move to `Arn` repository in new branch
 - [ ] Implement Sequences / Arrays
 - [ ] Figure out how to implement `;`, `\`, and `@`
+- [ ] Implement command line arguments
 - [ ] Fix found issues
 - [ ] Fix bugs
 
