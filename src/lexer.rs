@@ -157,7 +157,7 @@ pub fn expr_to_postfix(tokens: &[Token]) -> Vec<Token> {
                     if OPTIONS.precedence.get(left).is_none()
                         || OPTIONS.precedence.get(right).is_none()
                         || OPTIONS.precedence.get(left).unwrap()
-                            >= OPTIONS.precedence.get(right).unwrap()
+                            > OPTIONS.precedence.get(right).unwrap()
                         || rank.0 == 0
                     {
                         operators.push(op);
