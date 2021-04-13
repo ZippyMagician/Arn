@@ -1,3 +1,5 @@
+use std::io::{self, Read};
+
 use crate::utils::num::Num;
 use crate::utils::{env::Environment, tokens::Node, types::*};
 use crate::FLOAT_PRECISION;
@@ -310,6 +312,10 @@ pub fn parse_node(env: &mut Environment, node: &Node) -> Dynamic {
 pub fn parse(ast: &[Node]) {
     let mut env = Environment::init();
 
+    let mut stdin = String::new();
+    io::stdin().read_to_string(&mut stdin).expect("Could not read from stdin");
+
+    env.define_var("_", stdin);
     env.define_var(
         "E",
         Num::with_val(
