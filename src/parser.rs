@@ -141,7 +141,9 @@ pub fn parse_op(env: Env, op: &str, left: &[Node], right: &[Node]) -> Dynamic {
                 let child_env = Rc::new(env.as_ref().clone());
 
                 for _ in 0..count {
-                    child_env.borrow_mut().define_var(name.as_ref().unwrap_or(&USCORE), loop_arg);
+                    child_env
+                        .borrow_mut()
+                        .define_var(name.as_ref().unwrap_or(&USCORE), loop_arg);
                     loop_arg = parse_block(child_env.clone(), &right[0]);
                 }
 
@@ -173,7 +175,12 @@ pub fn parse_op(env: Env, op: &str, left: &[Node], right: &[Node]) -> Dynamic {
         // Inc <right>
         "++" => {
             if let Node::Variable(name) = &right[0] {
-                let mut val = env.borrow().vars.get(name).expect("Variable not recognized").clone();
+                let mut val = env
+                    .borrow()
+                    .vars
+                    .get(name)
+                    .expect("Variable not recognized")
+                    .clone();
                 val = val.mutate_num(|n| n + 1);
                 env.borrow_mut().define_var(name, val.clone());
                 val
@@ -186,7 +193,12 @@ pub fn parse_op(env: Env, op: &str, left: &[Node], right: &[Node]) -> Dynamic {
         // Dec <right>
         "--" => {
             if let Node::Variable(name) = &right[0] {
-                let mut val = env.borrow().vars.get(name).expect("Variable not recognized").clone();
+                let mut val = env
+                    .borrow()
+                    .vars
+                    .get(name)
+                    .expect("Variable not recognized")
+                    .clone();
                 val = val.mutate_num(|n| n - 1);
                 env.borrow_mut().define_var(name, val.clone());
                 val
@@ -236,29 +248,37 @@ pub fn parse_op(env: Env, op: &str, left: &[Node], right: &[Node]) -> Dynamic {
 
         // Very weakly typed, see `src/utils/types.rs`, PartialEq for Dynamic
         // <left> == <right>
-        "=" => Dynamic::from(parse_node(env.clone(), &left[0]) == parse_node(env.clone(), &right[0])),
+        "=" => {
+            Dynamic::from(parse_node(env.clone(), &left[0]) == parse_node(env.clone(), &right[0]))
+        }
 
         // <left> != <right>
-        "!=" => Dynamic::from(parse_node(env.clone(), &left[0]) != parse_node(env.clone(), &right[0])),
+        "!=" => {
+            Dynamic::from(parse_node(env.clone(), &left[0]) != parse_node(env.clone(), &right[0]))
+        }
 
         // <left> < <right>
         "<" => Dynamic::from(
-            parse_node(env.clone(), &left[0]).literal_num() < parse_node(env.clone(), &right[0]).literal_num(),
+            parse_node(env.clone(), &left[0]).literal_num()
+                < parse_node(env.clone(), &right[0]).literal_num(),
         ),
 
         // <left> <= <right>
         "<=" => Dynamic::from(
-            parse_node(env.clone(), &left[0]).literal_num() <= parse_node(env.clone(), &right[0]).literal_num(),
+            parse_node(env.clone(), &left[0]).literal_num()
+                <= parse_node(env.clone(), &right[0]).literal_num(),
         ),
 
         // <left> > <right>
         ">" => Dynamic::from(
-            parse_node(env.clone(), &left[0]).literal_num() > parse_node(env.clone(), &right[0]).literal_num(),
+            parse_node(env.clone(), &left[0]).literal_num()
+                > parse_node(env.clone(), &right[0]).literal_num(),
         ),
 
         // <left> >= <right>
         ">=" => Dynamic::from(
-            parse_node(env.clone(), &left[0]).literal_num() >= parse_node(env.clone(), &right[0]).literal_num(),
+            parse_node(env.clone(), &left[0]).literal_num()
+                >= parse_node(env.clone(), &right[0]).literal_num(),
         ),
 
         // <left> && <right> yields <right> if both truthy
@@ -303,17 +323,18 @@ pub fn parse_op(env: Env, op: &str, left: &[Node], right: &[Node]) -> Dynamic {
             let child_env = Rc::new(env.as_ref().clone());
             if let Node::Block(_, name) = &left[0] {
                 let val = child_env.borrow().vars.get("_").unwrap().clone();
-                child_env.borrow_mut().define_var(
-                    name.as_ref().unwrap_or(&USCORE),
-                    val,
-                )
+                child_env
+                    .borrow_mut()
+                    .define_var(name.as_ref().unwrap_or(&USCORE), val)
             }
             let mut block = parse_block(child_env.clone(), &left[0]);
 
             while {
                 let c_env = Rc::new(env.as_ref().clone());
                 if let Node::Block(_, name) = &right[0] {
-                    c_env.borrow_mut().define_var(name.as_ref().unwrap_or(&USCORE), block.clone())
+                    c_env
+                        .borrow_mut()
+                        .define_var(name.as_ref().unwrap_or(&USCORE), block.clone())
                 } else {
                     c_env.borrow_mut().define_var("_", block.clone());
                 }
@@ -321,7 +342,9 @@ pub fn parse_op(env: Env, op: &str, left: &[Node], right: &[Node]) -> Dynamic {
                 parse_block(c_env.clone(), &right[0]).literal_bool()
             } {
                 if let Node::Block(_, name) = &left[0] {
-                    child_env.borrow_mut().define_var(name.as_ref().unwrap_or(&USCORE), block.clone())
+                    child_env
+                        .borrow_mut()
+                        .define_var(name.as_ref().unwrap_or(&USCORE), block.clone())
                 } else {
                     child_env.borrow_mut().define_var("_", block.clone());
                 }
@@ -379,10 +402,9 @@ pub fn parse_node(env: Env, node: &Node) -> Dynamic {
         Node::Block(body, name) => {
             let child_env = Rc::new(env.as_ref().clone());
             let val = child_env.borrow().vars.get("_").unwrap().clone();
-            child_env.borrow_mut().define_var(
-                name.as_ref().unwrap_or(&USCORE),
-                val,
-            );
+            child_env
+                .borrow_mut()
+                .define_var(name.as_ref().unwrap_or(&USCORE), val);
             for node in &body[..body.len() - 1] {
                 parse_node(child_env.clone(), node);
             }

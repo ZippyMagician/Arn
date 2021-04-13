@@ -74,8 +74,13 @@ impl Dynamic {
             },
 
             Val::Array(n) => Self {
-                val: Val::String(n.clone().next().unwrap_or_else(|| Dynamic::from("")).literal_string()),
-                cur: 1
+                val: Val::String(
+                    n.clone()
+                        .next()
+                        .unwrap_or_else(|| Dynamic::from(""))
+                        .literal_string(),
+                ),
+                cur: 1,
             },
 
             Val::Empty => Self {
@@ -106,7 +111,13 @@ impl Dynamic {
             Val::Array(n) => Self {
                 val: Val::Number(Num::with_val(
                     *FLOAT_PRECISION,
-                    Num::parse(n.clone().next().unwrap_or_else(|| Dynamic::from("")).literal_string()).unwrap_or_else(|_| Num::parse("0").unwrap()),
+                    Num::parse(
+                        n.clone()
+                            .next()
+                            .unwrap_or_else(|| Dynamic::from(""))
+                            .literal_string(),
+                    )
+                    .unwrap_or_else(|_| Num::parse("0").unwrap()),
                 )),
                 cur: 2,
             },
@@ -134,8 +145,13 @@ impl Dynamic {
             Val::Boolean(_) => self.clone(),
 
             Val::Array(n) => Self {
-                val: Val::Boolean(n.clone().next().unwrap_or_else(|| Dynamic::from(false)).literal_bool()),
-                cur: 3
+                val: Val::Boolean(
+                    n.clone()
+                        .next()
+                        .unwrap_or_else(|| Dynamic::from(false))
+                        .literal_bool(),
+                ),
+                cur: 3,
             },
 
             Val::Empty => Self {
@@ -151,14 +167,22 @@ impl Dynamic {
                 if s.contains(' ') {
                     let iter = s.split(" ").map(|x: &str| Dynamic::from(x));
                     Self {
-                        val: Val::Array(Box::new(Sequence::from_iter(iter.clone(), Node::String(String::new()), Some(iter.count())))),
-                        cur: 4
+                        val: Val::Array(Box::new(Sequence::from_iter(
+                            iter.clone(),
+                            Node::String(String::new()),
+                            Some(iter.count()),
+                        ))),
+                        cur: 4,
                     }
                 } else {
                     let iter = s.split("").map(|x: &str| Dynamic::from(x));
                     Self {
-                        val: Val::Array(Box::new(Sequence::from_iter(iter, Node::String(String::new()), Some(s.len())))),
-                        cur: 4
+                        val: Val::Array(Box::new(Sequence::from_iter(
+                            iter,
+                            Node::String(String::new()),
+                            Some(s.len()),
+                        ))),
+                        cur: 4,
                     }
                 }
             }
@@ -170,9 +194,13 @@ impl Dynamic {
             Val::Array(_) => self.clone(),
 
             Val::Empty => Self {
-                val: Val::Array(Box::new(Sequence::from_vec::<String>(vec![], Node::String(String::new()), Some(0)))),
+                val: Val::Array(Box::new(Sequence::from_vec::<String>(
+                    vec![],
+                    Node::String(String::new()),
+                    Some(0),
+                ))),
                 cur: 4,
-            }
+            },
         }
     }
 
@@ -260,7 +288,7 @@ impl Dynamic {
         match &mut self.val {
             Val::Array(seq) => Self {
                 val: Val::Array(Box::new(f(seq.as_mut()).clone())),
-                cur: 4
+                cur: 4,
             },
 
             _ => self.into_array().mutate_array(f),
@@ -277,10 +305,22 @@ impl Display for Dynamic {
             Val::Number(n) => {
                 let s = format!(
                     "{}",
-                    n.to_string_radix_round(10, Some(*OUTPUT_PRECISION), rug::float::Round::Nearest)
+                    n.to_string_radix_round(
+                        10,
+                        Some(*OUTPUT_PRECISION),
+                        rug::float::Round::Nearest
+                    )
                 );
 
-                write!(f, "{}", if s.contains('.') && !s.contains('e') { s.trim_end_matches(|c| c == '0' || c == '.') } else { &s })
+                write!(
+                    f,
+                    "{}",
+                    if s.contains('.') && !s.contains('e') {
+                        s.trim_end_matches(|c| c == '0' || c == '.')
+                    } else {
+                        &s
+                    }
+                )
             }
 
             Val::Boolean(b) => write!(f, "{}", if *b { 1 } else { 0 }),
