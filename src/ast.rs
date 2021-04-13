@@ -11,9 +11,9 @@ pub fn to_ast(postfix: &[Token]) -> Vec<Node> {
 
             Token::Variable(val) => output.push(Node::Variable(val.clone())),
 
-            Token::Block(body, chr) => {
+            Token::Block(body, chr, nm) => {
                 output.push(match *chr {
-                    '{' => Node::Block(to_ast(body)),
+                    '{' => Node::Block(to_ast(body), nm.clone()),
                     '(' => Node::Group(to_ast(body)),
                     _ => unimplemented!(),
                 });

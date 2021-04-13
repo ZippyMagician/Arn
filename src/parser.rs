@@ -6,6 +6,7 @@ use crate::FLOAT_PRECISION;
 
 lazy_static! {
     static ref DEFAULT: Node = Node::String(Default::default());
+    static ref USCORE: String = String::from("_");
 }
 
 pub fn parse_op(env: &mut Environment, op: &str, left: &[Node], right: &[Node]) -> Dynamic {
@@ -119,7 +120,7 @@ pub fn parse_op(env: &mut Environment, op: &str, left: &[Node], right: &[Node]) 
         }
 
         "&." => {
-            if let Node::Block(_) = right[0] {
+            if let Node::Block(_, name) = &right[0] {
                 let mut loop_arg = parse_node(env, &right[1]);
                 let count = parse_node(env, &right[2])
                     .literal_num()
@@ -127,7 +128,7 @@ pub fn parse_op(env: &mut Environment, op: &str, left: &[Node], right: &[Node]) 
                     .unwrap();
                 for _ in 0..count {
                     let mut child_env = env.clone();
-                    child_env.define_var("_", loop_arg);
+                    child_env.define_var(name.as_ref().unwrap_or(&USCORE), loop_arg);
                     loop_arg = parse_node(&mut child_env, &right[0]);
                 }
 
@@ -264,15 +265,30 @@ pub fn parse_op(env: &mut Environment, op: &str, left: &[Node], right: &[Node]) 
 
         ":" => {
             // TODO: When blocks have different variable names, this will use a child env
-            let mut block = parse_node(env, &left[0]);
+            let mut child_env = env.clone();
+            if let Node::Block(_, name) = &left[0] {
+                child_env.define_var(
+                    name.as_ref().unwrap_or(&USCORE),
+                    child_env.vars.get("_").unwrap().clone(),
+                )
+            }
+            let mut block = parse_node(&mut child_env, &left[0]);
 
             while {
                 let mut child_env = env.clone();
-                child_env.define_var("_", block.clone());
+                if let Node::Block(_, name) = &right[0] {
+                    child_env.define_var(name.as_ref().unwrap_or(&USCORE), block.clone())
+                } else {
+                    child_env.define_var("_", block.clone());
+                }
                 parse_node(&mut child_env, &right[0]).literal_bool()
             } {
                 let mut child_env = env.clone();
-                child_env.define_var("_", block.clone());
+                if let Node::Block(_, name) = &left[0] {
+                    child_env.define_var(name.as_ref().unwrap_or(&USCORE), block.clone())
+                } else {
+                    child_env.define_var("_", block.clone());
+                }
                 block = parse_node(&mut child_env, &left[0]);
             }
 
@@ -299,12 +315,25 @@ pub fn parse_node(env: &mut Environment, node: &Node) -> Dynamic {
             }
         }
 
-        Node::Group(body) | Node::Block(body) => {
+        Node::Group(body) => {
             for node in &body[..body.len() - 1] {
                 parse_node(env, node);
             }
 
             parse_node(env, body.last().unwrap_or(&DEFAULT))
+        }
+
+        Node::Block(body, name) => {
+            let mut child_env = env.clone();
+            child_env.define_var(
+                name.as_ref().unwrap_or(&USCORE),
+                child_env.vars.get("_").unwrap().clone(),
+            );
+            for node in &body[..body.len() - 1] {
+                parse_node(&mut child_env, node);
+            }
+
+            parse_node(&mut child_env, body.last().unwrap_or(&DEFAULT))
         }
     }
 }
@@ -313,7 +342,9 @@ pub fn parse(ast: &[Node]) {
     let mut env = Environment::init();
 
     let mut stdin = String::new();
-    io::stdin().read_to_string(&mut stdin).expect("Could not read from stdin");
+    io::stdin()
+        .read_to_string(&mut stdin)
+        .expect("Could not read from stdin");
 
     env.define_var("_", stdin);
     env.define_var(

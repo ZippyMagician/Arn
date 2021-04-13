@@ -34,6 +34,7 @@ pub fn lex(prg: &str) -> Vec<Token> {
 
         if !in_group && (buf == "{" || buf == "(") {
             in_group = true;
+            group_char = Some(buf.chars().next().unwrap());
         }
 
         if in_string {
@@ -45,23 +46,32 @@ pub fn lex(prg: &str) -> Vec<Token> {
                 buf.push(tok);
             }
         } else if in_group {
-            if (tok == ')' || tok == '→') && buf.starts_with('(') {
+            if (tok == ')' || tok == '→') && Some('(') == group_char {
                 if group_count > 0 {
                     group_count -= 1;
                     buf.push(tok);
                 } else {
                     buf.push(tok);
-                    construct.push(Token::Block(lex(&buf[1..buf.len() - 1]), '('));
+                    construct.push(Token::Block(lex(&buf[1..buf.len() - 1]), '(', None));
                     buf.clear();
                     in_group = false;
                 }
-            } else if (tok == '}' || tok == '→') && buf.starts_with('{') {
+            } else if (tok == '}' || tok == '→') && Some('{') == group_char {
                 if group_count > 0 {
                     group_count -= 1;
                     buf.push(tok);
                 } else {
                     buf.push(tok);
-                    construct.push(Token::Block(lex(&buf[1..buf.len() - 1]), '{'));
+                    if let Some(Token::Variable(name)) = construct.clone().last() {
+                        construct.pop();
+                        construct.push(Token::Block(
+                            lex(&buf[1..buf.len() - 1]),
+                            '{',
+                            Some(name.clone()),
+                        ));
+                    } else {
+                        construct.push(Token::Block(lex(&buf[1..buf.len() - 1]), '{', None));
+                    }
                     buf.clear();
                     in_group = false;
                 }
@@ -112,16 +122,6 @@ pub fn lex(prg: &str) -> Vec<Token> {
             }
 
             buf.push(tok);
-        } else if tok == '{' || tok == '(' {
-            if tok == '{' {
-                group_char = Some('{');
-            } else {
-                group_char = Some('(');
-            }
-
-            buf.push_str(&format!("{} ", tok));
-            in_group = true;
-        // Not marked as group, need to do so
         } else if buf == "," {
             construct.push(Token::Comma);
             buf.clear();
@@ -186,9 +186,9 @@ fn expr_to_postfix(tokens: &[Token]) -> Vec<Token> {
             }
 
             operators.push(tok.clone());
-        } else if let Token::Block(body, ch) = tok {
+        } else if let Token::Block(body, ch, nm) = tok {
             let new = expr_to_postfix(&body);
-            output.push(Token::Block(new, *ch));
+            output.push(Token::Block(new, *ch, nm.clone()));
         } else {
             output.push(tok.clone());
         }

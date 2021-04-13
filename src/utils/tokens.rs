@@ -12,7 +12,7 @@ pub enum Token {
     Variable(String),
 
     /// A block that contains some code
-    Block(Vec<Token>, char),
+    Block(Vec<Token>, char, Option<String>),
 
     /// Operator
     Operator(String, (i32, i32)),
@@ -42,5 +42,5 @@ pub enum Node {
     Group(Vec<Node>),
 
     /// A Block `{ ... }`
-    Block(Vec<Node>),
+    Block(Vec<Node>, Option<String>),
 }
