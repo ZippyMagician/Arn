@@ -82,9 +82,13 @@ pub fn lex(prg: &str) -> Vec<Token> {
             buf.push(tok);
             if !num::is_arn_num(&buf) {
                 buf.pop();
-                construct.push(Token::Number(
-                    num::parse_arn_num(&buf).expect("Error parsing number"),
-                ));
+                if buf == "_" {
+                    construct.push(Token::Variable("_".to_string()));
+                } else {
+                    construct.push(Token::Number(
+                        num::parse_arn_num(&buf).expect("Error parsing number"),
+                    ));
+                }
                 buf.clear();
                 buf.push(tok);
             }

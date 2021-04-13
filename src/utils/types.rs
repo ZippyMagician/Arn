@@ -1,20 +1,27 @@
 #![allow(dead_code)]
 
+use std::cell::RefCell;
 use std::fmt::{self, Display, Formatter};
+use std::rc::Rc;
 
 use super::env::Environment;
 use super::num::Num;
 use super::tokens::Node;
 use crate::{FLOAT_PRECISION, OUTPUT_PRECISION};
 
+// Shorthand for this monstrosity
+pub type Env = Rc<RefCell<Environment>>;
+
 // Inner value enum for dynamic type
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug)]
 pub enum Val {
     String(String),
 
     Number(Num),
 
     Boolean(bool),
+
+    Array(Box<Sequence>),
 
     Empty,
     // TODO: Sequence type
@@ -66,6 +73,11 @@ impl Dynamic {
                 cur: 1,
             },
 
+            Val::Array(n) => Self {
+                val: Val::String(n.clone().next().unwrap_or_else(|| Dynamic::from("")).literal_string()),
+                cur: 1
+            },
+
             Val::Empty => Self {
                 val: Val::String(Default::default()),
                 cur: 1,
@@ -91,6 +103,14 @@ impl Dynamic {
                 cur: 2,
             },
 
+            Val::Array(n) => Self {
+                val: Val::Number(Num::with_val(
+                    *FLOAT_PRECISION,
+                    Num::parse(n.clone().next().unwrap_or_else(|| Dynamic::from("")).literal_string()).unwrap_or_else(|_| Num::parse("0").unwrap()),
+                )),
+                cur: 2,
+            },
+
             Val::Empty => Self {
                 val: Val::Number(Num::with_val(*FLOAT_PRECISION, 0)),
                 cur: 2,
@@ -113,10 +133,46 @@ impl Dynamic {
 
             Val::Boolean(_) => self.clone(),
 
+            Val::Array(n) => Self {
+                val: Val::Boolean(n.clone().next().unwrap_or_else(|| Dynamic::from(false)).literal_bool()),
+                cur: 3
+            },
+
             Val::Empty => Self {
                 val: Val::Boolean(false),
                 cur: 3,
             },
+        }
+    }
+
+    pub fn into_array(&self) -> Self {
+        match &self.val {
+            Val::String(s) => {
+                if s.contains(' ') {
+                    let iter = s.split(" ").map(|x: &str| Dynamic::from(x));
+                    Self {
+                        val: Val::Array(Box::new(Sequence::from_iter(iter.clone(), Node::String(String::new()), Some(iter.count())))),
+                        cur: 4
+                    }
+                } else {
+                    let iter = s.split("").map(|x: &str| Dynamic::from(x));
+                    Self {
+                        val: Val::Array(Box::new(Sequence::from_iter(iter, Node::String(String::new()), Some(s.len())))),
+                        cur: 4
+                    }
+                }
+            }
+
+            Val::Number(_) => Dynamic::from(format!("{}", self)).into_array(),
+
+            Val::Boolean(_) => Dynamic::from(format!("{}", self)).into_array(),
+
+            Val::Array(_) => self.clone(),
+
+            Val::Empty => Self {
+                val: Val::Array(Box::new(Sequence::from_vec::<String>(vec![], Node::String(String::new()), Some(0)))),
+                cur: 4,
+            }
         }
     }
 
@@ -145,6 +201,14 @@ impl Dynamic {
     }
 
     #[inline]
+    pub fn literal_array<'a>(self) -> Sequence {
+        match &self.val {
+            Val::Array(seq) => seq.as_ref().clone(),
+            _ => self.into_array().literal_array(),
+        }
+    }
+
+    #[inline]
     pub fn is_string(&self) -> bool {
         self.cur == 1
     }
@@ -157,6 +221,11 @@ impl Dynamic {
     #[inline]
     pub fn is_bool(&self) -> bool {
         self.cur == 3
+    }
+
+    #[inline]
+    pub fn is_array(&self) -> bool {
+        self.cur == 4
     }
 
     // Mutate inner `Val::String`
@@ -185,6 +254,18 @@ impl Dynamic {
             _ => self.into_bool().mutate_bool(f),
         }
     }
+
+    // Mutate inner `Val::Array`
+    pub fn mutate_array<T: FnOnce(&mut Sequence) -> &mut Sequence>(&mut self, f: T) -> Self {
+        match &mut self.val {
+            Val::Array(seq) => Self {
+                val: Val::Array(Box::new(f(seq.as_mut()).clone())),
+                cur: 4
+            },
+
+            _ => self.into_array().mutate_array(f),
+        }
+    }
 }
 
 // Equivalent to sprintf function in the js version
@@ -193,13 +274,19 @@ impl Display for Dynamic {
         match &self.val {
             Val::String(s) => write!(f, "{}", s),
 
-            Val::Number(n) => write!(
-                f,
-                "{}",
-                n.to_string_radix_round(10, Some(*OUTPUT_PRECISION), rug::float::Round::Nearest)
-            ),
+            Val::Number(n) => {
+                let s = format!(
+                    "{}",
+                    n.to_string_radix_round(10, Some(*OUTPUT_PRECISION), rug::float::Round::Nearest)
+                );
+
+                write!(f, "{}", if s.contains('.') && !s.contains('e') { s.trim_end_matches(|c| c == '0' || c == '.') } else { &s })
+            }
 
             Val::Boolean(b) => write!(f, "{}", if *b { 1 } else { 0 }),
+
+            // TODO: Formatting for a Sequence
+            Val::Array(_) => unimplemented!(),
 
             Val::Empty => write!(f, ""),
         }
@@ -254,7 +341,9 @@ impl PartialEq for Dynamic {
                 _ => false,
             },
 
-            Val::Empty => other.val == Val::Empty,
+            Val::Array(_) => todo!(),
+
+            Val::Empty => matches!(other.val, Val::Empty),
         }
     }
 }
@@ -308,16 +397,17 @@ impl Into<Node> for Dynamic {
     }
 }
 
-pub struct Sequence<'a> {
+#[derive(Clone, Debug)]
+pub struct Sequence {
     cstr: Vec<Dynamic>,
     length: Option<usize>,
     block: Node,
     _i: Option<isize>,
-    env: Option<&'a mut Environment>,
+    env: Option<Env>,
     index: usize,
 }
 
-impl<'a> Sequence<'a> {
+impl Sequence {
     pub fn from_iter<T, U>(iter: T, block: Node, length: Option<usize>) -> Self
     where
         T: Iterator<Item = U>,
@@ -350,7 +440,13 @@ impl<'a> Sequence<'a> {
         }
     }
 
-    pub fn set_env(&mut self, env: &'a mut Environment) {
+    #[inline]
+    pub fn is_finite(&self) -> bool {
+        self.length.is_some()
+    }
+
+    #[inline]
+    pub fn set_env(&mut self, env: Env) {
         self.env = Some(env);
     }
 
@@ -412,8 +508,7 @@ impl<'a> Sequence<'a> {
             self.index += 1;
             let block = self.traverse_replace(self.block.clone());
             self._i = None;
-            let mut e = (*self.env.as_ref().unwrap()).clone();
-            let res = crate::parser::parse_node(&mut e, &block);
+            let res = crate::parser::parse_node(self.env.as_ref().unwrap().clone(), &block);
             self.cstr.push(res.clone());
 
             Some(res)
@@ -421,7 +516,7 @@ impl<'a> Sequence<'a> {
     }
 }
 
-impl<'a> Iterator for Sequence<'a> {
+impl Iterator for Sequence {
     type Item = Dynamic;
 
     fn next(&mut self) -> Option<Self::Item> {

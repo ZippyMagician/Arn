@@ -1,4 +1,5 @@
 use std::collections::HashMap;
+use std::fmt;
 use std::rc::Rc;
 
 use super::types::Dynamic;
@@ -38,5 +39,13 @@ impl Environment {
             .unwrap_or_else(|| panic!("Unrecognized function {}", name));
 
         f(arg)
+    }
+}
+
+impl fmt::Debug for Environment {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.debug_struct("Environment")
+            .field("vars", &self.vars)
+            .finish()
     }
 }

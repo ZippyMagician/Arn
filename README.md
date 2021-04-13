@@ -8,15 +8,14 @@ Current status of the Rust interpreter for Arn
 - [x] Environment for storing variables and functions
 - [x] Parser that takes in AST
 - [x] Fix found issues
-- [ ] Fix bugs
  
  MILESTONE: move to `Arn` repository in new branch
-- [ ] Implement Sequences / Arrays
+- [x] Implement Sequences / Arrays
+- [ ] Implement Sequence-related fixes
 - [ ] Figure out how to implement `;`, `\`, and `@`
 - [ ] Implement command line arguments
 - [ ] Implement compressed strings and Carn
 - [ ] Fix found issues
-- [ ] Fix bugs
 
 Current (found) issues
 - [x] Doesn't place `_` inside blocks
