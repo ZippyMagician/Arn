@@ -72,8 +72,6 @@ pub fn parse_op(env: &mut Environment, op: &str, left: &[Node], right: &[Node]) 
             left.mutate_num(|n| n - parse_node(env, &right[0]).literal_num())
         }
 
-        ":" => todo!("Sequences needed"),
-
         ".$" => todo!("Sequences needed"),
 
         "=>" => todo!("Sequences needed"),
@@ -260,6 +258,23 @@ pub fn parse_op(env: &mut Environment, op: &str, left: &[Node], right: &[Node]) 
             } else {
                 Dynamic::from(false)
             }
+        }
+
+        ":" => {
+            // TODO: When blocks have different variable names, this will use a child env
+            let mut block = parse_node(env, &left[0]);
+
+            while {
+                let mut child_env = env.clone();
+                child_env.define_var("_", block.clone());
+                parse_node(&mut child_env, &right[0]).literal_bool()
+            } {
+                let mut child_env = env.clone();
+                child_env.define_var("_", block.clone());
+                block = parse_node(&mut child_env, &left[0]);
+            }
+
+            block
         }
 
         _ => unimplemented!(),
