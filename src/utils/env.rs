@@ -31,7 +31,7 @@ impl Environment {
         self.vars.insert(name.to_owned(), Dynamic::from(val));
     }
 
-    pub fn attempt_call(&mut self, name: &String, arg: Dynamic) -> Dynamic {
+    pub fn attempt_call(&mut self, name: &str, arg: Dynamic) -> Dynamic {
         let f = self
             .funcs
             .get_mut(name)

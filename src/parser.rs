@@ -11,6 +11,7 @@ lazy_static! {
 
 pub fn parse_op(env: &mut Environment, op: &str, left: &[Node], right: &[Node]) -> Dynamic {
     match op {
+        // <right>(<left>)
         "." => {
             if let Node::Variable(v) = &right[0] {
                 let arg = parse_node(env, &left[0]);
@@ -20,6 +21,7 @@ pub fn parse_op(env: &mut Environment, op: &str, left: &[Node], right: &[Node]) 
             }
         }
 
+        // <left> pow <right>
         "^" => {
             let left = parse_node(env, &left[0]);
             if !left.is_string() {
@@ -46,16 +48,19 @@ pub fn parse_op(env: &mut Environment, op: &str, left: &[Node], right: &[Node]) 
             }
         }
 
+        // <left> × <right>
         "*" => {
             let left = parse_node(env, &left[0]);
             left.mutate_num(|n| n * parse_node(env, &right[0]).literal_num())
         }
 
+        // <left> ÷ <right>
         "/" => {
             let left = parse_node(env, &left[0]);
             left.mutate_num(|n| n / parse_node(env, &right[0]).literal_num())
         }
 
+        // <left> mod <right>
         "%" => {
             let left = parse_node(env, &left[0]);
             left.mutate_num(|n| n % parse_node(env, &right[0]).literal_num())
@@ -65,11 +70,13 @@ pub fn parse_op(env: &mut Environment, op: &str, left: &[Node], right: &[Node]) 
 
         ":!" => todo!("Sequences needed"),
 
+        // <left> + <right>
         "+" => {
             let left = parse_node(env, &left[0]);
             left.mutate_num(|n| n + parse_node(env, &right[0]).literal_num())
         }
 
+        // <left> - <right>
         "-" => {
             let left = parse_node(env, &left[0]);
             left.mutate_num(|n| n - parse_node(env, &right[0]).literal_num())
@@ -89,6 +96,7 @@ pub fn parse_op(env: &mut Environment, op: &str, left: &[Node], right: &[Node]) 
 
         ".@" => todo!("Sequences needed"),
 
+        // |<left>|
         ".|" => {
             let left = parse_node(env, &left[0]);
             left.mutate_num(|n| n.abs())
@@ -114,11 +122,13 @@ pub fn parse_op(env: &mut Environment, op: &str, left: &[Node], right: &[Node]) 
 
         ":@" => todo!("Sequences needed"),
 
+        // is <left> perfect square?
         "^*" => {
             let left = parse_node(env, &left[0]).literal_num();
-            Dynamic::from(left > 0 && left.sqrt() % 1 == 0)
+            Dynamic::from(left.sqrt().is_integer())
         }
 
+        // Repeat <r1> <r3> times with initial value <r2>
         "&." => {
             if let Node::Block(_, name) = &right[0] {
                 let mut loop_arg = parse_node(env, &right[1]);
@@ -140,20 +150,24 @@ pub fn parse_op(env: &mut Environment, op: &str, left: &[Node], right: &[Node]) 
 
         ":i" => todo!("Sequences needed"),
 
+        // not <right>
         "!" => Dynamic::from(!parse_node(env, &right[0]).literal_bool()),
 
         "$" => todo!("Sequences needed"),
 
+        // Floor <right>
         ":v" => {
             let right = parse_node(env, &right[0]);
             right.mutate_num(|n| n.floor())
         }
 
+        // Ceil <right>
         ":^" => {
             let right = parse_node(env, &right[0]);
             right.mutate_num(|n| n.floor())
         }
 
+        // Inc <right>
         "++" => {
             if let Node::Variable(name) = &right[0] {
                 let val = env.vars.get_mut(name).expect("Variable not recognized");
@@ -165,6 +179,7 @@ pub fn parse_op(env: &mut Environment, op: &str, left: &[Node], right: &[Node]) 
             }
         }
 
+        // Dec <right>
         "--" => {
             if let Node::Variable(name) = &right[0] {
                 let val = env.vars.get_mut(name).expect("Variable not recognized");
@@ -176,12 +191,16 @@ pub fn parse_op(env: &mut Environment, op: &str, left: &[Node], right: &[Node]) 
             }
         }
 
+        // <right> ^ 2
         ":*" => parse_node(env, &right[0]).mutate_num(|n| n.square()),
 
+        // √<right>
         ":/" => parse_node(env, &right[0]).mutate_num(|n| n.sqrt()),
 
+        // 2<right>
         ":+" => parse_node(env, &right[0]).mutate_num(|n| n * 2),
 
+        // ½<right>
         ":-" => parse_node(env, &right[0]).mutate_num(|n| n / 2),
 
         ":>" => todo!("Sequences needed"),
@@ -202,6 +221,7 @@ pub fn parse_op(env: &mut Environment, op: &str, left: &[Node], right: &[Node]) 
 
         "z" => todo!("Sequences needed"),
 
+        // Concat <left> and <right>
         "|" => {
             // TODO: special case if concatenating to array
             let mut left = parse_node(env, &left[0]).literal_string();
@@ -209,26 +229,34 @@ pub fn parse_op(env: &mut Environment, op: &str, left: &[Node], right: &[Node]) 
             Dynamic::from(left)
         }
 
+        // Very weakly typed, see `src/utils/types.rs`, PartialEq for Dynamic
+        // <left> == <right>
         "=" => Dynamic::from(parse_node(env, &left[0]) == parse_node(env, &right[0])),
 
+        // <left> != <right>
         "!=" => Dynamic::from(parse_node(env, &left[0]) != parse_node(env, &right[0])),
 
+        // <left> < <right>
         "<" => Dynamic::from(
             parse_node(env, &left[0]).literal_num() < parse_node(env, &right[0]).literal_num(),
         ),
 
+        // <left> <= <right>
         "<=" => Dynamic::from(
             parse_node(env, &left[0]).literal_num() <= parse_node(env, &right[0]).literal_num(),
         ),
 
+        // <left> > <right>
         ">" => Dynamic::from(
             parse_node(env, &left[0]).literal_num() > parse_node(env, &right[0]).literal_num(),
         ),
 
+        // <left> >= <right>
         ">=" => Dynamic::from(
             parse_node(env, &left[0]).literal_num() >= parse_node(env, &right[0]).literal_num(),
         ),
 
+        // <left> && <right> yields <right> if both truthy
         "&&" => {
             let left = parse_node(env, &left[0]);
             let right = parse_node(env, &right[0]);
@@ -250,6 +278,7 @@ pub fn parse_op(env: &mut Environment, op: &str, left: &[Node], right: &[Node]) 
             }
         }
 
+        // <left> || <right> Yields <left> if truthy and <right> otherwise
         "||" => {
             let left = parse_node(env, &left[0]);
             let right = parse_node(env, &right[0]);
@@ -263,6 +292,8 @@ pub fn parse_op(env: &mut Environment, op: &str, left: &[Node], right: &[Node]) 
             }
         }
 
+        // Do <left> while <right> (left & right take previous left value as arg), yields final mutated value
+        // TODO: separate fix that yields number of iterations?
         ":" => {
             // TODO: When blocks have different variable names, this will use a child env
             let mut child_env = env.clone();
