@@ -43,6 +43,9 @@ lazy_static! {
 }
 
 fn main() {
+    crate::utils::types::test_seq();
+    std::process::exit(0);
+
     if let Some(path) = MATCHES.value_of("file") {
         let program = read_file(path);
         parser::parse(&ast::to_ast(&lexer::to_postfix(&lexer::lex(&program))));

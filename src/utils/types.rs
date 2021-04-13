@@ -2,7 +2,9 @@
 
 use std::fmt::{self, Display, Formatter};
 
+use super::env::Environment;
 use super::num::Num;
+use super::tokens::Node;
 use crate::{FLOAT_PRECISION, OUTPUT_PRECISION};
 
 // Inner value enum for dynamic type
@@ -293,25 +295,142 @@ impl From<bool> for Dynamic {
     }
 }
 
-#[cfg(test)]
-mod typing_tests {
-    use super::*;
+impl Into<Node> for Dynamic {
+    fn into(self) -> Node {
+        match self.val {
+            Val::String(st) => Node::String(st),
+            Val::Number(nm) => Node::Number(nm),
+            Val::Boolean(bl) => {
+                Node::Number(Num::with_val(*FLOAT_PRECISION, if bl { 1 } else { 0 }))
+            }
+            _ => panic!("Cannot convert emtpy value into Node"),
+        }
+    }
+}
 
-    #[test]
-    fn test_casting() {
-        let mut ty = Dynamic::empty().into_string();
+pub struct Sequence<'a> {
+    cstr: Vec<Dynamic>,
+    length: Option<usize>,
+    block: Node,
+    _i: Option<isize>,
+    env: Option<&'a mut Environment>,
+    index: usize,
+}
 
-        ty.mutate_string(|s| s + "57");
-        assert_eq!(ty.val, Val::String(String::from("57")));
+impl<'a> Sequence<'a> {
+    pub fn from_iter<T, U>(iter: T, block: Node, length: Option<usize>) -> Self
+    where
+        T: Iterator<Item = U>,
+        Dynamic: From<U>,
+    {
+        let v = iter.map(|n| Dynamic::from(n)).collect();
+        Self {
+            cstr: v,
+            length,
+            block,
+            _i: None,
+            env: None,
+            index: 0,
+        }
+    }
 
-        ty.as_num();
-        if let Val::Number(n) = &ty.val {
-            assert_eq!(n.clone(), 57);
-        } else {
-            // Fail
-            assert!(false)
+    pub fn from_vec<T>(v: Vec<T>, block: Node, length: Option<usize>) -> Self
+    where
+        Dynamic: From<T>,
+        T: Clone,
+    {
+        let v = v.iter().map(|n| Dynamic::from(n.clone())).collect();
+        Self {
+            cstr: v,
+            length,
+            block,
+            _i: None,
+            env: None,
+            index: 0,
+        }
+    }
+
+    pub fn set_env(&mut self, env: &'a mut Environment) {
+        self.env = Some(env);
+    }
+
+    fn traverse_replace(&mut self, n: Node) -> Node {
+        if self._i.is_none() {
+            self._i = Some(self.index as isize - 2);
         }
 
-        assert_eq!(format!("{}", ty.into_bool()), "1");
+        match &n {
+            Node::Block(body, nm) => {
+                let new_body = body
+                    .iter()
+                    .map(|n| self.traverse_replace(n.clone()))
+                    .collect();
+                Node::Block(new_body, nm.clone())
+            }
+
+            Node::String(_) => n,
+
+            Node::Number(_) => n,
+
+            Node::Variable(v) => {
+                if v == "_" {
+                    self._i = Some(self._i.unwrap() - 1);
+                    self.cstr[(self._i.unwrap() + 1) as usize].clone().into()
+                } else {
+                    n
+                }
+            }
+
+            Node::Group(body) => {
+                let new_body = body
+                    .iter()
+                    .map(|n| self.traverse_replace(n.clone()))
+                    .collect();
+                Node::Group(new_body)
+            }
+
+            Node::Op(n, largs, rargs) => {
+                let nl = largs
+                    .iter()
+                    .map(|n| self.traverse_replace(n.clone()))
+                    .collect();
+                let nr = rargs
+                    .iter()
+                    .map(|n| self.traverse_replace(n.clone()))
+                    .collect();
+                Node::Op(n.clone(), nl, nr)
+            }
+        }
+    }
+
+    #[inline(always)]
+    fn _next(&mut self) -> Option<Dynamic> {
+        if self.index < self.cstr.len() {
+            self.index += 1;
+            Some(self.cstr[self.index - 1].clone())
+        } else {
+            self.index += 1;
+            let block = self.traverse_replace(self.block.clone());
+            self._i = None;
+            let mut e = (*self.env.as_ref().unwrap()).clone();
+            let res = crate::parser::parse_node(&mut e, &block);
+            self.cstr.push(res.clone());
+
+            Some(res)
+        }
+    }
+}
+
+impl<'a> Iterator for Sequence<'a> {
+    type Item = Dynamic;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        if self.length.is_none() {
+            self._next()
+        } else if self.length.unwrap() == self.cstr.len() {
+            None
+        } else {
+            self._next()
+        }
     }
 }
