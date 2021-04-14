@@ -1,8 +1,27 @@
 [package]
-name = "anvil"
+name = "arn"
 version = "0.1.0"
-authors = ["ZippyMagician <zippymagician1@gmail.com>"]
 edition = "2018"
+include = [
+    "src/*.rs",
+    "Cargo.toml",
+    "Cargo.lock",
+    "README.md",
+    "LICENSE"
+]
+
+authors = ["Joshua Barnett <zippymagician1@gmail.com>"]
+description = "Rust parser for the Arn golfing language"
+repository = "https://github.com/ZippyMagician/Arn"
+readme = "README.md"
+license = "Apache-2.0"
+
+categories = [ "parser", "language", "code-golf", "arn" ]
+keywords = [ "ast", "parser", "golfing", "language", "arn" ]
+
+[[bin]]
+name = "arn"
+path = "src/main.rs"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
@@ -10,3 +29,7 @@ edition = "2018"
 rug = { version = "1.12.0", default-features = false, features = [ "float" ] }
 clap = "2.33.3"
 lazy_static = "1.4"
+
+[profile.release]
+lto = true
+panic = "abort"
