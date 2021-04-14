@@ -29,12 +29,12 @@ pub enum Val {
 
 // Struct that represents types in Arn
 #[derive(Clone, Debug)]
-#[allow(clippy::clippy::wrong_self_convention)]
 pub struct Dynamic {
     val: Val,
     cur: u8,
 }
 
+#[allow(clippy::clippy::wrong_self_convention)]
 impl Dynamic {
     pub fn empty() -> Self {
         Self {
@@ -84,7 +84,7 @@ impl Dynamic {
             },
 
             Val::Empty => Self {
-                val: Val::String(Default::default()),
+                val: Val::String(String::new()),
                 cur: 1,
             },
         }
@@ -165,7 +165,7 @@ impl Dynamic {
         match &self.val {
             Val::String(s) => {
                 if s.contains(' ') {
-                    let iter = s.split(" ").map(|x: &str| Dynamic::from(x));
+                    let iter = s.split(' ').map(Dynamic::from);
                     Self {
                         val: Val::Array(Box::new(Sequence::from_iter(
                             iter.clone(),
@@ -175,7 +175,7 @@ impl Dynamic {
                         cur: 4,
                     }
                 } else {
-                    let iter = s.split("").map(|x: &str| Dynamic::from(x));
+                    let iter = s.split("").map(Dynamic::from);
                     Self {
                         val: Val::Array(Box::new(Sequence::from_iter(
                             iter,
@@ -195,7 +195,7 @@ impl Dynamic {
 
             Val::Empty => Self {
                 val: Val::Array(Box::new(Sequence::from_vec::<String>(
-                    vec![],
+                    &[],
                     Node::String(String::new()),
                     Some(0),
                 ))),
@@ -229,7 +229,7 @@ impl Dynamic {
     }
 
     #[inline]
-    pub fn literal_array<'a>(self) -> Sequence {
+    pub fn literal_array(self) -> Sequence {
         match &self.val {
             Val::Array(seq) => seq.as_ref().clone(),
             _ => self.into_array().literal_array(),
@@ -303,13 +303,10 @@ impl Display for Dynamic {
             Val::String(s) => write!(f, "{}", s),
 
             Val::Number(n) => {
-                let s = format!(
-                    "{}",
-                    n.to_string_radix_round(
-                        10,
-                        Some(*OUTPUT_PRECISION),
-                        rug::float::Round::Nearest
-                    )
+                let s = n.to_string_radix_round(
+                    10,
+                    Some(*OUTPUT_PRECISION),
+                    rug::float::Round::Nearest,
                 );
 
                 write!(
@@ -442,7 +439,7 @@ pub struct Sequence {
     cstr: Vec<Dynamic>,
     length: Option<usize>,
     block: Node,
-    _i: Option<isize>,
+    t_i: Option<isize>,
     env: Option<Env>,
     index: usize,
 }
@@ -453,18 +450,18 @@ impl Sequence {
         T: Iterator<Item = U>,
         Dynamic: From<U>,
     {
-        let v = iter.map(|n| Dynamic::from(n)).collect();
+        let v = iter.map(Dynamic::from).collect();
         Self {
             cstr: v,
             length,
             block,
-            _i: None,
+            t_i: None,
             env: None,
             index: 0,
         }
     }
 
-    pub fn from_vec<T>(v: Vec<T>, block: Node, length: Option<usize>) -> Self
+    pub fn from_vec<T>(v: &[T], block: Node, length: Option<usize>) -> Self
     where
         Dynamic: From<T>,
         T: Clone,
@@ -474,7 +471,7 @@ impl Sequence {
             cstr: v,
             length,
             block,
-            _i: None,
+            t_i: None,
             env: None,
             index: 0,
         }
@@ -491,8 +488,8 @@ impl Sequence {
     }
 
     fn traverse_replace(&mut self, n: Node) -> Node {
-        if self._i.is_none() {
-            self._i = Some(self.index as isize - 2);
+        if self.t_i.is_none() {
+            self.t_i = Some(self.index as isize - 2);
         }
 
         match &n {
@@ -510,8 +507,8 @@ impl Sequence {
 
             Node::Variable(v) => {
                 if v == "_" {
-                    self._i = Some(self._i.unwrap() - 1);
-                    self.cstr[(self._i.unwrap() + 1) as usize].clone().into()
+                    self.t_i = Some(self.t_i.unwrap() - 1);
+                    self.cstr[(self.t_i.unwrap() + 1) as usize].clone().into()
                 } else {
                     n
                 }
@@ -539,7 +536,7 @@ impl Sequence {
         }
     }
 
-    #[inline(always)]
+    #[inline]
     fn _next(&mut self) -> Option<Dynamic> {
         if self.index < self.cstr.len() {
             self.index += 1;
@@ -547,8 +544,8 @@ impl Sequence {
         } else {
             self.index += 1;
             let block = self.traverse_replace(self.block.clone());
-            self._i = None;
-            let res = crate::parser::parse_node(self.env.as_ref().unwrap().clone(), &block);
+            self.t_i = None;
+            let res = crate::parser::parse_node(Rc::clone(self.env.as_ref().unwrap()), &block);
             self.cstr.push(res.clone());
 
             Some(res)

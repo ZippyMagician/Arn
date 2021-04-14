@@ -1,4 +1,20 @@
-extern crate clap;
+#![deny(rust_2018_idioms, clippy::all)]
+#![deny(mutable_borrow_reservation_conflict, clippy::clone_on_ref_ptr)]
+#![warn(clippy::pedantic)]
+#![allow(
+    clippy::module_name_repetitions,
+    clippy::wildcard_imports,
+    clippy::too_many_lines,
+    // I have a lot of TODOs, so this is reduntant
+    clippy::match_same_arms,
+    // The casting I do is valid
+    clippy::cast_possible_wrap,
+    clippy::cast_sign_loss,
+    clippy::cast_possible_truncation,
+    // It's a ******* Rc
+    clippy::needless_pass_by_value
+)]
+
 #[macro_use]
 extern crate lazy_static;
 

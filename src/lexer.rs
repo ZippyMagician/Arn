@@ -16,7 +16,7 @@ pub fn lex(prg: &str) -> Vec<Token> {
     let mut group_char: Option<char> = None;
 
     // Mark end of program with `→` (as that character is not supported in decompressed code)
-    let bytes = prg.chars().chain("→".chars());
+    let bytes = prg.chars().chain("\u{2192}".chars());
 
     for tok in bytes {
         if buf == "\"" {

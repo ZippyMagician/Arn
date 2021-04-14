@@ -7,7 +7,7 @@ use crate::utils::{env::Environment, tokens::Node, types::*};
 use crate::FLOAT_PRECISION;
 
 lazy_static! {
-    static ref DEFAULT: Node = Node::String(Default::default());
+    static ref DEFAULT: Node = Node::String(String::new());
     static ref USCORE: String = String::from("_");
 }
 
@@ -16,7 +16,7 @@ pub fn parse_op(env: Env, op: &str, left: &[Node], right: &[Node]) -> Dynamic {
         // <right>(<left>)
         "." => {
             if let Node::Variable(v) = &right[0] {
-                let arg = parse_node(env.clone(), &left[0]);
+                let arg = parse_node(Rc::clone(&env), &left[0]);
                 env.borrow_mut().attempt_call(v, arg)
             } else {
                 panic!("Dot operator only accepts a variable on the right hand side")
@@ -25,11 +25,20 @@ pub fn parse_op(env: Env, op: &str, left: &[Node], right: &[Node]) -> Dynamic {
 
         // <left> pow <right>
         "^" => {
-            let left = parse_node(env.clone(), &left[0]);
-            if !left.is_string() {
+            let left = parse_node(Rc::clone(&env), &left[0]);
+            if left.is_string() {
+                left.mutate_string(|s| {
+                    s.repeat(
+                        parse_node(Rc::clone(&env), &right[0])
+                            .literal_num()
+                            .to_u32_saturating_round(rug::float::Round::Down)
+                            .unwrap() as usize,
+                    )
+                })
+            } else {
                 let mut left = left.literal_num();
                 let o = left.clone();
-                let right = parse_node(env.clone(), &right[0]).literal_num();
+                let right = parse_node(Rc::clone(&env), &right[0]).literal_num();
                 for _ in 1..right
                     .to_u32_saturating_round(rug::float::Round::Down)
                     .unwrap()
@@ -38,34 +47,25 @@ pub fn parse_op(env: Env, op: &str, left: &[Node], right: &[Node]) -> Dynamic {
                 }
 
                 Dynamic::from(left)
-            } else {
-                left.mutate_string(|s| {
-                    s.repeat(
-                        parse_node(env.clone(), &right[0])
-                            .literal_num()
-                            .to_u32_saturating_round(rug::float::Round::Down)
-                            .unwrap() as usize,
-                    )
-                })
             }
         }
 
         // <left> × <right>
         "*" => {
-            let left = parse_node(env.clone(), &left[0]);
-            left.mutate_num(|n| n * parse_node(env.clone(), &right[0]).literal_num())
+            let left = parse_node(Rc::clone(&env), &left[0]);
+            left.mutate_num(|n| n * parse_node(Rc::clone(&env), &right[0]).literal_num())
         }
 
         // <left> ÷ <right>
         "/" => {
-            let left = parse_node(env.clone(), &left[0]);
-            left.mutate_num(|n| n / parse_node(env.clone(), &right[0]).literal_num())
+            let left = parse_node(Rc::clone(&env), &left[0]);
+            left.mutate_num(|n| n / parse_node(Rc::clone(&env), &right[0]).literal_num())
         }
 
         // <left> mod <right>
         "%" => {
-            let left = parse_node(env.clone(), &left[0]);
-            left.mutate_num(|n| n % parse_node(env.clone(), &right[0]).literal_num())
+            let left = parse_node(Rc::clone(&env), &left[0]);
+            left.mutate_num(|n| n % parse_node(Rc::clone(&env), &right[0]).literal_num())
         }
 
         ":|" => todo!("Sequences needed"),
@@ -74,14 +74,14 @@ pub fn parse_op(env: Env, op: &str, left: &[Node], right: &[Node]) -> Dynamic {
 
         // <left> + <right>
         "+" => {
-            let left = parse_node(env.clone(), &left[0]);
-            left.mutate_num(|n| n + parse_node(env.clone(), &right[0]).literal_num())
+            let left = parse_node(Rc::clone(&env), &left[0]);
+            left.mutate_num(|n| n + parse_node(Rc::clone(&env), &right[0]).literal_num())
         }
 
         // <left> - <right>
         "-" => {
-            let left = parse_node(env.clone(), &left[0]);
-            left.mutate_num(|n| n - parse_node(env.clone(), &right[0]).literal_num())
+            let left = parse_node(Rc::clone(&env), &left[0]);
+            left.mutate_num(|n| n - parse_node(Rc::clone(&env), &right[0]).literal_num())
         }
 
         ".$" => todo!("Sequences needed"),
@@ -100,8 +100,8 @@ pub fn parse_op(env: Env, op: &str, left: &[Node], right: &[Node]) -> Dynamic {
 
         // |<left>|
         ".|" => {
-            let left = parse_node(env.clone(), &left[0]);
-            left.mutate_num(|n| n.abs())
+            let left = parse_node(Rc::clone(&env), &left[0]);
+            left.mutate_num(Num::abs)
         }
 
         ".<" => todo!("Sequences needed"),
@@ -126,15 +126,15 @@ pub fn parse_op(env: Env, op: &str, left: &[Node], right: &[Node]) -> Dynamic {
 
         // is <left> perfect square?
         "^*" => {
-            let left = parse_node(env.clone(), &left[0]).literal_num();
+            let left = parse_node(Rc::clone(&env), &left[0]).literal_num();
             Dynamic::from(left.sqrt().is_integer())
         }
 
         // Repeat <r1> <r3> times with initial value <r2>
         "&." => {
             if let Node::Block(_, name) = &right[0] {
-                let mut loop_arg = parse_node(env.clone(), &right[1]);
-                let count = parse_node(env.clone(), &right[2])
+                let mut loop_arg = parse_node(Rc::clone(&env), &right[1]);
+                let count = parse_node(Rc::clone(&env), &right[2])
                     .literal_num()
                     .to_u32_saturating_round(rug::float::Round::Down)
                     .unwrap();
@@ -144,7 +144,7 @@ pub fn parse_op(env: Env, op: &str, left: &[Node], right: &[Node]) -> Dynamic {
                     child_env
                         .borrow_mut()
                         .define_var(name.as_ref().unwrap_or(&USCORE), loop_arg);
-                    loop_arg = parse_block(child_env.clone(), &right[0]);
+                    loop_arg = parse_block(Rc::clone(&child_env), &right[0]);
                 }
 
                 loop_arg
@@ -156,20 +156,20 @@ pub fn parse_op(env: Env, op: &str, left: &[Node], right: &[Node]) -> Dynamic {
         ":i" => todo!("Sequences needed"),
 
         // not <right>
-        "!" => Dynamic::from(!parse_node(env.clone(), &right[0]).literal_bool()),
+        "!" => Dynamic::from(!parse_node(Rc::clone(&env), &right[0]).literal_bool()),
 
         "$" => todo!("Sequences needed"),
 
         // Floor <right>
         ":v" => {
-            let right = parse_node(env.clone(), &right[0]);
-            right.mutate_num(|n| n.floor())
+            let right = parse_node(Rc::clone(&env), &right[0]);
+            right.mutate_num(Num::floor)
         }
 
         // Ceil <right>
         ":^" => {
-            let right = parse_node(env.clone(), &right[0]);
-            right.mutate_num(|n| n.floor())
+            let right = parse_node(Rc::clone(&env), &right[0]);
+            right.mutate_num(Num::ceil)
         }
 
         // Inc <right>
@@ -185,7 +185,7 @@ pub fn parse_op(env: Env, op: &str, left: &[Node], right: &[Node]) -> Dynamic {
                 env.borrow_mut().define_var(name, val.clone());
                 val
             } else {
-                let right = parse_node(env.clone(), &right[0]);
+                let right = parse_node(Rc::clone(&env), &right[0]);
                 right.mutate_num(|n| n + 1)
             }
         }
@@ -203,22 +203,22 @@ pub fn parse_op(env: Env, op: &str, left: &[Node], right: &[Node]) -> Dynamic {
                 env.borrow_mut().define_var(name, val.clone());
                 val
             } else {
-                let right = parse_node(env.clone(), &right[0]);
+                let right = parse_node(Rc::clone(&env), &right[0]);
                 right.mutate_num(|n| n - 1)
             }
         }
 
         // <right> ^ 2
-        ":*" => parse_node(env.clone(), &right[0]).mutate_num(|n| n.square()),
+        ":*" => parse_node(Rc::clone(&env), &right[0]).mutate_num(Num::square),
 
         // √<right>
-        ":/" => parse_node(env.clone(), &right[0]).mutate_num(|n| n.sqrt()),
+        ":/" => parse_node(Rc::clone(&env), &right[0]).mutate_num(Num::sqrt),
 
         // 2<right>
-        ":+" => parse_node(env.clone(), &right[0]).mutate_num(|n| n * 2),
+        ":+" => parse_node(Rc::clone(&env), &right[0]).mutate_num(|n| n * 2),
 
         // ½<right>
-        ":-" => parse_node(env.clone(), &right[0]).mutate_num(|n| n / 2),
+        ":-" => parse_node(Rc::clone(&env), &right[0]).mutate_num(|n| n / 2),
 
         ":>" => todo!("Sequences needed"),
 
@@ -241,50 +241,50 @@ pub fn parse_op(env: Env, op: &str, left: &[Node], right: &[Node]) -> Dynamic {
         // Concat <left> and <right>
         "|" => {
             // TODO: special case if concatenating to array
-            let mut left = parse_node(env.clone(), &left[0]).literal_string();
-            left.push_str(&parse_node(env.clone(), &right[0]).literal_string());
+            let mut left = parse_node(Rc::clone(&env), &left[0]).literal_string();
+            left.push_str(&parse_node(Rc::clone(&env), &right[0]).literal_string());
             Dynamic::from(left)
         }
 
         // Very weakly typed, see `src/utils/types.rs`, PartialEq for Dynamic
         // <left> == <right>
-        "=" => {
-            Dynamic::from(parse_node(env.clone(), &left[0]) == parse_node(env.clone(), &right[0]))
-        }
+        "=" => Dynamic::from(
+            parse_node(Rc::clone(&env), &left[0]) == parse_node(Rc::clone(&env), &right[0]),
+        ),
 
         // <left> != <right>
-        "!=" => {
-            Dynamic::from(parse_node(env.clone(), &left[0]) != parse_node(env.clone(), &right[0]))
-        }
+        "!=" => Dynamic::from(
+            parse_node(Rc::clone(&env), &left[0]) != parse_node(Rc::clone(&env), &right[0]),
+        ),
 
         // <left> < <right>
         "<" => Dynamic::from(
-            parse_node(env.clone(), &left[0]).literal_num()
-                < parse_node(env.clone(), &right[0]).literal_num(),
+            parse_node(Rc::clone(&env), &left[0]).literal_num()
+                < parse_node(Rc::clone(&env), &right[0]).literal_num(),
         ),
 
         // <left> <= <right>
         "<=" => Dynamic::from(
-            parse_node(env.clone(), &left[0]).literal_num()
-                <= parse_node(env.clone(), &right[0]).literal_num(),
+            parse_node(Rc::clone(&env), &left[0]).literal_num()
+                <= parse_node(Rc::clone(&env), &right[0]).literal_num(),
         ),
 
         // <left> > <right>
         ">" => Dynamic::from(
-            parse_node(env.clone(), &left[0]).literal_num()
-                > parse_node(env.clone(), &right[0]).literal_num(),
+            parse_node(Rc::clone(&env), &left[0]).literal_num()
+                > parse_node(Rc::clone(&env), &right[0]).literal_num(),
         ),
 
         // <left> >= <right>
         ">=" => Dynamic::from(
-            parse_node(env.clone(), &left[0]).literal_num()
-                >= parse_node(env.clone(), &right[0]).literal_num(),
+            parse_node(Rc::clone(&env), &left[0]).literal_num()
+                >= parse_node(Rc::clone(&env), &right[0]).literal_num(),
         ),
 
         // <left> && <right> yields <right> if both truthy
         "&&" => {
-            let left = parse_node(env.clone(), &left[0]);
-            let right = parse_node(env.clone(), &right[0]);
+            let left = parse_node(Rc::clone(&env), &left[0]);
+            let right = parse_node(Rc::clone(&env), &right[0]);
 
             if left.is_bool() {
                 if right.is_bool() {
@@ -305,8 +305,8 @@ pub fn parse_op(env: Env, op: &str, left: &[Node], right: &[Node]) -> Dynamic {
 
         // <left> || <right> Yields <left> if truthy and <right> otherwise
         "||" => {
-            let left = parse_node(env.clone(), &left[0]);
-            let right = parse_node(env.clone(), &right[0]);
+            let left = parse_node(Rc::clone(&env), &left[0]);
+            let right = parse_node(Rc::clone(&env), &right[0]);
 
             if left.clone().literal_bool() {
                 left
@@ -327,19 +327,19 @@ pub fn parse_op(env: Env, op: &str, left: &[Node], right: &[Node]) -> Dynamic {
                     .borrow_mut()
                     .define_var(name.as_ref().unwrap_or(&USCORE), val)
             }
-            let mut block = parse_block(child_env.clone(), &left[0]);
+            let mut block = parse_block(Rc::clone(&child_env), &left[0]);
 
             while {
-                let c_env = Rc::new(env.as_ref().clone());
+                let child_env = Rc::new(env.as_ref().clone());
                 if let Node::Block(_, name) = &right[0] {
-                    c_env
+                    child_env
                         .borrow_mut()
                         .define_var(name.as_ref().unwrap_or(&USCORE), block.clone())
                 } else {
-                    c_env.borrow_mut().define_var("_", block.clone());
+                    child_env.borrow_mut().define_var("_", block.clone());
                 }
 
-                parse_block(c_env.clone(), &right[0]).literal_bool()
+                parse_block(Rc::clone(&child_env), &right[0]).literal_bool()
             } {
                 if let Node::Block(_, name) = &left[0] {
                     child_env
@@ -349,7 +349,7 @@ pub fn parse_op(env: Env, op: &str, left: &[Node], right: &[Node]) -> Dynamic {
                     child_env.borrow_mut().define_var("_", block.clone());
                 }
 
-                block = parse_block(child_env.clone(), &left[0]);
+                block = parse_block(Rc::clone(&child_env), &left[0]);
             }
 
             block
@@ -365,10 +365,10 @@ fn parse_block(env: Env, block: &Node) -> Dynamic {
     match block {
         Node::Block(block, _) => {
             for node in &block[..block.len() - 1] {
-                parse_node(env.clone(), node);
+                parse_node(Rc::clone(&env), node);
             }
 
-            parse_node(env.clone(), block.last().unwrap_or(&DEFAULT))
+            parse_node(Rc::clone(&env), block.last().unwrap_or(&DEFAULT))
         }
 
         _ => unreachable!(),
@@ -393,10 +393,10 @@ pub fn parse_node(env: Env, node: &Node) -> Dynamic {
 
         Node::Group(body) => {
             for node in &body[..body.len() - 1] {
-                parse_node(env.clone(), node);
+                parse_node(Rc::clone(&env), node);
             }
 
-            parse_node(env.clone(), body.last().unwrap_or(&DEFAULT))
+            parse_node(Rc::clone(&env), body.last().unwrap_or(&DEFAULT))
         }
 
         Node::Block(body, name) => {
@@ -406,10 +406,10 @@ pub fn parse_node(env: Env, node: &Node) -> Dynamic {
                 .borrow_mut()
                 .define_var(name.as_ref().unwrap_or(&USCORE), val);
             for node in &body[..body.len() - 1] {
-                parse_node(child_env.clone(), node);
+                parse_node(Rc::clone(&child_env), node);
             }
 
-            parse_node(child_env.clone(), body.last().unwrap_or(&DEFAULT))
+            parse_node(Rc::clone(&child_env), body.last().unwrap_or(&DEFAULT))
         }
     }
 }
@@ -439,7 +439,7 @@ pub fn parse(ast: &[Node]) {
     let env: Env = Rc::new(RefCell::new(env));
 
     for node in &ast[..ast.len() - 1] {
-        parse_node(env.clone(), node);
+        parse_node(Rc::clone(&env), node);
     }
 
     println!("{}", parse_node(env, ast.last().unwrap_or(&DEFAULT)));

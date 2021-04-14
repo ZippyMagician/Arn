@@ -12,7 +12,7 @@ impl<T> From<T> for EmptyError
 where
     T: std::error::Error,
 {
-    #[inline(always)]
+    #[inline]
     fn from(_: T) -> Self {
         Self()
     }
