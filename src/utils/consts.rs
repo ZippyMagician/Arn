@@ -36,7 +36,7 @@ macro_rules! operators {
 macro_rules! len {
     () => { 0 };
     ($item:literal) => { 1 };
-    ($item:literal, $($extras:literal),*) => { 1 + len!($($extras),*); }
+    ($item:literal, $($extras:literal),*) => { 1 + len!($($extras),*) }
 }
 
 macro_rules! hashmap {

@@ -84,3 +84,11 @@ pub fn parse_arn_num(string: &str) -> Result<Num, EmptyError> {
         Num::with_val(*FLOAT_PRECISION, num)
     })
 }
+
+#[inline]
+pub fn to_u32(env: &super::types::Env, n: &super::tokens::Node) -> u32 {
+    crate::parser::parse_node(std::rc::Rc::clone(env), n)
+        .literal_num()
+        .to_u32_saturating_round(rug::float::Round::Down)
+        .unwrap()
+}

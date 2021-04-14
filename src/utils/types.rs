@@ -43,6 +43,10 @@ impl Dynamic {
         }
     }
 
+    pub fn new(val: Val, cur: u8) -> Self {
+        Self { val, cur }
+    }
+
     #[inline]
     pub fn as_string(&mut self) {
         *self = self.into_string();
@@ -294,6 +298,28 @@ impl Dynamic {
             _ => self.into_array().mutate_array(f),
         }
     }
+
+    // Convert to Node
+    pub fn into_node(self) -> Node {
+        match self.val {
+            Val::String(s) => Node::String(s),
+            Val::Number(n) => Node::Number(n),
+            Val::Boolean(b) => Node::Number(Num::with_val(*FLOAT_PRECISION, if b { 1 } else { 0 })),
+            Val::Array(s) => {
+                if !s.is_finite() {
+                    panic!("Cannot convert infinite sequence into Node");
+                }
+
+                let s = s.as_ref().clone();
+                Node::Sequence(
+                    s.cstr.iter().cloned().map(Dynamic::into_node).collect(),
+                    Box::new(s.block),
+                    s.length,
+                )
+            }
+            Val::Empty => unreachable!(),
+        }
+    }
 }
 
 // Equivalent to sprintf function in the js version
@@ -422,6 +448,57 @@ impl From<bool> for Dynamic {
     }
 }
 
+impl<'a, T> From<&'a [T]> for Dynamic
+where
+    Dynamic: From<T>,
+    T: Clone,
+{
+    fn from(v: &'a [T]) -> Self {
+        Self {
+            val: Val::Array(Box::new(Sequence::from_vec(
+                v,
+                Node::Block(vec![], None),
+                Some(v.len()),
+            ))),
+            cur: 4,
+        }
+    }
+}
+
+impl<T> From<Vec<T>> for Dynamic
+where
+    Dynamic: From<T>,
+    T: Clone,
+{
+    fn from(v: Vec<T>) -> Self {
+        Self {
+            val: Val::Array(Box::new(Sequence::from_vec(
+                &v,
+                Node::Block(vec![], None),
+                Some(v.len()),
+            ))),
+            cur: 4,
+        }
+    }
+}
+
+impl<T, const N: usize> From<[T; N]> for Dynamic
+where
+    Dynamic: From<T>,
+    T: Clone,
+{
+    fn from(v: [T; N]) -> Self {
+        Self {
+            val: Val::Array(Box::new(Sequence::from_vec(
+                &v,
+                Node::Block(vec![], None),
+                Some(N),
+            ))),
+            cur: 4,
+        }
+    }
+}
+
 impl Into<Node> for Dynamic {
     fn into(self) -> Node {
         match self.val {
@@ -437,9 +514,9 @@ impl Into<Node> for Dynamic {
 
 #[derive(Clone, Debug)]
 pub struct Sequence {
-    cstr: Vec<Dynamic>,
-    length: Option<usize>,
-    block: Node,
+    pub cstr: Vec<Dynamic>,
+    pub length: Option<usize>,
+    pub block: Node,
     t_i: Option<isize>,
     env: Option<Env>,
     index: usize,
@@ -478,9 +555,25 @@ impl Sequence {
         }
     }
 
+    pub fn from_vec_dyn(v: &[Dynamic], block: Node, length: Option<usize>) -> Self {
+        Self {
+            cstr: v.to_owned(),
+            length,
+            block,
+            t_i: None,
+            env: None,
+            index: 0,
+        }
+    }
+
     #[inline]
     pub fn is_finite(&self) -> bool {
         self.length.is_some()
+    }
+
+    #[inline]
+    pub fn len(&self) -> Option<usize> {
+        self.length
     }
 
     #[inline]
@@ -534,6 +627,8 @@ impl Sequence {
                     .collect();
                 Node::Op(n.clone(), nl, nr)
             }
+
+            _ => unimplemented!(),
         }
     }
 
