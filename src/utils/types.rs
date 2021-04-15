@@ -5,7 +5,7 @@ use std::fmt::{self, Display, Formatter};
 use std::rc::Rc;
 
 use super::env::Environment;
-use super::num::Num;
+use super::num::{to_u32, Num};
 use super::tokens::Node;
 use crate::{FLOAT_PRECISION, OUTPUT_PRECISION};
 
@@ -314,7 +314,8 @@ impl Dynamic {
                 Node::Sequence(
                     s.cstr.iter().cloned().map(Dynamic::into_node).collect(),
                     Box::new(s.block),
-                    s.length,
+                    s.length
+                        .map(|n| Box::new(Node::Number(Num::with_val(*FLOAT_PRECISION, n)))),
                 )
             }
             Val::Empty => unreachable!(),
@@ -349,8 +350,26 @@ impl Display for Dynamic {
 
             Val::Boolean(b) => write!(f, "{}", if *b { 1 } else { 0 }),
 
-            // TODO: Formatting for a Sequence
-            Val::Array(_) => unimplemented!(),
+            Val::Array(seq) => {
+                let seq = seq.as_ref().clone();
+                let is_infinite = !seq.is_finite();
+
+                for entry in seq {
+                    let mut as_string = format!("{}", entry);
+
+                    if entry.is_array() {
+                        as_string = as_string.replace('\n', " ");
+                    }
+
+                    if is_infinite {
+                        println!("{}", as_string);
+                    } else {
+                        writeln!(f, "{}", as_string)?;
+                    }
+                }
+
+                Ok(())
+            }
 
             Val::Empty => write!(f, ""),
         }
@@ -517,6 +536,7 @@ pub struct Sequence {
     pub cstr: Vec<Dynamic>,
     pub length: Option<usize>,
     pub block: Node,
+    unparsed_length: Option<Node>,
     t_i: Option<isize>,
     env: Option<Env>,
     index: usize,
@@ -531,6 +551,7 @@ impl Sequence {
         let v = iter.map(Dynamic::from).collect();
         Self {
             cstr: v,
+            unparsed_length: None,
             length,
             block,
             t_i: None,
@@ -547,6 +568,7 @@ impl Sequence {
         let v = v.iter().map(|n| Dynamic::from(n.clone())).collect();
         Self {
             cstr: v,
+            unparsed_length: None,
             length,
             block,
             t_i: None,
@@ -558,6 +580,7 @@ impl Sequence {
     pub fn from_vec_dyn(v: &[Dynamic], block: Node, length: Option<usize>) -> Self {
         Self {
             cstr: v.to_owned(),
+            unparsed_length: None,
             length,
             block,
             t_i: None,
@@ -568,7 +591,7 @@ impl Sequence {
 
     #[inline]
     pub fn is_finite(&self) -> bool {
-        self.length.is_some()
+        self.length.is_some() || self.unparsed_length.is_some()
     }
 
     #[inline]
@@ -652,10 +675,18 @@ impl Sequence {
 impl Iterator for Sequence {
     type Item = Dynamic;
 
+    #[inline]
     fn next(&mut self) -> Option<Self::Item> {
+        if self.length.is_none() && self.unparsed_length.is_some() {
+            self.length = Some(to_u32(
+                self.env.as_ref().unwrap(),
+                self.unparsed_length.as_ref().unwrap(),
+            ) as usize);
+        }
+
         if self.length.is_none() {
             self._next()
-        } else if self.length.unwrap() == self.cstr.len() {
+        } else if self.index == self.cstr.len() && self.cstr.len() == self.length.unwrap() {
             None
         } else {
             self._next()

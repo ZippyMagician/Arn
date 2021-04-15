@@ -504,16 +504,18 @@ pub fn parse_node(env: Env, node: &Node) -> Dynamic {
         }
 
         // This will maybe be parsed differently in the future?
-        Node::Sequence(arr, block, len) => Dynamic::new(
-            Val::Array(Box::new(Sequence::from_vec_dyn(
+        Node::Sequence(arr, block, len) => {
+            let mut seq = Sequence::from_vec_dyn(
                 &arr.iter()
                     .map(|n| parse_node(Rc::clone(&env), n))
                     .collect::<Vec<Dynamic>>(),
                 block.as_ref().clone(),
-                *len,
-            ))),
-            4,
-        ),
+                len.as_ref().map(|n| to_u32(&env, n.as_ref()) as usize),
+            );
+
+            seq.set_env(Rc::clone(&env));
+            Dynamic::new(Val::Array(Box::new(seq)), 4)
+        }
     }
 }
 

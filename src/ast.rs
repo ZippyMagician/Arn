@@ -1,4 +1,6 @@
+use crate::utils::num::Num;
 use crate::utils::tokens::*;
+use crate::FLOAT_PRECISION;
 
 pub fn to_ast(postfix: &[Token]) -> Vec<Node> {
     let mut output = Vec::with_capacity(postfix.len());
@@ -15,6 +17,51 @@ pub fn to_ast(postfix: &[Token]) -> Vec<Node> {
                 output.push(match *chr {
                     '{' => Node::Block(to_ast(body), nm.clone()),
                     '(' => Node::Group(to_ast(body)),
+                    '[' => {
+                        let body = to_ast(body);
+                        match body.last() {
+                            // (Maybe) Sized Sequence
+                            Some(Node::Op(f, block_node, size_node)) if f == "->" => {
+                                if let Some(Node::Block(_, _)) = block_node.get(0) {
+                                    let seq_body = &body[0..body.len() - 1];
+                                    Node::Sequence(
+                                        seq_body.to_owned(),
+                                        Box::new(body.last().unwrap().clone()),
+                                        Some(Box::new(size_node[0].clone())),
+                                    )
+                                } else {
+                                    Node::Sequence(
+                                        body.clone(),
+                                        Box::new(Node::Block(vec![], None)),
+                                        Some(Box::new(Node::Number(Num::with_val(
+                                            *FLOAT_PRECISION,
+                                            body.len(),
+                                        )))),
+                                    )
+                                }
+                            }
+
+                            // Infinite sequence
+                            Some(Node::Block(_, _)) => {
+                                let seq_body = &body[0..body.len() - 1];
+                                Node::Sequence(
+                                    seq_body.to_owned(),
+                                    Box::new(body.last().unwrap().clone()),
+                                    None,
+                                )
+                            }
+
+                            // Constant sequence
+                            _ => Node::Sequence(
+                                body.clone(),
+                                Box::new(Node::Block(vec![], None)),
+                                Some(Box::new(Node::Number(Num::with_val(
+                                    *FLOAT_PRECISION,
+                                    body.len(),
+                                )))),
+                            ),
+                        }
+                    }
                     _ => unimplemented!(),
                 });
             }

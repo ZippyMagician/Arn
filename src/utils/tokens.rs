@@ -45,5 +45,6 @@ pub enum Node {
     Block(Vec<Node>, Option<String>),
 
     /// A Sequence `[ ... ]`
-    Sequence(Vec<Node>, Box<Node>, Option<usize>),
+    /// Body, block, size
+    Sequence(Vec<Node>, Box<Node>, Option<Box<Node>>),
 }
