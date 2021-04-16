@@ -105,7 +105,7 @@ pub fn lex(prg: &str) -> Vec<Token> {
 
             let rank = OPTIONS.rank.get(&buf).unwrap();
             if rank.0 > 0 {
-                if construct.is_empty() {
+                if construct.is_empty() || construct.last() == Some(&Token::Comma) {
                     for _ in 0..rank.0 {
                         construct.push(Token::Variable('_'.to_string()));
                     }

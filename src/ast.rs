@@ -26,7 +26,7 @@ pub fn to_ast(postfix: &[Token]) -> Vec<Node> {
                                     let seq_body = &body[0..body.len() - 1];
                                     Node::Sequence(
                                         seq_body.to_owned(),
-                                        Box::new(body.last().unwrap().clone()),
+                                        Box::new(block_node[0].clone()),
                                         Some(Box::new(size_node[0].clone())),
                                     )
                                 } else {

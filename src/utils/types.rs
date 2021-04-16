@@ -686,7 +686,7 @@ impl Iterator for Sequence {
 
         if self.length.is_none() {
             self._next()
-        } else if self.index == self.cstr.len() && self.cstr.len() == self.length.unwrap() {
+        } else if self.index == self.length.unwrap() {
             None
         } else {
             self._next()
