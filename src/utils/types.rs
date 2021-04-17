@@ -24,7 +24,6 @@ pub enum Val {
     Array(Box<Sequence>),
 
     Empty,
-    // TODO: Sequence type
 }
 
 // Struct that represents types in Arn
@@ -518,6 +517,7 @@ where
     }
 }
 
+#[allow(clippy::from_over_into)]
 impl Into<Node> for Dynamic {
     fn into(self) -> Node {
         match self.val {
@@ -655,6 +655,7 @@ impl Sequence {
         }
     }
 
+    #[allow(clippy::unnecessary_wraps)]
     #[inline]
     fn _next(&mut self) -> Option<Dynamic> {
         if self.index < self.cstr.len() {
@@ -690,6 +691,26 @@ impl Iterator for Sequence {
             None
         } else {
             self._next()
+        }
+    }
+}
+
+impl DoubleEndedIterator for Sequence {
+    fn next_back(&mut self) -> Option<Dynamic> {
+        if self.len().is_none() {
+            panic!("Can only implement DoubleEndedIterator for a finite Sequence");
+        }
+
+        while let Some(_) = self.next() {
+            // Build the values, the starting index is initialized
+            self.t_i = Some(self.index as isize - 1);
+        }
+
+        if self.t_i.unwrap() < 0 {
+            None
+        } else {
+            self.t_i = Some(self.t_i.unwrap() - 1);
+            Some(self.cstr[(self.t_i.unwrap() + 1) as usize].clone())
         }
     }
 }

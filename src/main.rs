@@ -61,7 +61,14 @@ lazy_static! {
 fn main() {
     if let Some(path) = MATCHES.value_of("file") {
         let program = read_file(path);
-        parser::parse(&ast::to_ast(&lexer::to_postfix(&lexer::lex(&program))));
+        let tree = ast::to_ast(&lexer::to_postfix(&lexer::lex(&program)));
+        // Create thread to run parser in that features much larger stack
+        let builder = std::thread::Builder::new()
+            .name("parser".into())
+            .stack_size(32 * 1024 * 1024);
+
+        let handler = builder.spawn(move || parser::parse(&tree)).unwrap();
+        handler.join().unwrap();
     }
 }
 

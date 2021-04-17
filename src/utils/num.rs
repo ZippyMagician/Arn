@@ -36,9 +36,9 @@ pub fn is_arn_num(string: &str) -> bool {
             'e' => {
                 if seen_e {
                     return false;
-                } else {
-                    seen_e = true;
                 }
+
+                seen_e = true;
             }
 
             '0'..='9' => {}

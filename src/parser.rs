@@ -187,7 +187,29 @@ pub fn parse_op(env: Env, op: &str, left: &[Node], right: &[Node]) -> Dynamic {
             Dynamic::from(new)
         }
 
-        ".@" => todo!("Sequences needed"),
+        ".@" => {
+            let mut parent = parse_node(Rc::clone(&env), &left[0]).literal_array();
+            parent.set_env(Rc::clone(&env));
+
+            let mut pre = Vec::new();
+            for item in parent {
+                pre.push(item.literal_array());
+            }
+
+            Dynamic::from(
+                pre.clone()
+                    .get(0)
+                    .unwrap()
+                    .clone()
+                    .enumerate()
+                    .map(|(i, _)| {
+                        pre.iter()
+                            .map(|array| array.clone().nth(i).unwrap())
+                            .collect()
+                    })
+                    .collect::<Vec<Vec<Dynamic>>>(),
+            )
+        }
 
         // |<left>|
         ".|" => {
@@ -195,25 +217,119 @@ pub fn parse_op(env: Env, op: &str, left: &[Node], right: &[Node]) -> Dynamic {
             left.mutate_num(Num::abs)
         }
 
-        ".<" => todo!("Sequences needed"),
+        // Reverse <left>
+        ".<" => Dynamic::from(
+            parse_node(Rc::clone(&env), &left[0])
+                .literal_array()
+                .rev()
+                .collect::<Vec<Dynamic>>(),
+        ),
 
-        ".." => todo!("Sequences needed"),
+        // Rangify <left>, exclusive or inclusive
+        ".." | ".=" => {
+            let mut left = parse_node(Rc::clone(&env), &left[0]).literal_array();
+            left.set_env(Rc::clone(&env));
+            let left: Vec<u32> = left
+                .map(|n| {
+                    n.literal_num()
+                        .to_u32_saturating_round(rug::float::Round::Down)
+                        .unwrap()
+                })
+                .collect();
 
-        ".=" => todo!("Sequences needed"),
+            #[allow(clippy::range_plus_one)]
+            let range = if op == ".." {
+                left[0]..left[1]
+            } else {
+                left[0]..left[1] + 1
+            };
 
-        ":n" => todo!("Sequences needed"),
+            Dynamic::new(
+                Val::Array(Box::new(Sequence::from_iter(
+                    range
+                        .clone()
+                        .map(|n| Dynamic::from(Num::with_val(*FLOAT_PRECISION, n))),
+                    Node::Block(vec![], None),
+                    Some(range.count()),
+                ))),
+                4,
+            )
+        }
 
-        ":s" => todo!("Sequences needed"),
+        // Split <left> on newlines
+        ":n" => Dynamic::from(
+            parse_node(Rc::clone(&env), &left[0])
+                .literal_string()
+                .split('\n')
+                .map(str::to_owned)
+                .collect::<Vec<_>>(),
+        ),
 
-        ":}" => todo!("Sequences needed"),
+        // Split <left> on spaces
+        ":s" => Dynamic::from(
+            parse_node(Rc::clone(&env), &left[0])
+                .literal_string()
+                .split(' ')
+                .map(str::to_owned)
+                .collect::<Vec<_>>(),
+        ),
 
-        ":{" => todo!("Sequences needed"),
+        // Tail of <left>
+        ":}" => {
+            let mut seq = parse_node(Rc::clone(&env), &left[0]).literal_array();
+            seq.set_env(Rc::clone(&env));
 
-        ".{" => todo!("Sequences needed"),
+            seq.last()
+                .expect("Cannot take last element of infinite sequence")
+        }
 
-        ".}" => todo!("Sequences needed"),
+        // Head of <left>
+        ":{" => {
+            let mut seq = parse_node(Rc::clone(&env), &left[0]).literal_array();
+            seq.set_env(Rc::clone(&env));
 
-        ":@" => todo!("Sequences needed"),
+            seq.next().unwrap()
+        }
+
+        // Behead <left>
+        ".{" => {
+            let mut seq = parse_node(Rc::clone(&env), &left[0]).literal_array();
+            seq.set_env(Rc::clone(&env));
+
+            Dynamic::from(seq.collect::<Vec<Dynamic>>()[1..].to_owned())
+        }
+
+        // Drop <left>
+        ".}" => {
+            let mut seq = parse_node(Rc::clone(&env), &left[0]).literal_array();
+            seq.set_env(Rc::clone(&env));
+
+            Dynamic::from(seq.clone().collect::<Vec<Dynamic>>()[..seq.count() - 1].to_owned())
+        }
+
+        // Group entries in <left> based on frequencies
+        ":@" => {
+            let mut arr = parse_node(Rc::clone(&env), &left[0]).literal_array();
+            arr.set_env(Rc::clone(&env));
+            let arr = arr.collect::<Vec<Dynamic>>();
+
+            Dynamic::from(arr.iter().fold(Vec::new(), |mut acc, val| {
+                if acc.is_empty() {
+                    vec![vec![val.clone()]]
+                } else {
+                    let filter = acc.iter().filter(|e| e[0].clone() == val.clone());
+                    if filter.clone().count() > 0 {
+                        let filter = filter.cloned().collect::<Vec<_>>();
+                        let pos = acc.iter().cloned().position(|e| e == filter[0]).unwrap();
+                        acc[pos].push(val.clone());
+                        acc
+                    } else {
+                        acc.push(vec![val.clone()]);
+                        acc
+                    }
+                }
+            }))
+        }
 
         // is <left> perfect square?
         "^*" => {

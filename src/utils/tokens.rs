@@ -22,7 +22,6 @@ pub enum Token {
 }
 
 // Will be used by ast once implemented
-#[allow(dead_code)]
 #[derive(Debug, Clone, PartialEq)]
 pub enum Node {
     /// A fix is any operation (usually denoted by punctuation)

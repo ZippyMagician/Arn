@@ -24,7 +24,10 @@ pub fn lex(prg: &str) -> Vec<Token> {
             buf.clear();
         }
 
-        if !in_string && !in_group && (buf == "\n" || buf == " " || buf == "\r" || buf == "→") {
+        if !in_string
+            && !in_group
+            && (buf == "\n" || buf == " " || buf == "\r" || buf == "\u{2192}")
+        {
             buf.clear();
         }
 
