@@ -2,6 +2,8 @@ use std::cell::RefCell;
 use std::io::{self, Read};
 use std::rc::Rc;
 
+use rand::Rng;
+
 use crate::utils::num::{to_u32, Num};
 use crate::utils::{env::Environment, tokens::Node, types::*};
 use crate::FLOAT_PRECISION;
@@ -339,33 +341,68 @@ pub fn parse_op(env: Env, op: &str, left: &[Node], right: &[Node]) -> Dynamic {
 
         // Repeat <r1> <r3> times with initial value <r2>
         "&." => {
-            if let Node::Block(_, name) = &right[0] {
-                let mut loop_arg = parse_node(Rc::clone(&env), &right[1]);
-                let count = parse_node(Rc::clone(&env), &right[2])
-                    .literal_num()
-                    .to_u32_saturating_round(rug::float::Round::Down)
-                    .unwrap();
-                let child_env = Rc::new(env.as_ref().clone());
+            let mut loop_arg = parse_node(Rc::clone(&env), &right[1]);
+            let count = parse_node(Rc::clone(&env), &right[2])
+                .literal_num()
+                .to_u32_saturating_round(rug::float::Round::Down)
+                .unwrap();
+            let child_env = Rc::new(env.as_ref().clone());
 
-                for _ in 0..count {
+            for _ in 0..count {
+                if let Node::Block(_, name) = &right[0] {
                     child_env
                         .borrow_mut()
-                        .define_var(name.as_ref().unwrap_or(&USCORE), loop_arg);
-                    loop_arg = parse_block(Rc::clone(&child_env), &right[0]);
+                        .define_var(name.as_ref().unwrap_or(&USCORE), loop_arg)
+                } else {
+                    child_env.borrow_mut().define_var("_", loop_arg);
                 }
-
-                loop_arg
-            } else {
-                panic!("First argument to `&.` must be Node::Block")
+                loop_arg = parse_node_uniq(Rc::clone(&child_env), &right[0]);
             }
+
+            loop_arg
         }
 
-        ":i" => todo!("Sequences needed"),
+        ":i" => {
+            let mut seq = parse_node(Rc::clone(&env), &left[0]).literal_array();
+            let val = parse_node(Rc::clone(&env), &right[0]);
+            seq.set_env(Rc::clone(&env));
+
+            Dynamic::from(Num::with_val(
+                *FLOAT_PRECISION,
+                seq.position(|e| e.clone() == val)
+                    .map(|v| v as i128)
+                    .unwrap_or(-1),
+            ))
+        }
 
         // not <right>
         "!" => Dynamic::from(!parse_node(Rc::clone(&env), &right[0]).literal_bool()),
 
-        "$" => todo!("Sequences needed"),
+        // Filter <r2> with condition <r1> /// <r2>.any(<r1>)
+        "$" | "$:" => {
+            let mut seq = parse_node(Rc::clone(&env), &right[1]).literal_array();
+            seq.set_env(Rc::clone(&env));
+            let child_env = Rc::new(env.as_ref().clone());
+            let filter = seq
+                .filter(|v| {
+                    if let Node::Block(_, name) = &right[0] {
+                        child_env
+                            .borrow_mut()
+                            .define_var(name.as_ref().unwrap_or(&USCORE), v.clone())
+                    } else {
+                        child_env.borrow_mut().define_var("_", v.clone());
+                    }
+
+                    parse_node_uniq(Rc::clone(&child_env), &right[0]).literal_bool()
+                })
+                .collect::<Vec<_>>();
+
+            if op == "$" {
+                Dynamic::from(filter)
+            } else {
+                Dynamic::from(filter.len() > 0)
+            }
+        }
 
         // Floor <right>
         ":v" => {
@@ -427,30 +464,157 @@ pub fn parse_op(env: Env, op: &str, left: &[Node], right: &[Node]) -> Dynamic {
         // ½<right>
         ":-" => parse_node(Rc::clone(&env), &right[0]).mutate_num(|n| n / 2),
 
-        ":>" => todo!("Sequences needed"),
+        // Sort <right> in descending order
+        ":>" => {
+            let mut seq = parse_node(Rc::clone(&env), &right[0]).literal_array();
+            seq.set_env(Rc::clone(&env));
+            let mut seq = seq.collect::<Vec<_>>();
+            seq.sort_by(|a, b| b.partial_cmp(a).unwrap());
+            Dynamic::from(seq)
+        }
 
-        ":<" => todo!("Sequences needed"),
+        // Sort <right> in ascending order
+        ":<" => {
+            let mut seq = parse_node(Rc::clone(&env), &right[0]).literal_array();
+            seq.set_env(Rc::clone(&env));
+            let mut seq = seq.collect::<Vec<_>>();
+            seq.sort_by(|a, b| a.partial_cmp(b).unwrap());
+            Dynamic::from(seq)
+        }
 
-        "|:" => todo!("Sequences needed"),
+        // Bifurcate <right>
+        "|:" => {
+            let string = parse_node(Rc::clone(&env), &right[0]).literal_string();
+            let mid = string.len() / 2;
+            Dynamic::from([
+                string[..mid].to_owned(),
+                string[mid..].to_owned().chars().rev().collect(),
+            ])
+        }
 
-        "$:" => todo!("Sequences needed"),
+        // Get random item within <right>
+        "?." => {
+            let mut seq = parse_node(Rc::clone(&env), &right[0]).literal_array();
+            seq.set_env(Rc::clone(&env));
+            let seq = seq.collect::<Vec<_>>();
 
-        "?." => todo!("Sequences needed"),
+            let mut rng = rand::thread_rng();
 
-        "#." => todo!("Sequences needed"),
+            Dynamic::from(seq[(rng.gen::<f64>() * seq.len() as f64).floor() as usize].clone())
+        }
 
-        "*." => todo!("Sequences needed"),
+        // All primes up to <right>
+        "#." => {
+            let num = to_u32(&env, &right[0]) as usize;
+            let sieve = primal::Primes::all()
+                .take_while(|n| *n <= num)
+                .map(|n| Num::with_val(*FLOAT_PRECISION, n))
+                .collect::<Vec<_>>();
+            Dynamic::new(
+                Val::Array(Box::new(Sequence::from_vec(
+                    &sieve,
+                    Node::Block(vec![], None),
+                    Some(sieve.len()),
+                ))),
+                4,
+            )
+        }
 
-        "$." => todo!("Sequences needed"),
+        // All factors of <right>
+        "*." => {
+            let num = to_u32(&env, &right[0]) as usize;
+            let mut fac = Vec::new();
+            let mut i = 1;
+            let mut ind = 0;
 
-        "z" => todo!("Sequences needed"),
+            while i <= (num as f64).sqrt().floor() as usize {
+                if num % i == 0 {
+                    fac.insert(ind, Num::with_val(*FLOAT_PRECISION, i));
+                    if i != num / i {
+                        fac.insert(fac.len() - ind, Num::with_val(*FLOAT_PRECISION, num / i));
+                    }
+                    ind += 1;
+                }
 
-        // Concat <left> and <right>
+                i += 1;
+            }
+
+            let len = fac.len();
+            let temp = fac[len - 1].clone();
+            fac[len - 1] = fac[0].clone();
+            fac[0] = temp;
+
+            Dynamic::from(fac)
+        }
+
+        // Split array at mid
+        "$." => {
+            let mut seq = parse_node(Rc::clone(&env), &right[0]).literal_array();
+            seq.set_env(Rc::clone(&env));
+            let seq = seq.collect::<Vec<_>>();
+
+            Dynamic::from([
+                seq[..seq.len() / 2].to_owned(),
+                seq[seq.len() / 2..].to_owned(),
+            ])
+        }
+
+        // Zip <left> and <right>
+        "z" => {
+            let left = parse_node(Rc::clone(&env), &left[0])
+                .literal_array()
+                .set_env_self(Rc::clone(&env))
+                .collect::<Vec<_>>();
+            let right = parse_node(Rc::clone(&env), &right[0])
+                .literal_array()
+                .set_env_self(Rc::clone(&env))
+                .collect::<Vec<_>>();
+            let mut output = Vec::with_capacity(left.len());
+
+            for i in 0..left.len() {
+                output.push([left[i].clone(), right[i].clone()]);
+            }
+
+            Dynamic::from(output)
+        }
+
+        // Concat <left> and <right>, special case for arrays
         "|" => {
-            // TODO: special case if concatenating to array
-            let mut left = parse_node(Rc::clone(&env), &left[0]).literal_string();
-            left.push_str(&parse_node(Rc::clone(&env), &right[0]).literal_string());
-            Dynamic::from(left)
+            let left = parse_node(Rc::clone(&env), &left[0]);
+            let right = parse_node(Rc::clone(&env), &right[0]);
+            if left.is_array() {
+                let mut left = left
+                    .literal_array()
+                    .set_env_self(Rc::clone(&env))
+                    .collect::<Vec<_>>();
+                if right.is_array() {
+                    Dynamic::from(
+                        [
+                            left,
+                            right
+                                .literal_array()
+                                .set_env_self(Rc::clone(&env))
+                                .collect::<Vec<_>>(),
+                        ]
+                        .concat()
+                        .to_owned(),
+                    )
+                } else {
+                    left.push(right);
+                    Dynamic::from(left)
+                }
+            } else if right.is_array() {
+                let mut right = right
+                    .literal_array()
+                    .set_env_self(Rc::clone(&env))
+                    .collect::<Vec<_>>();
+                right.insert(0, left);
+                Dynamic::from(right)
+            } else {
+                let mut left = left.literal_string();
+                left.push_str(&right.literal_string());
+                Dynamic::from(left)
+            }
         }
 
         // Very weakly typed, see `src/utils/types.rs`, PartialEq for Dynamic
@@ -534,7 +698,7 @@ pub fn parse_op(env: Env, op: &str, left: &[Node], right: &[Node]) -> Dynamic {
                     .borrow_mut()
                     .define_var(name.as_ref().unwrap_or(&USCORE), val)
             }
-            let mut block = parse_block(Rc::clone(&child_env), &left[0]);
+            let mut block = parse_node_uniq(Rc::clone(&child_env), &left[0]);
 
             while {
                 let child_env = Rc::new(env.as_ref().clone());
@@ -546,7 +710,7 @@ pub fn parse_op(env: Env, op: &str, left: &[Node], right: &[Node]) -> Dynamic {
                     child_env.borrow_mut().define_var("_", block.clone());
                 }
 
-                parse_block(Rc::clone(&child_env), &right[0]).literal_bool()
+                parse_node_uniq(Rc::clone(&child_env), &right[0]).literal_bool()
             } {
                 if let Node::Block(_, name) = &left[0] {
                     child_env
@@ -556,7 +720,7 @@ pub fn parse_op(env: Env, op: &str, left: &[Node], right: &[Node]) -> Dynamic {
                     child_env.borrow_mut().define_var("_", block.clone());
                 }
 
-                block = parse_block(Rc::clone(&child_env), &left[0]);
+                block = parse_node_uniq(Rc::clone(&child_env), &left[0]);
             }
 
             block
@@ -568,7 +732,7 @@ pub fn parse_op(env: Env, op: &str, left: &[Node], right: &[Node]) -> Dynamic {
 
 // Parses Node::Block, assuming it's key has already been initialized
 // Call if the key is checked before
-fn parse_block(env: Env, block: &Node) -> Dynamic {
+fn parse_node_uniq(env: Env, block: &Node) -> Dynamic {
     match block {
         Node::Block(block, _) => {
             for node in &block[..block.len() - 1] {
@@ -578,7 +742,7 @@ fn parse_block(env: Env, block: &Node) -> Dynamic {
             parse_node(Rc::clone(&env), block.last().unwrap_or(&DEFAULT))
         }
 
-        _ => unreachable!(),
+        _ => parse_node(env, block),
     }
 }
 

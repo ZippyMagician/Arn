@@ -7,7 +7,7 @@
     clippy::too_many_lines,
     // I have a lot of TODOs, so this is reduntant
     clippy::match_same_arms,
-    // The casting I do is valid
+    // I don't care about this
     clippy::cast_possible_wrap,
     clippy::cast_sign_loss,
     clippy::cast_possible_truncation,
@@ -24,8 +24,9 @@ mod lexer;
 mod parser;
 mod utils;
 
-use clap::{App, Arg};
 use std::fs;
+
+use clap::{App, Arg};
 
 // This is really cursed, but it works so hey
 lazy_static! {

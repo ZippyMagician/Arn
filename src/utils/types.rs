@@ -1,6 +1,7 @@
 #![allow(dead_code)]
 
 use std::cell::RefCell;
+use std::cmp::Ordering;
 use std::fmt::{self, Display, Formatter};
 use std::rc::Rc;
 
@@ -430,6 +431,77 @@ impl PartialEq for Dynamic {
     }
 }
 
+// Technically this isn't true
+impl Eq for Dynamic {}
+
+impl PartialOrd for Dynamic {
+    #[inline]
+    fn partial_cmp(&self, other: &Dynamic) -> Option<Ordering> {
+        match &self.val {
+            Val::String(s) => match &other.val {
+                Val::String(o) => s.partial_cmp(o),
+                Val::Number(n) => match Num::parse(s) {
+                    Ok(s) => Num::with_val(*FLOAT_PRECISION, s).partial_cmp(n),
+                    Err(_) => None,
+                },
+                Val::Boolean(b) => {
+                    if *b {
+                        s.partial_cmp(&"1".to_string())
+                    } else {
+                        s.partial_cmp(&"0".to_string())
+                    }
+                }
+                _ => s.partial_cmp(&other.clone().literal_string()),
+            },
+
+            Val::Number(n) => match &other.val {
+                Val::String(s) => match Num::parse(s) {
+                    Ok(s) => n.partial_cmp(&Num::with_val(*FLOAT_PRECISION, s)),
+                    Err(_) => None,
+                },
+                Val::Number(o) => n.partial_cmp(o),
+                Val::Boolean(b) => {
+                    if *b {
+                        n.partial_cmp(&1)
+                    } else {
+                        n.cmp0()
+                    }
+                }
+                _ => n.partial_cmp(&other.clone().literal_num()),
+            },
+
+            Val::Boolean(b) => match &other.val {
+                Val::Number(n) => {
+                    if *b {
+                        Num::with_val(*FLOAT_PRECISION, 1).partial_cmp(&1)
+                    } else {
+                        Num::new(*FLOAT_PRECISION).partial_cmp(n)
+                    }
+                }
+                Val::Boolean(n) => b.partial_cmp(n),
+                _ => b.partial_cmp(&other.clone().literal_bool()),
+            },
+
+            Val::Array(s) => match &other.val {
+                Val::Array(o) => {
+                    let s = s.as_ref().clone().collect::<Vec<_>>();
+                    let o = o.as_ref().clone().collect::<Vec<_>>();
+
+                    s.partial_cmp(&o)
+                }
+
+                _ => s
+                    .as_ref()
+                    .clone()
+                    .collect::<Vec<_>>()
+                    .partial_cmp(&other.clone().literal_array().collect::<Vec<_>>()),
+            },
+
+            Val::Empty => None,
+        }
+    }
+}
+
 impl<'a> From<&'a str> for Dynamic {
     fn from(v: &'a str) -> Self {
         Self {
@@ -602,6 +674,19 @@ impl Sequence {
     #[inline]
     pub fn set_env(&mut self, env: Env) {
         self.env = Some(env);
+    }
+
+    #[inline]
+    pub fn set_env_self(self, env: Env) -> Self {
+        Self {
+            cstr: self.cstr,
+            unparsed_length: self.unparsed_length,
+            length: self.length,
+            block: self.block,
+            t_i: self.t_i,
+            env: Some(env),
+            index: self.index,
+        }
     }
 
     fn traverse_replace(&mut self, n: Node) -> Node {
