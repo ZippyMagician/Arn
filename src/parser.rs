@@ -2,6 +2,7 @@ use std::cell::RefCell;
 use std::io::{self, Read};
 use std::rc::Rc;
 
+use radix_fmt::radix;
 use rand::Rng;
 
 use crate::utils::num::{to_u32, Num};
@@ -176,6 +177,26 @@ pub fn parse_op(env: Env, op: &str, left: &[Node], right: &[Node]) -> Dynamic {
                 .len()
                 .expect("Cannot take length of infinite sequence"),
         )),
+
+        ";" => {
+            let ops = format!("{}", right[0]);
+            let chars = ops.trim().trim_matches('"').chars();
+            let mut cur = parse_node(Rc::clone(&env), &left[0]).to_string();
+
+            for char in chars {
+                match char {
+                    'b' => cur = radix(cur.parse::<i128>().expect("Invalid base10 number"), 2).to_string(),
+                    'o' => cur = radix(cur.parse::<i128>().expect("Invalid base10 number"), 8).to_string(),
+                    'h' => cur = radix(cur.parse::<i128>().expect("Invalid base10 number"), 16).to_string(),
+                    'B' => cur = i128::from_str_radix(&cur, 2).expect("Invalid base2 number").to_string(),
+                    'O' => cur = i128::from_str_radix(&cur, 8).expect("Invalid base8 number").to_string(),
+                    'H' => cur = i128::from_str_radix(&cur, 16).expect("Invalid base16 number").to_string(),
+                    _ => panic!("Unrecognized base conversion char {}", char)
+                }
+            }
+
+            Dynamic::from(cur)
+        }
 
         ":_" => {
             let orig = parse_node(Rc::clone(&env), &left[0]).literal_array();
