@@ -38,7 +38,7 @@ pub fn parse_op(env: Env, op: &str, left: &[Node], right: &[Node]) -> Dynamic {
         "." => {
             if let Node::Variable(v) = &right[0] {
                 let arg = parse_node(Rc::clone(&env), &left[0]);
-                env.borrow_mut().attempt_call(v, arg)
+                env.borrow().attempt_call(v, &env, arg)
             } else {
                 panic!("Dot operator only accepts a variable on the right hand side")
             }
@@ -64,19 +64,22 @@ pub fn parse_op(env: Env, op: &str, left: &[Node], right: &[Node]) -> Dynamic {
         // <left> × <right>
         "*" => {
             let left = parse_node(Rc::clone(&env), &left[0]);
-            left.mutate_num(|n| n * parse_node(Rc::clone(&env), &right[0]).literal_num())
+            let right = parse_node(Rc::clone(&env), &right[0]).literal_num();
+            left.mutate_num(|n| n * right)
         }
 
         // <left> ÷ <right>
         "/" => {
             let left = parse_node(Rc::clone(&env), &left[0]);
-            left.mutate_num(|n| n / parse_node(Rc::clone(&env), &right[0]).literal_num())
+            let right = parse_node(Rc::clone(&env), &right[0]).literal_num();
+            left.mutate_num(|n| n / right)
         }
 
         // <left> mod <right>
         "%" => {
             let left = parse_node(Rc::clone(&env), &left[0]);
-            left.mutate_num(|n| n % parse_node(Rc::clone(&env), &right[0]).literal_num())
+            let right = parse_node(Rc::clone(&env), &right[0]).literal_num();
+            left.mutate_num(|n| n % right)
         }
 
         // <left>.join(<right>)
@@ -105,13 +108,15 @@ pub fn parse_op(env: Env, op: &str, left: &[Node], right: &[Node]) -> Dynamic {
         // <left> + <right>
         "+" => {
             let left = parse_node(Rc::clone(&env), &left[0]);
-            left.mutate_num(|n| n + parse_node(Rc::clone(&env), &right[0]).literal_num())
+            let right = parse_node(Rc::clone(&env), &right[0]).literal_num();
+            left.mutate_num(|n| n + right)
         }
 
         // <left> - <right>
         "-" => {
             let left = parse_node(Rc::clone(&env), &left[0]);
-            left.mutate_num(|n| n - parse_node(Rc::clone(&env), &right[0]).literal_num())
+            let right = parse_node(Rc::clone(&env), &right[0]).literal_num();
+            left.mutate_num(|n| n - right)
         }
 
         // <left> ==> [<left>[..<right>], <left>[<right>..]]
@@ -453,13 +458,13 @@ pub fn parse_op(env: Env, op: &str, left: &[Node], right: &[Node]) -> Dynamic {
 
         // Fold + map op
         "\\" => {
-            let seq = parse_node(Rc::clone(&env), &right[0])
+            let seq = Box::new(parse_node(Rc::clone(&env), &right[0])
                 .literal_array()
-                .set_env_self(Rc::clone(&env));
+                .set_env_self(Rc::clone(&env)));
 
             let (block, rest) = grab_block_from_fold(&left[0], None);
 
-            let res = if let Some(Node::Block(_, name)) = block.clone() {
+            let res = Box::new(if let Some(Node::Block(_, name)) = block.clone() {
                 let child_env = Rc::new(env.as_ref().clone());
                 let block = block.unwrap();
 
@@ -472,10 +477,10 @@ pub fn parse_op(env: Env, op: &str, left: &[Node], right: &[Node]) -> Dynamic {
                 .collect::<Vec<_>>()
             } else {
                 seq.collect::<Vec<_>>()
-            };
+            });
 
             if rest == Node::Variable("_".to_string()) {
-                Dynamic::from(res)
+                Dynamic::from(res.as_ref().clone())
             } else {
                 let constructed = format!("{}", rest);
                 let seperator = constructed.trim().trim_matches('_');
@@ -486,8 +491,7 @@ pub fn parse_op(env: Env, op: &str, left: &[Node], right: &[Node]) -> Dynamic {
                     .join(seperator);
 
                 // This looks like a Vec<Node>, but in reality it is a single Node (only one value)
-                let val =
-                    crate::ast::to_ast(&crate::lexer::to_postfix(&crate::lexer::lex(&program)));
+                let val = crate::build_ast(&program);
                 parse_node(Rc::clone(&env), &val[0])
             }
         }
@@ -945,9 +949,14 @@ pub fn parse(ast: &[Node]) {
         ),
     );
 
-    env.define_fn("out", |d| {
+    env.define_fn("out", |_, d| {
         println!("{}", d);
         d
+    });
+    env.define_fn("f", |e, val| {
+        let child = Rc::new(e.as_ref().clone());
+        child.borrow_mut().define_var("_", val);
+        parse_node(Rc::clone(&child), &crate::build_ast("*\\~")[0])
     });
 
     let env: Env = Rc::new(RefCell::new(env));

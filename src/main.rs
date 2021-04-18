@@ -56,6 +56,14 @@ lazy_static! {
                 .value_name("INTEGER")
         )
         .arg(
+            Arg::with_name("stack-size")
+                .long("stack")
+                .help("Sets the size of the allocated stack for the program")
+                .takes_value(true)
+                .value_name("MEGABYTES")
+                .default_value("2")
+        )
+        .arg(
             Arg::with_name("one-ten")
                 .short("d")
                 .help("Sets STDIN to the range [1, 10]")
@@ -116,6 +124,7 @@ lazy_static! {
 fn main() {
     if let Some(path) = MATCHES.value_of("file") {
         let mut program = read_file(path);
+        let size = MATCHES.value_of("stack-size").unwrap().parse::<usize>().unwrap();
 
         // Some ARGV handling
         if MATCHES.is_present("array") {
@@ -125,15 +134,19 @@ fn main() {
             program = format!("{{{}}}\\", program);
         }
 
-        let tree = ast::to_ast(&lexer::to_postfix(&lexer::lex(&program)));
         // Create thread to run parser in that features much larger stack
         let builder = std::thread::Builder::new()
             .name("parser".into())
-            .stack_size(32 * 1024 * 1024);
+            .stack_size(size * 1024 * 1024);
 
-        let handler = builder.spawn(move || parser::parse(&tree)).unwrap();
+        let handler = builder.spawn(move || parser::parse(&build_ast(&program))).unwrap();
         handler.join().unwrap();
     }
+}
+
+#[inline]
+pub fn build_ast(prg: &str) -> Vec<utils::tokens::Node> {
+    ast::to_ast(&lexer::to_postfix(&lexer::lex(prg)))
 }
 
 fn read_file(path: &str) -> String {

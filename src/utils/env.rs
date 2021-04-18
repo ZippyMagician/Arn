@@ -2,11 +2,11 @@ use std::collections::HashMap;
 use std::fmt;
 use std::rc::Rc;
 
-use super::types::Dynamic;
+use super::types::{Dynamic, Env};
 
 #[derive(Clone)]
 pub struct Environment {
-    pub funcs: HashMap<String, Rc<dyn Fn(Dynamic) -> Dynamic>>,
+    pub funcs: HashMap<String, Rc<dyn Fn(Env, Dynamic) -> Dynamic>>,
     pub vars: HashMap<String, Dynamic>,
 }
 
@@ -20,7 +20,7 @@ impl Environment {
 
     pub fn define_fn<T: 'static>(&mut self, name: &str, f: T)
     where
-        T: Fn(Dynamic) -> Dynamic,
+        T: Fn(Env, Dynamic) -> Dynamic,
     {
         self.funcs.insert(name.to_owned(), Rc::new(f));
     }
@@ -32,13 +32,12 @@ impl Environment {
         self.vars.insert(name.to_owned(), Dynamic::from(val));
     }
 
-    pub fn attempt_call(&mut self, name: &str, arg: Dynamic) -> Dynamic {
+    pub fn attempt_call(&self, name: &str, env: &Env, arg: Dynamic) -> Dynamic {
         let f = self
             .funcs
-            .get_mut(name)
+            .get(name)
             .unwrap_or_else(|| panic!("Unrecognized function {}", name));
-
-        f(arg)
+        f(Rc::clone(env), arg)
     }
 }
 
