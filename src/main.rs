@@ -28,6 +28,8 @@ use std::fs;
 
 use clap::{App, Arg};
 
+use crate::utils::compress;
+
 // This is really cursed, but it works so hey
 lazy_static! {
     pub static ref MATCHES: clap::ArgMatches<'static> = App::new("Arn")
@@ -62,6 +64,12 @@ lazy_static! {
                 .takes_value(true)
                 .value_name("MEGABYTES")
                 .default_value("2")
+        )
+        .arg(
+            Arg::with_name("compress")
+                .short("c")
+                .long("compress")
+                .help("The input will be compressed and printed to STDOUT")
         )
         .arg(
             Arg::with_name("one-ten")
@@ -128,12 +136,22 @@ lazy_static! {
 
 fn main() {
     if let Some(path) = MATCHES.value_of("file") {
-        let mut program = read_file(path);
+        // Read file, remove CRLF
+        let mut program = read_file(path).replace("\r\n", "\n");
         let size = MATCHES
             .value_of("stack-size")
             .unwrap()
             .parse::<usize>()
             .unwrap();
+
+        if MATCHES.is_present("compress") {
+            println!("{}", compress::pack(&program));
+            std::process::exit(0);
+        }
+
+        if compress::is_packed(&program) {
+            program = compress::unpack(&program);
+        }
 
         // Some ARGV handling
         if MATCHES.is_present("array") {
