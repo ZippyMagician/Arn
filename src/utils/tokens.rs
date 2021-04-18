@@ -1,3 +1,5 @@
+use std::fmt::{self, Display, Formatter};
+
 use super::num::Num;
 
 #[derive(Debug, Clone, PartialEq)]
@@ -46,4 +48,62 @@ pub enum Node {
     /// A Sequence `[ ... ]`
     /// Body, block, size
     Sequence(Vec<Node>, Box<Node>, Option<Box<Node>>),
+}
+
+// Hacky but it'll do
+impl Display for Node {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        match &self {
+            Self::Op(val, l, r) => {
+                for item in l {
+                    write!(f, "{}", item)?;
+                }
+                write!(f, "{} ", val)?;
+                for item in r {
+                    write!(f, "{}", item)?;
+                }
+
+                Ok(())
+            }
+
+            Self::String(st) => write!(f, "\"{}\" ", st),
+
+            Self::Number(num) => write!(f, "{} ", super::types::Dynamic::from(num.clone())),
+
+            Self::Variable(st) => write!(f, "{} ", st),
+
+            Self::Group(nodes) => {
+                write!(f, "(")?;
+                for node in nodes {
+                    write!(f, "{}", node)?;
+                }
+                write!(f, ")")
+            }
+
+            Self::Block(nodes, name) => {
+                if let Some(name) = name {
+                    write!(f, "{}", name)?;
+                }
+                write!(f, "{{")?;
+                for node in nodes {
+                    write!(f, "{}", node)?;
+                }
+                write!(f, "}} ")
+            }
+
+            Self::Sequence(entries, block, len) => {
+                write!(f, "[")?;
+                for entry in entries {
+                    write!(f, "{}, ", entry)?;
+                }
+                write!(f, "{}", block.as_ref())?;
+
+                if let Some(len) = len {
+                    write!(f, "-> {}", len.as_ref())?;
+                }
+
+                write!(f, "]")
+            }
+        }
+    }
 }

@@ -13,6 +13,24 @@ lazy_static! {
     static ref USCORE: String = String::from("_");
 }
 
+fn grab_block_from_fold(fold: &Node, mut block: Option<Node>) -> (Option<Node>, Node) {
+    match fold {
+        Node::Op(n, l, r) => {
+            let mut r = r.clone();
+            let end = r.len() - 1;
+            let inter = grab_block_from_fold(&r[end], block);
+
+            block = inter.0;
+            r[end] = inter.1;
+            (block, Node::Op(n.clone(), l.clone(), r))
+        }
+
+        Node::Block(_, _) => (Some(fold.clone()), Node::Variable("_".to_string())),
+
+        _ => (block, fold.clone()),
+    }
+}
+
 pub fn parse_op(env: Env, op: &str, left: &[Node], right: &[Node]) -> Dynamic {
     match op {
         // <right>(<left>)
@@ -369,9 +387,7 @@ pub fn parse_op(env: Env, op: &str, left: &[Node], right: &[Node]) -> Dynamic {
 
             Dynamic::from(Num::with_val(
                 *FLOAT_PRECISION,
-                seq.position(|e| e.clone() == val)
-                    .map(|v| v as i128)
-                    .unwrap_or(-1),
+                seq.position(|e| e == val).map_or(-1, |v| v as i128),
             ))
         }
 
@@ -400,7 +416,50 @@ pub fn parse_op(env: Env, op: &str, left: &[Node], right: &[Node]) -> Dynamic {
             if op == "$" {
                 Dynamic::from(filter)
             } else {
-                Dynamic::from(filter.len() > 0)
+                Dynamic::from(!filter.is_empty())
+            }
+        }
+
+        // Fold + map op
+        "\\" => {
+            let seq = parse_node(Rc::clone(&env), &right[0])
+                .literal_array()
+                .set_env_self(Rc::clone(&env));
+
+            let (block, rest) = grab_block_from_fold(&left[0], None);
+            let res;
+
+            if let Some(Node::Block(_, name)) = block.clone() {
+                let child_env = Rc::new(env.as_ref().clone());
+                let block = block.unwrap();
+
+                res = seq
+                    .map(|val| {
+                        child_env
+                            .borrow_mut()
+                            .define_var(name.as_ref().unwrap_or(&USCORE), val);
+                        parse_node_uniq(Rc::clone(&child_env), &block)
+                    })
+                    .collect::<Vec<_>>();
+            } else {
+                res = seq.collect::<Vec<_>>();
+            }
+
+            if rest == Node::Variable("_".to_string()) {
+                Dynamic::from(res)
+            } else {
+                let constructed = format!("{}", rest);
+                let seperator = constructed.trim().trim_matches('_');
+                let program = res
+                    .iter()
+                    .map(|n| format!("{}", n))
+                    .collect::<Vec<String>>()
+                    .join(seperator);
+
+                // This looks like a Vec<Node>, but in reality it is a single Node (only one value)
+                let val =
+                    crate::ast::to_ast(&crate::lexer::to_postfix(&crate::lexer::lex(&program)));
+                parse_node(Rc::clone(&env), &val[0])
             }
         }
 
@@ -500,7 +559,7 @@ pub fn parse_op(env: Env, op: &str, left: &[Node], right: &[Node]) -> Dynamic {
 
             let mut rng = rand::thread_rng();
 
-            Dynamic::from(seq[(rng.gen::<f64>() * seq.len() as f64).floor() as usize].clone())
+            seq[(rng.gen::<f64>() * seq.len() as f64).floor() as usize].clone()
         }
 
         // All primes up to <right>
@@ -596,8 +655,7 @@ pub fn parse_op(env: Env, op: &str, left: &[Node], right: &[Node]) -> Dynamic {
                                 .set_env_self(Rc::clone(&env))
                                 .collect::<Vec<_>>(),
                         ]
-                        .concat()
-                        .to_owned(),
+                        .concat(),
                     )
                 } else {
                     left.push(right);
@@ -724,6 +782,28 @@ pub fn parse_op(env: Env, op: &str, left: &[Node], right: &[Node]) -> Dynamic {
             }
 
             block
+        }
+
+        "@" => {
+            let seq = parse_node(Rc::clone(&env), &left[0])
+                .literal_array()
+                .set_env_self(Rc::clone(&env));
+            let child_env = Rc::new(env.as_ref().clone());
+
+            Dynamic::from(
+                seq.map(|val| {
+                    if let Node::Block(_, name) = &left[0] {
+                        child_env
+                            .borrow_mut()
+                            .define_var(name.as_ref().unwrap_or(&USCORE), val)
+                    } else {
+                        child_env.borrow_mut().define_var("_", val);
+                    }
+
+                    parse_node_uniq(Rc::clone(&child_env), &right[0])
+                })
+                .collect::<Vec<_>>(),
+            )
         }
 
         _ => unimplemented!(),

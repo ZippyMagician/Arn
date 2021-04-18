@@ -71,12 +71,21 @@ pub fn to_ast(postfix: &[Token]) -> Vec<Node> {
                 let mut right = Vec::new();
 
                 for _ in 0..rank.1 {
-                    // I can call unwrap as lexer::expr_to_postfix guarantees arguments exist
-                    right.insert(0, output.pop().unwrap());
+                    right.insert(
+                        0,
+                        output
+                            .pop()
+                            .unwrap_or_else(|| Node::Variable("_".to_string())),
+                    );
                 }
 
                 for _ in 0..rank.0 {
-                    left.insert(0, output.pop().unwrap());
+                    left.insert(
+                        0,
+                        output
+                            .pop()
+                            .unwrap_or_else(|| Node::Variable("_".to_string())),
+                    );
                 }
 
                 output.push(Node::Op(ident.clone(), left, right));

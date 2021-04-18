@@ -67,8 +67,8 @@ impl Dynamic {
         match &self.val {
             Val::String(_) => self.clone(),
 
-            Val::Number(n) => Self {
-                val: Val::String(n.to_string()),
+            Val::Number(_) => Self {
+                val: Val::String(format!("{}", self)),
                 cur: 1,
             },
 

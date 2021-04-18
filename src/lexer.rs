@@ -4,7 +4,7 @@ use crate::utils::tokens::Token;
 
 // Takes the inputted program and converts it into a stream of tokens
 // Inserts the implied variable `_` wherever it is used
-// TODO: This will handle literals used by `\` and `@` in the future - make modular instead of hardcode?
+// Special case for `\` and TODO: `@`
 pub fn lex(prg: &str) -> Vec<Token> {
     // Lets assume only 5 `_` will be inserted, this should help performance
     let mut construct: Vec<Token> = Vec::new();
@@ -108,8 +108,17 @@ pub fn lex(prg: &str) -> Vec<Token> {
 
             let rank = OPTIONS.rank.get(&buf).unwrap();
             if rank.0 > 0 {
-                if construct.is_empty() || construct.last() == Some(&Token::Comma) {
-                    for _ in 0..rank.0 {
+                if construct.is_empty()
+                    || construct.len() < rank.0 as usize
+                    || construct.last() == Some(&Token::Comma)
+                {
+                    for _ in 0..rank.0 - construct.len() as i32
+                        + if construct.last() == Some(&Token::Comma) {
+                            construct.len() as i32
+                        } else {
+                            0
+                        }
+                    {
                         construct.push(Token::Variable('_'.to_string()));
                     }
                 } else if let Some(Token::Operator(_, stack_rank)) = construct.last() {
