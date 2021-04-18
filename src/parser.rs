@@ -6,8 +6,8 @@ use radix_fmt::radix;
 use rand::Rng;
 
 use crate::utils::num::{to_u32, Num};
-use crate::utils::{env::Environment, tokens::Node, types::*};
-use crate::FLOAT_PRECISION;
+use crate::utils::{self, env::Environment, tokens::Node, types::*};
+use crate::{FLOAT_PRECISION, MATCHES};
 
 lazy_static! {
     static ref DEFAULT: Node = Node::String(String::new());
@@ -184,15 +184,25 @@ pub fn parse_op(env: Env, op: &str, left: &[Node], right: &[Node]) -> Dynamic {
             let mut cur = parse_node(Rc::clone(&env), &left[0]).to_string();
 
             for char in chars {
-                match char {
-                    'b' => cur = radix(cur.parse::<i128>().expect("Invalid base10 number"), 2).to_string(),
-                    'o' => cur = radix(cur.parse::<i128>().expect("Invalid base10 number"), 8).to_string(),
-                    'h' => cur = radix(cur.parse::<i128>().expect("Invalid base10 number"), 16).to_string(),
-                    'B' => cur = i128::from_str_radix(&cur, 2).expect("Invalid base2 number").to_string(),
-                    'O' => cur = i128::from_str_radix(&cur, 8).expect("Invalid base8 number").to_string(),
-                    'H' => cur = i128::from_str_radix(&cur, 16).expect("Invalid base16 number").to_string(),
-                    _ => panic!("Unrecognized base conversion char {}", char)
-                }
+                cur =
+                    match char {
+                        'b' => radix(cur.parse::<i128>().expect("Invalid base10 number"), 2)
+                            .to_string(),
+                        'o' => radix(cur.parse::<i128>().expect("Invalid base10 number"), 8)
+                            .to_string(),
+                        'h' => radix(cur.parse::<i128>().expect("Invalid base10 number"), 16)
+                            .to_string(),
+                        'B' => i128::from_str_radix(&cur, 2)
+                            .expect("Invalid base2 number")
+                            .to_string(),
+                        'O' => i128::from_str_radix(&cur, 8)
+                            .expect("Invalid base8 number")
+                            .to_string(),
+                        'H' => i128::from_str_radix(&cur, 16)
+                            .expect("Invalid base16 number")
+                            .to_string(),
+                        _ => panic!("Unrecognized base conversion char {}", char),
+                    }
             }
 
             Dynamic::from(cur)
@@ -448,23 +458,21 @@ pub fn parse_op(env: Env, op: &str, left: &[Node], right: &[Node]) -> Dynamic {
                 .set_env_self(Rc::clone(&env));
 
             let (block, rest) = grab_block_from_fold(&left[0], None);
-            let res;
 
-            if let Some(Node::Block(_, name)) = block.clone() {
+            let res = if let Some(Node::Block(_, name)) = block.clone() {
                 let child_env = Rc::new(env.as_ref().clone());
                 let block = block.unwrap();
 
-                res = seq
-                    .map(|val| {
-                        child_env
-                            .borrow_mut()
-                            .define_var(name.as_ref().unwrap_or(&USCORE), val);
-                        parse_node_uniq(Rc::clone(&child_env), &block)
-                    })
-                    .collect::<Vec<_>>();
+                seq.map(|val| {
+                    child_env
+                        .borrow_mut()
+                        .define_var(name.as_ref().unwrap_or(&USCORE), val);
+                    parse_node_uniq(Rc::clone(&child_env), &block)
+                })
+                .collect::<Vec<_>>()
             } else {
-                res = seq.collect::<Vec<_>>();
-            }
+                seq.collect::<Vec<_>>()
+            };
 
             if rest == Node::Variable("_".to_string()) {
                 Dynamic::from(res)
@@ -903,10 +911,30 @@ pub fn parse_node(env: Env, node: &Node) -> Dynamic {
 pub fn parse(ast: &[Node]) {
     let mut env = Environment::init();
 
-    let mut stdin = String::new();
-    io::stdin()
-        .read_to_string(&mut stdin)
-        .expect("Could not read from stdin");
+    let mut stdin = if atty::is(atty::Stream::Stdin) {
+        String::from("")
+    } else {
+        let mut buffer = String::new();
+        io::stdin()
+            .read_to_string(&mut buffer)
+            .expect("Could not read from stdin");
+        buffer
+    };
+
+    if MATCHES.is_present("one-ten") {
+        stdin = utils::create_str_range(1, 10);
+    }
+    if MATCHES.is_present("one-hundred") {
+        stdin = utils::create_str_range(1, 100);
+    }
+    if MATCHES.is_present("rangeify") {
+        stdin = utils::create_str_range(
+            1,
+            stdin
+                .parse::<usize>()
+                .expect("Input was not a valid integer"),
+        );
+    }
 
     env.define_var("_", stdin.trim_end_matches('\n').to_owned());
     env.define_var(
@@ -928,5 +956,41 @@ pub fn parse(ast: &[Node]) {
         parse_node(Rc::clone(&env), node);
     }
 
-    println!("{}", parse_node(env, ast.last().unwrap_or(&DEFAULT)));
+    let mut result = parse_node(Rc::clone(&env), ast.last().unwrap_or(&DEFAULT));
+
+    if MATCHES.is_present("first") {
+        result = result
+            .literal_array()
+            .set_env_self(Rc::clone(&env))
+            .collect::<Vec<_>>()
+            .first()
+            .unwrap()
+            .clone();
+    }
+    if MATCHES.is_present("last") {
+        result = result
+            .literal_array()
+            .set_env_self(Rc::clone(&env))
+            .collect::<Vec<_>>()
+            .last()
+            .unwrap()
+            .clone();
+    }
+    if MATCHES.is_present("sum") {
+        result = Dynamic::from(
+            result
+                .literal_array()
+                .set_env_self(Rc::clone(&env))
+                .map(|n| n.literal_num())
+                .fold(Num::new(*FLOAT_PRECISION), |acc, val| acc + val),
+        );
+    }
+    if MATCHES.is_present("size") {
+        result = Dynamic::from(Num::with_val(
+            *FLOAT_PRECISION,
+            result.literal_array().set_env_self(Rc::clone(&env)).count(),
+        ));
+    }
+
+    println!("{}", result);
 }

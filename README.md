@@ -13,7 +13,7 @@ Current status of the Rust interpreter for Arn
 - [x] Implement Sequences / Arrays
 - [x] Implement Sequence-related fixes
 - [x] Figure out how to implement `;`, `\`, and `@`
-- [ ] Implement command line arguments
+- [x] Implement command line arguments
 - [ ] Implement compressed strings and Carn
 - [ ] Fix found issues
 

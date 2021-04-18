@@ -32,6 +32,7 @@ lazy_static = "1.4"
 rand = "0.8.3"
 primal = "0.3"
 radix_fmt = "1.0.0"
+atty = "0.2.14"
 
 [profile.release]
 lto = true

@@ -30,38 +30,101 @@ use clap::{App, Arg};
 
 // This is really cursed, but it works so hey
 lazy_static! {
-    pub static ref MATCHES: clap::ArgMatches<'static> = App::new("Anvil")
-        .version("0.1")
-        .about("Rust interpreter for Arn")
-        .arg(Arg::from_usage("<file> 'The file to be interpreted'"))
+    pub static ref MATCHES: clap::ArgMatches<'static> = App::new("Arn")
+        .version("1.0")
+        .author("ZippyMagician <zippymagician1@gmail.com>")
+        .about("The Rust interpreter for Arn")
+        .arg(
+            Arg::with_name("file")
+                .required(true)
+                .help("The input file to be run")
+        )
         .arg(
             Arg::with_name("precision")
                 .short("p")
                 .long("precision")
-                .value_name("INTEGER")
                 .help("Precision of internal floats")
-                .default_value("50"),
+                .takes_value(true)
+                .value_name("INTEGER")
         )
         .arg(
             Arg::with_name("output-precision")
                 .short("o")
                 .long("oprecision")
+                .help("Precision of outputted numbers")
+                .takes_value(true)
                 .value_name("INTEGER")
-                .help("Determines precision of outputted numbers")
-                .default_value("4")
+        )
+        .arg(
+            Arg::with_name("one-ten")
+                .short("d")
+                .help("Sets STDIN to the range [1, 10]")
+        )
+        .arg(
+            Arg::with_name("one-hundred")
+                .short("h")
+                .help("Sets STDIN to the range [1, 100]")
+        )
+        .arg(
+            Arg::with_name("array")
+                .short("a")
+                .help("Wraps program in `[ ... ]`")
+        )
+        .arg(
+            Arg::with_name("rangeify")
+                .short("r")
+                .help("Converts STDIN `r` to the range [1, r]")
+        )
+        .arg(
+            Arg::with_name("map")
+                .short("m")
+                .help("Executes the program like it's mapped over the input")
+        )
+        .arg(
+            Arg::with_name("first")
+                .short("f")
+                .help("Returns first value in return value of program")
+        )
+        .arg(
+            Arg::with_name("last")
+                .short("l")
+                .help("Returns last value in return value of program")
+        )
+        .arg(
+            Arg::with_name("size")
+                .short("s")
+                .help("Returns size of return value of program")
+        )
+        .arg(
+            Arg::with_name("sum")
+                .short("x")
+                .help("Sums the returned value of the program")
         )
         .get_matches();
-    pub static ref FLOAT_PRECISION: u32 = MATCHES.value_of("precision").unwrap().parse().unwrap();
+    pub static ref FLOAT_PRECISION: u32 = MATCHES
+        .value_of("precision")
+        .unwrap_or("50")
+        .parse()
+        .unwrap();
     pub static ref OUTPUT_PRECISION: usize = MATCHES
         .value_of("output-precision")
-        .unwrap()
+        .unwrap_or("4")
         .parse()
         .unwrap();
 }
 
 fn main() {
     if let Some(path) = MATCHES.value_of("file") {
-        let program = read_file(path);
+        let mut program = read_file(path);
+
+        // Some ARGV handling
+        if MATCHES.is_present("array") {
+            program = format!("[{}]", program);
+        }
+        if MATCHES.is_present("map") {
+            program = format!("{{{}}}\\", program);
+        }
+
         let tree = ast::to_ast(&lexer::to_postfix(&lexer::lex(&program)));
         // Create thread to run parser in that features much larger stack
         let builder = std::thread::Builder::new()
