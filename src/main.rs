@@ -108,6 +108,11 @@ lazy_static! {
                 .short("x")
                 .help("Sums the returned value of the program")
         )
+        .arg(
+            Arg::with_name("index")
+                .short("i")
+                .help("Yields the i'th value in the return value of the program, where i is STDIN")
+        )
         .get_matches();
     pub static ref FLOAT_PRECISION: u32 = MATCHES
         .value_of("precision")
@@ -124,7 +129,11 @@ lazy_static! {
 fn main() {
     if let Some(path) = MATCHES.value_of("file") {
         let mut program = read_file(path);
-        let size = MATCHES.value_of("stack-size").unwrap().parse::<usize>().unwrap();
+        let size = MATCHES
+            .value_of("stack-size")
+            .unwrap()
+            .parse::<usize>()
+            .unwrap();
 
         // Some ARGV handling
         if MATCHES.is_present("array") {
@@ -139,7 +148,9 @@ fn main() {
             .name("parser".into())
             .stack_size(size * 1024 * 1024);
 
-        let handler = builder.spawn(move || parser::parse(&build_ast(&program))).unwrap();
+        let handler = builder
+            .spawn(move || parser::parse(&build_ast(&program)))
+            .unwrap();
         handler.join().unwrap();
     }
 }

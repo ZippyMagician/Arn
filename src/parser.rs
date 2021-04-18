@@ -458,9 +458,11 @@ pub fn parse_op(env: Env, op: &str, left: &[Node], right: &[Node]) -> Dynamic {
 
         // Fold + map op
         "\\" => {
-            let seq = Box::new(parse_node(Rc::clone(&env), &right[0])
-                .literal_array()
-                .set_env_self(Rc::clone(&env)));
+            let seq = Box::new(
+                parse_node(Rc::clone(&env), &right[0])
+                    .literal_array()
+                    .set_env_self(Rc::clone(&env)),
+            );
 
             let (block, rest) = grab_block_from_fold(&left[0], None);
 
@@ -922,7 +924,7 @@ pub fn parse(ast: &[Node]) {
         io::stdin()
             .read_to_string(&mut buffer)
             .expect("Could not read from stdin");
-        buffer
+        buffer.trim_end_matches('\n').to_owned()
     };
 
     if MATCHES.is_present("one-ten") {
@@ -940,7 +942,7 @@ pub fn parse(ast: &[Node]) {
         );
     }
 
-    env.define_var("_", stdin.trim_end_matches('\n').to_owned());
+    env.define_var("_", stdin.clone());
     env.define_var(
         "E",
         Num::with_val(
@@ -984,6 +986,13 @@ pub fn parse(ast: &[Node]) {
             .last()
             .unwrap()
             .clone();
+    }
+    if MATCHES.is_present("index") {
+        result = result
+            .literal_array()
+            .set_env_self(Rc::clone(&env))
+            .nth(stdin.parse::<usize>().unwrap())
+            .unwrap();
     }
     if MATCHES.is_present("sum") {
         result = Dynamic::from(
