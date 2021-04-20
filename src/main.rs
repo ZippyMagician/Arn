@@ -151,7 +151,7 @@ fn main() {
             print!("# [Arn](https://github.com/ZippyMagician/Arn)");
             for arg in std::env::args()
                 .skip(1)
-                .filter(|h| h.starts_with('-'))
+                .filter(|h| !h.starts_with("--") && h.starts_with('-'))
                 .flat_map(|n| {
                     n.trim_matches('-')
                         .chars()
@@ -166,7 +166,7 @@ fn main() {
             if !flags.is_empty() {
                 print!(" `-{}`", flags);
             }
-            println!(", [{} bytes](https://github.com/ZippyMagician/Arn/wiki/Carn)\n", comp_program.len());
+            println!(", [{} bytes](https://github.com/ZippyMagician/Arn/wiki/Carn)\n", comp_program.chars().count());
             println!("```\n{}\n```\n", comp_program);
             println!("# Explained\nUnpacked: `{}`\n```\nELABORATE HERE\n```", program);
             std::process::exit(0);

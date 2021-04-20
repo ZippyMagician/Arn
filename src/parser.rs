@@ -985,7 +985,7 @@ pub fn parse(ast: &[Node]) {
             rug::float::Constant::Pi,
         ),
     );
-    env.define_var("a", Vec::new());
+    env.define_var("a", Vec::<Dynamic>::new());
     env.define_var("c", String::new());
     env.define_var("Fi", "Fizz".to_string());
     env.define_var("Bu", "Buzz".to_string());
