@@ -1,5 +1,3 @@
-I am currently in the process of completely re-writing the Arn parser in order to fix all the issues the current one has (op precedence being the primary offender). See [here](https://github.com/ZippyMagician/Arn/tree/new-parser).
-
 # Arn
 [![Build Status](https://travis-ci.org/ZippyMagician/Arn.svg?branch=master)](https://travis-ci.org/ZippyMagician/Arn)
 
