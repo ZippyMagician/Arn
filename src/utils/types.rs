@@ -1,9 +1,7 @@
 #![allow(dead_code)]
 
-use std::cell::RefCell;
-use std::cmp::Ordering;
 use std::fmt::{self, Display, Formatter};
-use std::rc::Rc;
+use std::{cell::RefCell, cmp::Ordering, rc::Rc};
 
 use super::env::Environment;
 use super::num::{to_u32, Num};
@@ -690,54 +688,8 @@ impl Sequence {
     }
 
     fn traverse_replace(&mut self, n: Node) -> Node {
-        if self.t_i.is_none() {
-            self.t_i = Some(self.index as isize - 2);
-        }
-
-        match &n {
-            Node::Block(body, nm) => {
-                let new_body = body
-                    .iter()
-                    .map(|n| self.traverse_replace(n.clone()))
-                    .collect();
-                Node::Block(new_body, nm.clone())
-            }
-
-            Node::String(_) => n,
-
-            Node::Number(_) => n,
-
-            Node::Variable(v) => {
-                if v == "_" {
-                    self.t_i = Some(self.t_i.unwrap() - 1);
-                    self.cstr[(self.t_i.unwrap() + 1) as usize].clone().into()
-                } else {
-                    n
-                }
-            }
-
-            Node::Group(body) => {
-                let new_body = body
-                    .iter()
-                    .map(|n| self.traverse_replace(n.clone()))
-                    .collect();
-                Node::Group(new_body)
-            }
-
-            Node::Op(n, largs, rargs) => {
-                let nl = largs
-                    .iter()
-                    .map(|n| self.traverse_replace(n.clone()))
-                    .collect();
-                let nr = rargs
-                    .iter()
-                    .map(|n| self.traverse_replace(n.clone()))
-                    .collect();
-                Node::Op(n.clone(), nl, nr)
-            }
-
-            _ => unimplemented!(),
-        }
+        let mut vals = self.cstr.iter().cloned().map(|n| n.into_node()).collect();
+        super::traverse_replace(&mut vals, n)
     }
 
     #[allow(clippy::unnecessary_wraps)]
@@ -749,7 +701,6 @@ impl Sequence {
         } else {
             self.index += 1;
             let block = self.traverse_replace(self.block.clone());
-            self.t_i = None;
             let res = crate::parser::parse_node(Rc::clone(self.env.as_ref().unwrap()), &block);
             self.cstr.push(res.clone());
 

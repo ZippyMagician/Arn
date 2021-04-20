@@ -25,8 +25,8 @@ where
     }
 
     while !big.is_zero() {
-        result.push((big.clone() % 252_u8).floor().to_u32_saturating().unwrap() as u8);
-        big = (big / 252_u8).floor();
+        result.push((big.clone() % 256_u16).floor().to_u32_saturating().unwrap() as u8);
+        big = (big / 256_u16).floor();
     }
 
     result
@@ -56,7 +56,7 @@ where
     let mut big = Num::new(1000);
 
     for byte in bytes.rev() {
-        big = big * 252 + byte;
+        big = big * 256 + byte;
     }
 
     while !big.is_zero() {

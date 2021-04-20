@@ -819,6 +819,33 @@ pub fn parse_op(env: Env, op: &str, left: &[Node], right: &[Node]) -> Dynamic {
             block
         }
 
+        // Compare adjacent values in array <left> and, if <right> evaluates to true, groups them
+        "::" => {
+            let mut groups = Vec::new();
+            let orig = parse_node(Rc::clone(&env), &left[0])
+                .literal_array()
+                .set_env_self(Rc::clone(&env));
+
+            for node in orig {
+                if groups.last().is_none() {
+                    groups.push(vec![node]);
+                } else {
+                    let mut vals = vec![
+                        groups.last().unwrap().last().unwrap().clone().into_node(),
+                        node.clone().into_node(),
+                    ];
+                    let block = utils::traverse_replace(&mut vals, right[0].clone());
+                    if parse_node(Rc::clone(&env), &block).literal_bool() {
+                        groups.last_mut().unwrap().push(node);
+                    } else {
+                        groups.push(vec![node]);
+                    }
+                }
+            }
+
+            Dynamic::from(groups)
+        }
+
         "@" => {
             let seq = parse_node(Rc::clone(&env), &left[0])
                 .literal_array()

@@ -4,9 +4,7 @@ use crate::utils::tokens::Token;
 
 // Takes the inputted program and converts it into a stream of tokens
 // Inserts the implied variable `_` wherever it is used
-// Special case for `\` and TODO: `@`
 pub fn lex(prg: &str) -> Vec<Token> {
-    // Lets assume only 5 `_` will be inserted, this should help performance
     let mut construct: Vec<Token> = Vec::new();
     let mut buf: String = String::new();
 
