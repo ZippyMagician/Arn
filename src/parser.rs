@@ -969,6 +969,7 @@ pub fn parse(ast: &[Node]) {
         );
     }
 
+    // Defined variables
     env.define_var("_", stdin.clone());
     env.define_var(
         "E",
@@ -977,15 +978,38 @@ pub fn parse(ast: &[Node]) {
             Num::parse("2.7182818284590452353602874713527").unwrap(),
         ),
     );
+    env.define_var(
+        "pi",
+        Num::with_val(
+            *FLOAT_PRECISION,
+            rug::float::Constant::Pi,
+        ),
+    );
+    env.define_var("a", Vec::new());
+    env.define_var("c", String::new());
+    env.define_var("Fi", "Fizz".to_string());
+    env.define_var("Bu", "Buzz".to_string());
+    // I don't care what people say, I am never adding a constant for "Hello, World!"
 
-    env.define_fn("out", |_, d| {
+    // Defined functions
+    env.define_fn("o", |_, d| {
         println!("{}", d);
         d
     });
     env.define_fn("f", |e, val| {
         let child = Rc::new(e.as_ref().clone());
         child.borrow_mut().define_var("_", val);
-        parse_node(Rc::clone(&child), &crate::build_ast("*\\~")[0])
+        parse_node(Rc::clone(&child), &crate::build_ast(r#"*\~"#)[0])
+    });
+    env.define_fn("me", |e, val| {
+        let child = Rc::new(e.as_ref().clone());
+        child.borrow_mut().define_var("_", val);
+        parse_node(Rc::clone(&child), &crate::build_ast(r#"(+\) / #"#)[0])
+    });
+    env.define_fn("sdev", |e, val| {
+        let child = Rc::new(e.as_ref().clone());
+        child.borrow_mut().define_var("_", val);
+        parse_node(Rc::clone(&child), &crate::build_ast(r#":/(@n{:*n-.me}).me"#)[0])
     });
 
     let env: Env = Rc::new(RefCell::new(env));
