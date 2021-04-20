@@ -1,5 +1,5 @@
 [package]
-name = "arn"
+name = "arn-language"
 version = "1.0.0"
 edition = "2018"
 include = [

@@ -28,7 +28,7 @@ cargo install --path path/to/repository
 ```
 or by running
 ```
-cargo install arn
+cargo install arn-language
 ```
 
 ## About
