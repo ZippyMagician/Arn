@@ -14,8 +14,8 @@ Current status of the Rust interpreter for Arn
 - [x] Implement Sequence-related fixes
 - [x] Figure out how to implement `;`, `\`, and `@`
 - [x] Implement command line arguments
-- [ ] Implement compressed strings and Carn
-- [ ] Fix found issues
+- [x] Implement compressed strings 
+- [x] Fix found issues
 
 Current (found) issues
 - [x] Doesn't place `_` inside blocks
@@ -28,7 +28,6 @@ See [here](https://docs.rs/gmp-mpfr-sys/1.4.4/gmp_mpfr_sys/index.html#building-o
 cargo install --path path/to/repository
 ```
 
-## Changes
-There were some changes made to the language to reduce bloat, as it is a golfing language at heart
-  - **No More `:` or `:=`**: You can't assign variables or functions any more
-  - **No More 2+ Arg Functions**: All functions are called with `<ARG> . <FN>`
+## TODO
+- Need to implement `:=` as the new variable / function assignment op (change how functions work) 
+- Implement compressed strings (not entirely necessary right now)
