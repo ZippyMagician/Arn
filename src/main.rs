@@ -24,6 +24,7 @@ mod lexer;
 mod parser;
 mod utils;
 
+use std::fmt::Write;
 use std::fs;
 
 use clap::{App, Arg};
@@ -40,6 +41,11 @@ lazy_static! {
             Arg::with_name("file")
                 .required(true)
                 .help("The input file to be run")
+        )
+        .arg(
+            Arg::with_name("gen-answer")
+                .long("cgans")
+                .help("Generates a sample answer from the provided program for https://codegolf.stackexchange.com")
         )
         .arg(
             Arg::with_name("precision")
@@ -138,6 +144,34 @@ fn main() {
     if let Some(path) = MATCHES.value_of("file") {
         // Read file, remove CRLF
         let mut program = read_file(path).replace("\r\n", "\n");
+        
+        if MATCHES.is_present("gen-answer") {
+            let comp_program = compress::pack(&program);
+            let mut flags = String::new();
+            print!("# [Arn](https://github.com/ZippyMagician/Arn)");
+            for arg in std::env::args()
+                .skip(1)
+                .filter(|h| h.starts_with('-'))
+                .flat_map(|n| {
+                    n.trim_matches('-')
+                        .chars()
+                        .collect::<Vec<_>>()
+                })
+            {
+                if arg != 'p' && arg != 'o' {
+                    write!(flags, "{}", arg).unwrap();
+                }
+            }
+            
+            if !flags.is_empty() {
+                print!(" `-{}`", flags);
+            }
+            println!(", [{} bytes](https://github.com/ZippyMagician/Arn/wiki/Carn)\n", comp_program.len());
+            println!("```\n{}\n```\n", comp_program);
+            println!("# Explained\nUnpacked: `{}`\n```\nELABORATE HERE\n```", program);
+            std::process::exit(0);
+        }
+        
         let size = MATCHES
             .value_of("stack-size")
             .unwrap()
