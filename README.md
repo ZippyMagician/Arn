@@ -1,7 +1,7 @@
 # Arn
 [![Build Status](https://travis-ci.org/ZippyMagician/Arn.svg?branch=master)](https://travis-ci.org/ZippyMagician/Arn)
 
-A general-purpose function golfing language. [Tutorial](https://github.com/ZippyMagician/Arn/wiki/Tutorial)
+A general-purpose functional golfing language. [Tutorial](https://github.com/ZippyMagician/Arn/wiki/Tutorial)
 
 ## Installation
 ### Prior to 1.0
@@ -30,8 +30,7 @@ cargo install arn-language
 ```
 
 ## About
-**Arn** is a golfing language; that is, it is designed to perform tasks in as few bytes as possible. However, unlike other golfing languages (such as **05AB1E** or **Gaia**), Arn is a functional paradigm with variable-based storage.
-This is different from other golfing languages, which mainly use single-character commands. Arn is much more similar to **J**, therefore, than any of these other golfing languages.
+**Arn** is a golfing language; that is, it is designed to perform tasks in as few bytes as possible. It draws heavy inspiration from **J**/**APL**
 
 Arn is constructed of variable declarations, functions, and symbols. These symbols come in the forms of prefixes, infixes, and suffixes. A full syntax and description can be found at [this page](https://github.com/ZippyMagician/Arn/wiki).
 This format, however, may lead to instances where your program needs to be a few bytes shorter in order to compete. This is where **Carn** (Compressed Arn) comes in.

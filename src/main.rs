@@ -133,9 +133,9 @@ lazy_static! {
                 .help("Boolean nots the returned value")
         )
         .arg(
-            Arg::with_name("decrement-ranges")
+            Arg::with_name("0-range")
                 .short("R")
-                .help("The `~` prefix becomes [0, N)")
+                .help("Sets STDIN N to the range [0, N)")
         )
         .arg(
             Arg::with_name("flat")
@@ -153,7 +153,6 @@ lazy_static! {
         .unwrap_or("4")
         .parse()
         .unwrap();
-    pub static ref ROFFSET: usize = if MATCHES.is_present("decrement-ranges") { 1 } else { 0 };
 }
 
 fn main() {

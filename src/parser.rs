@@ -7,7 +7,7 @@ use rand::Rng;
 
 use crate::utils::num::{to_u32, Num};
 use crate::utils::{self, env::Environment, tokens::Node, types::*};
-use crate::{FLOAT_PRECISION, MATCHES, ROFFSET};
+use crate::{FLOAT_PRECISION, MATCHES};
 
 lazy_static! {
     static ref DEFAULT: Node = Node::String(String::new());
@@ -142,7 +142,7 @@ pub fn parse_op(env: Env, op: &str, left: &[Node], right: &[Node]) -> Dynamic {
             let end = to_u32(&env, &left[0]) as usize;
 
             Dynamic::from(
-                (1 - *ROFFSET..=end - *ROFFSET)
+                (1..=end)
                     .map(|n| Dynamic::from(Num::with_val(*FLOAT_PRECISION, n)))
                     .collect::<Vec<_>>(),
             )
@@ -184,7 +184,7 @@ pub fn parse_op(env: Env, op: &str, left: &[Node], right: &[Node]) -> Dynamic {
 
             Dynamic::new(
                 Val::Array(Box::new(Sequence::from_iter(
-                    (1 - *ROFFSET..=right - *ROFFSET)
+                    (1..=right)
                         .map(|n| Dynamic::from(Num::with_val(*FLOAT_PRECISION, n))),
                     Node::Block(vec![], None),
                     Some(right),
@@ -1042,6 +1042,14 @@ pub fn parse(ast: &[Node]) {
                 .parse::<usize>()
                 .expect("Input was not a valid integer"),
         );
+    }
+    if MATCHES.is_present("0-range") {
+        stdin = utils::create_str_range(
+            1,
+            stdin
+                .parse::<usize>()
+                .expect("Input was not a valid integer"),
+        ).split(" ").rev().join(" ");
     }
 
     // Defined variables
