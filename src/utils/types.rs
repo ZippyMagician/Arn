@@ -1,6 +1,7 @@
 #![allow(dead_code)]
 
 use std::fmt::{self, Display, Formatter};
+use std::hash::{Hash, Hasher};
 use std::{cell::RefCell, cmp::Ordering, rc::Rc};
 
 use super::env::Environment;
@@ -25,8 +26,20 @@ pub enum Val {
     Empty,
 }
 
+impl Hash for Val {
+    fn hash<H: Hasher>(&self, state: &mut H) {
+        match self {
+            Val::String(s) => s.hash(state),
+            Val::Number(n) => n.clone().floor().to_u32_saturating().unwrap().hash(state),
+            Val::Boolean(b) => b.hash(state),
+            Val::Array(s) => s.as_ref().clone().collect::<Vec<Dynamic>>().hash(state),
+            Val::Empty => "".hash(state),
+        }
+    }
+}
+
 // Struct that represents types in Arn
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Hash)]
 pub struct Dynamic {
     val: Val,
     cur: u8,

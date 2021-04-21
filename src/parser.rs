@@ -130,6 +130,17 @@ pub fn parse_op(env: Env, op: &str, left: &[Node], right: &[Node]) -> Dynamic {
             Dynamic::from([l, r])
         }
 
+        // Descending range [<left>, 1]
+        ".~" => {
+            let end = to_u32(&env, &left[0]) as usize;
+
+            Dynamic::from(
+                (1 - *ROFFSET..=end - *ROFFSET)
+                    .map(|n| Dynamic::from(Num::with_val(*FLOAT_PRECISION, n)))
+                    .collect::<Vec<_>>(),
+            )
+        }
+
         // [<left>, <right>]
         "=>" => {
             let left = to_u32(&env, &left[0]) as usize;
@@ -674,6 +685,42 @@ pub fn parse_op(env: Env, op: &str, left: &[Node], right: &[Node]) -> Dynamic {
             }
 
             Dynamic::from(output)
+        }
+
+        // Dedup <right>
+        "#>" => {
+            let mut hash = std::collections::HashSet::new();
+            let mut result = Vec::new();
+            let array = parse_node(Rc::clone(&env), &right[0])
+                .literal_array()
+                .set_env_self(Rc::clone(&env));
+            for item in array {
+                if hash.get(&item).is_none() {
+                    hash.insert(item.clone());
+                    result.push(item);
+                }
+            }
+
+            Dynamic::from(result)
+        }
+
+        // Dedup sieve
+        "#:" => {
+            let mut hash = std::collections::HashSet::new();
+            let mut result = Vec::new();
+            let array = parse_node(Rc::clone(&env), &right[0])
+                .literal_array()
+                .set_env_self(Rc::clone(&env));
+            for item in array {
+                if hash.get(&item).is_none() {
+                    result.push(Num::with_val(*FLOAT_PRECISION, 1));
+                    hash.insert(item);
+                } else {
+                    result.push(Num::new(*FLOAT_PRECISION));
+                }
+            }
+
+            Dynamic::from(result)
         }
 
         // Concat <left> and <right>, special case for arrays
