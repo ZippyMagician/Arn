@@ -61,6 +61,13 @@ pub fn parse_op(env: Env, op: &str, left: &[Node], right: &[Node]) -> Dynamic {
             }
         }
 
+        // [<left>, <right>]
+        ",:" => {
+            let left = parse_node(Rc::clone(&env), &left[0]);
+            let right = parse_node(Rc::clone(&env), &right[0]);
+            Dynamic::from([left, right])
+        }
+
         // <left> × <right>
         "*" => {
             let left = parse_node(Rc::clone(&env), &left[0]);
@@ -897,6 +904,7 @@ pub fn parse_op(env: Env, op: &str, left: &[Node], right: &[Node]) -> Dynamic {
             Dynamic::from(groups)
         }
 
+        // Bind <right> to each value in <left>
         "@" => {
             let seq = parse_node(Rc::clone(&env), &left[0])
                 .literal_array()
@@ -917,6 +925,22 @@ pub fn parse_op(env: Env, op: &str, left: &[Node], right: &[Node]) -> Dynamic {
                 })
                 .collect::<Vec<_>>(),
             )
+        }
+
+        // Bind <right> to <left>
+        "&" => {
+            let left = parse_node(Rc::clone(&env), &left[0]);
+            let child_env = Rc::new(env.as_ref().clone());
+
+            if let Node::Block(_, name) = &right[0] {
+                child_env
+                    .borrow_mut()
+                    .define_var(name.as_ref().unwrap_or(&USCORE), left)
+            } else {
+                child_env.borrow_mut().define_var("_", left);
+            }
+
+            parse_node_uniq(Rc::clone(&child_env), &right[0])
         }
 
         _ => unimplemented!(),
