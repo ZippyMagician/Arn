@@ -854,7 +854,7 @@ pub fn parse_op(env: Env, op: &str, left: &[Node], right: &[Node]) -> Dynamic {
 
             Dynamic::from(
                 seq.map(|val| {
-                    if let Node::Block(_, name) = &left[0] {
+                    if let Node::Block(_, name) = &right[0] {
                         child_env
                             .borrow_mut()
                             .define_var(name.as_ref().unwrap_or(&USCORE), val)
@@ -1008,7 +1008,7 @@ pub fn parse(ast: &[Node]) {
         child.borrow_mut().define_var("_", val);
         parse_node(
             Rc::clone(&child),
-            &crate::build_ast(r#":/(@n{:*n-.me}).me"#)[0],
+            &crate::build_ast(r#":/ ( @ n{ :* n - (:s) . me } ) . me"#)[0],
         )
     });
 
