@@ -143,6 +143,7 @@ pub fn parse_op(env: Env, op: &str, left: &[Node], right: &[Node]) -> Dynamic {
 
             Dynamic::from(
                 (1..=end)
+                    .rev()
                     .map(|n| Dynamic::from(Num::with_val(*FLOAT_PRECISION, n)))
                     .collect::<Vec<_>>(),
             )
@@ -184,8 +185,7 @@ pub fn parse_op(env: Env, op: &str, left: &[Node], right: &[Node]) -> Dynamic {
 
             Dynamic::new(
                 Val::Array(Box::new(Sequence::from_iter(
-                    (1..=right)
-                        .map(|n| Dynamic::from(Num::with_val(*FLOAT_PRECISION, n))),
+                    (1..=right).map(|n| Dynamic::from(Num::with_val(*FLOAT_PRECISION, n))),
                     Node::Block(vec![], None),
                     Some(right),
                 ))),
@@ -1049,7 +1049,10 @@ pub fn parse(ast: &[Node]) {
             stdin
                 .parse::<usize>()
                 .expect("Input was not a valid integer"),
-        ).split(" ").rev().join(" ");
+        )
+        .split(" ")
+        .rev()
+        .join(" ");
     }
 
     // Defined variables
