@@ -177,12 +177,12 @@ impl Dynamic {
                         cur: 4,
                     }
                 } else {
-                    let iter = s.split("").map(Dynamic::from);
+                    let iter = s.chars().map(|n| Dynamic::from(n.to_string()));
                     Self {
                         val: Val::Array(Box::new(Sequence::from_iter(
-                            iter,
+                            iter.clone(),
                             Node::String(String::new()),
-                            Some(s.len()),
+                            Some(iter.count()),
                         ))),
                         cur: 4,
                     }
