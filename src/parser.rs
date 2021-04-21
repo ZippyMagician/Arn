@@ -452,7 +452,7 @@ pub fn parse_op(env: Env, op: &str, left: &[Node], right: &[Node]) -> Dynamic {
         // not <right>
         "!" => Dynamic::from(!parse_node(Rc::clone(&env), &right[0]).literal_bool()),
 
-        // Filter <r2> with condition <r1> /// <r2>.any(<r1>)
+        // Filter <r2> with condition <r1>, <r2>.any(<r1>)
         "$" | "$:" => {
             let mut seq = parse_node(Rc::clone(&env), &right[1]).literal_array();
             seq.set_env(Rc::clone(&env));
@@ -840,7 +840,6 @@ pub fn parse_op(env: Env, op: &str, left: &[Node], right: &[Node]) -> Dynamic {
         }
 
         // Do <left> while <right> (left & right take previous left value as arg), yields final mutated value
-        // TODO: separate fix that yields number of iterations?
         ":" => {
             let child_env = Rc::new(env.as_ref().clone());
             if let Node::Block(_, name) = &left[0] {
