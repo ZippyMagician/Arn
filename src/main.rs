@@ -127,6 +127,21 @@ lazy_static! {
                 .short("i")
                 .help("Yields the i'th value in the return value of the program, where i is STDIN")
         )
+        .arg(
+            Arg::with_name("not")
+                .short("!")
+                .help("Boolean nots the returned value")
+        )
+        .arg(
+            Arg::with_name("decrement-ranges")
+                .short("R")
+                .help("The `~` prefix becomes [0, N)")
+        )
+        .arg(
+            Arg::with_name("flat")
+                .short("F")
+                .help("Flattens returned value")
+        )
         .get_matches();
     pub static ref FLOAT_PRECISION: u32 = MATCHES
         .value_of("precision")
@@ -138,6 +153,7 @@ lazy_static! {
         .unwrap_or("4")
         .parse()
         .unwrap();
+    pub static ref ROFFSET: usize = if MATCHES.is_present("decrement-ranges") { 1 } else { 0 };
 }
 
 fn main() {
@@ -195,6 +211,9 @@ fn main() {
         }
         if MATCHES.is_present("map") {
             program = format!("{{{}}}\\", program);
+        }
+        if MATCHES.is_present("flat") {
+            program = format!("({}):_", program);
         }
 
         // Create thread to run parser in that features much larger stack

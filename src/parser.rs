@@ -7,7 +7,7 @@ use rand::Rng;
 
 use crate::utils::num::{to_u32, Num};
 use crate::utils::{self, env::Environment, tokens::Node, types::*};
-use crate::{FLOAT_PRECISION, MATCHES};
+use crate::{FLOAT_PRECISION, MATCHES, ROFFSET};
 
 lazy_static! {
     static ref DEFAULT: Node = Node::String(String::new());
@@ -166,7 +166,8 @@ pub fn parse_op(env: Env, op: &str, left: &[Node], right: &[Node]) -> Dynamic {
 
             Dynamic::new(
                 Val::Array(Box::new(Sequence::from_iter(
-                    (1..=right).map(|n| Dynamic::from(Num::with_val(*FLOAT_PRECISION, n))),
+                    (1 - *ROFFSET..=right - *ROFFSET)
+                        .map(|n| Dynamic::from(Num::with_val(*FLOAT_PRECISION, n))),
                     Node::Block(vec![], None),
                     Some(right),
                 ))),
@@ -183,6 +184,7 @@ pub fn parse_op(env: Env, op: &str, left: &[Node], right: &[Node]) -> Dynamic {
                 .expect("Cannot take length of infinite sequence"),
         )),
 
+        // Base conversion of <left> based on <right>
         ";" => {
             let ops = format!("{}", right[0]);
             let chars = ops.trim().trim_matches('"').chars();
@@ -213,6 +215,7 @@ pub fn parse_op(env: Env, op: &str, left: &[Node], right: &[Node]) -> Dynamic {
             Dynamic::from(cur)
         }
 
+        // Flatten <left>
         ":_" => {
             let orig = parse_node(Rc::clone(&env), &left[0]).literal_array();
             if !orig.is_finite() {
@@ -243,6 +246,7 @@ pub fn parse_op(env: Env, op: &str, left: &[Node], right: &[Node]) -> Dynamic {
             Dynamic::from(new)
         }
 
+        // Transpose <left>
         ".@" => {
             let mut parent = parse_node(Rc::clone(&env), &left[0]).literal_array();
             parent.set_env(Rc::clone(&env));
@@ -1059,6 +1063,9 @@ pub fn parse(ast: &[Node]) {
             *FLOAT_PRECISION,
             result.literal_array().set_env_self(Rc::clone(&env)).count(),
         ));
+    }
+    if MATCHES.is_present("not") {
+        result = Dynamic::from(!result.literal_bool())
     }
 
     println!("{}", result);
