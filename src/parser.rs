@@ -438,6 +438,7 @@ pub fn parse_op(env: Env, op: &str, left: &[Node], right: &[Node]) -> Dynamic {
             loop_arg
         }
 
+        // Index of <right> in <left>
         ":i" => {
             let mut seq = parse_node(Rc::clone(&env), &left[0]).literal_array();
             let val = parse_node(Rc::clone(&env), &right[0]);

@@ -22,7 +22,7 @@ async function yank() {
     base += '|\n';
     
     for (name in defs) {
-        base += `| \`${name.replace(/([\|])/g, "\\$1")}\` | \`${defs[name][0]}\` | \`${defs[name][1].map(c => " _ ".repeat(c)).join(name.replace(/([\|])/g, "\\$1")).trim()}\` | ${defs[name][2]} |\n`;
+        base += `| \`${name.replace(/([\|])/g, "\\$1")}\` | \`${defs[name][0]}\` | \`${defs[name][1].map(c => " _ ".repeat(c)).join(name.replace(/([\|])/g, "\\$1")).trim()}\` | **${defs[name][2].replace(/([\<\>\|])/g, "\\$1")}** |\n`;
     }
 
     console.log(base);
