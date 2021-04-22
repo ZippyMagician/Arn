@@ -1048,7 +1048,7 @@ pub fn parse(ast: &[Node]) {
             1,
             stdin
                 .parse::<usize>()
-                .expect("Input was not a valid integer"),
+                .expect("Input was not a valid integer") - 1,
         )
         .split(" ")
         .rev()

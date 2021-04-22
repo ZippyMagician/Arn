@@ -11,7 +11,6 @@ pub fn create_str_range(s: usize, n: usize) -> String {
     (s..=n).map(|v| v.to_string()).collect::<Vec<_>>().join(" ")
 }
 
-// REPLACE WITH VEC
 pub fn traverse_replace(entries: &mut Vec<Node>, tree: Node) -> Node {
     match &tree {
         Node::Block(body, nm) => {
