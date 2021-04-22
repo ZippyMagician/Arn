@@ -34,14 +34,23 @@ fn grab_block_from_fold(fold: &Node, mut block: Option<Node>) -> (Option<Node>, 
 
 pub fn parse_op(env: Env, op: &str, left: &[Node], right: &[Node]) -> Dynamic {
     match op {
+        // Assign expression <right> to <left>
+        ":=" => {
+            let name = format!("{}", left[0]);
+            let right = right[0].clone();
+            env.borrow_mut().define(&name, move |env, arg| {
+                let child = Rc::new(env.as_ref().clone());
+                child.borrow_mut().define_var("_", arg);
+                parse_node(Rc::clone(&child), &right)
+            });
+            Dynamic::from(false)
+        }
+
         // <right>(<left>)
         "." => {
-            if let Node::Variable(v) = &right[0] {
-                let arg = parse_node(Rc::clone(&env), &left[0]);
-                env.borrow().attempt_call(v, &env, arg)
-            } else {
-                panic!("Dot operator only accepts a variable on the right hand side")
-            }
+            let v = format!("{}", right[0]);
+            let arg = parse_node(Rc::clone(&env), &left[0]);
+            env.borrow().attempt_call(&v, &env, arg)
         }
 
         // <left> pow <right>
@@ -536,12 +545,7 @@ pub fn parse_op(env: Env, op: &str, left: &[Node], right: &[Node]) -> Dynamic {
         // Inc <right>
         "++" => {
             if let Node::Variable(name) = &right[0] {
-                let mut val = env
-                    .borrow()
-                    .vars
-                    .get(name)
-                    .expect("Variable not recognized")
-                    .clone();
+                let mut val = env.borrow().get_var(name);
                 val = val.mutate_num(|n| n + 1);
                 env.borrow_mut().define_var(name, val.clone());
                 val
@@ -554,12 +558,7 @@ pub fn parse_op(env: Env, op: &str, left: &[Node], right: &[Node]) -> Dynamic {
         // Dec <right>
         "--" => {
             if let Node::Variable(name) = &right[0] {
-                let mut val = env
-                    .borrow()
-                    .vars
-                    .get(name)
-                    .expect("Variable not recognized")
-                    .clone();
+                let mut val = env.borrow().get_var(name);
                 val = val.mutate_num(|n| n - 1);
                 env.borrow_mut().define_var(name, val.clone());
                 val
@@ -844,7 +843,7 @@ pub fn parse_op(env: Env, op: &str, left: &[Node], right: &[Node]) -> Dynamic {
         ":" => {
             let child_env = Rc::new(env.as_ref().clone());
             if let Node::Block(_, name) = &left[0] {
-                let val = child_env.borrow().vars.get("_").unwrap().clone();
+                let val = child_env.borrow().get_var("_");
                 child_env
                     .borrow_mut()
                     .define_var(name.as_ref().unwrap_or(&USCORE), val)
@@ -971,13 +970,9 @@ pub fn parse_node(env: Env, node: &Node) -> Dynamic {
 
         Node::Number(v) => Dynamic::from(v.clone()),
 
-        Node::Variable(v) => {
-            if let Some(val) = env.borrow().vars.get(v) {
-                val.clone()
-            } else {
-                panic!("Unrecognized variable {}", v);
-            }
-        }
+        Node::Variable(v) => env
+            .borrow()
+            .attempt_call(v, &env, env.borrow().get_var("_")),
 
         Node::Group(body) => {
             for node in &body[..body.len() - 1] {
@@ -989,7 +984,7 @@ pub fn parse_node(env: Env, node: &Node) -> Dynamic {
 
         Node::Block(body, name) => {
             let child_env = Rc::new(env.as_ref().clone());
-            let val = child_env.borrow().vars.get("_").unwrap().clone();
+            let val = child_env.borrow().get_var("_");
             child_env
                 .borrow_mut()
                 .define_var(name.as_ref().unwrap_or(&USCORE), val);
@@ -1048,7 +1043,8 @@ pub fn parse(ast: &[Node]) {
             0,
             stdin
                 .parse::<usize>()
-                .expect("Input was not a valid integer") - 1,
+                .expect("Input was not a valid integer")
+                - 1,
         );
     }
 
@@ -1072,21 +1068,21 @@ pub fn parse(ast: &[Node]) {
     // I don't care what people say, I am never adding a constant for "Hello, World!"
 
     // Defined functions
-    env.define_fn("o", |_, d| {
+    env.define("o", |_, d| {
         println!("{}", d);
         d
     });
-    env.define_fn("f", |e, val| {
+    env.define("f", |e, val| {
         let child = Rc::new(e.as_ref().clone());
         child.borrow_mut().define_var("_", val);
         parse_node(Rc::clone(&child), &crate::build_ast(r#"*\(~||[1])"#)[0])
     });
-    env.define_fn("me", |e, val| {
+    env.define("me", |e, val| {
         let child = Rc::new(e.as_ref().clone());
         child.borrow_mut().define_var("_", val);
         parse_node(Rc::clone(&child), &crate::build_ast(r#"(+\) / (#)"#)[0])
     });
-    env.define_fn("sdev", |e, val| {
+    env.define("sdev", |e, val| {
         let child = Rc::new(e.as_ref().clone());
         child.borrow_mut().define_var("_", val);
         parse_node(
