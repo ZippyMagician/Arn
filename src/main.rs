@@ -34,7 +34,7 @@ use crate::utils::compress;
 // This is really cursed, but it works so hey
 lazy_static! {
     pub static ref MATCHES: clap::ArgMatches<'static> = App::new("Arn")
-        .version("1.0.3")
+        .version("1.1.0")
         .author("ZippyMagician <zippymagician1@gmail.com>")
         .about("The Rust interpreter for Arn")
         .arg(
