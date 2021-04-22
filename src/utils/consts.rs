@@ -92,4 +92,5 @@ operators! {
 lazy_static! {
     pub static ref OPTIONS: Operators = Operators::new();
     pub static ref CODEPAGE: Vec<char> = "!\"#$%&'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_`abcdefghijklmnopqrstuvwxyz{|}~¡¢£¤¥¦§¨©ª«¬®¯°○■↑↓→←║═╔╗╚╝░▒►◄│─┌┐└┘├┤┴┬♦┼█▄▀▬±²³´µ¶·¸¹º»¼½¾¿ÀÁÂÃÄÅÆÇÈÉÊËÌÍÎÏÐÑÒÓÔÕÖ×ØÙÚÛÜÝÞßàáâãäåæçèéêëìíîïðñòóôõö÷øùúûüýþÿŒœŠšŸŽžƒƥʠˆ˜–—‘’‚“”„†‡•…‰‹›€™⁺⁻⁼⇒⇐★Δ".chars().collect();
+    pub static ref COMPRESSED_CHARS: Vec<char> = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ`1234567890-=[]\\;'/~@#$%^&*()_+{}|\"<>".chars().collect();
 }

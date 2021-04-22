@@ -9,6 +9,8 @@ pub fn to_ast(postfix: &[Token]) -> Vec<Node> {
         match tok {
             Token::String(val) => output.push(Node::String(val.clone())),
 
+            Token::CmpString(val, chr) => output.push(Node::CmpString(val.clone(), *chr)),
+
             Token::Number(num) => output.push(Node::Number(num.clone())),
 
             Token::Variable(val) => output.push(Node::Variable(val.clone())),

@@ -8,7 +8,8 @@ include = [
     "Cargo.toml",
     "Cargo.lock",
     "README.md",
-    "LICENSE"
+    "LICENSE",
+    "dictionary.txt"
 ]
 
 authors = ["Joshua Barnett <zippymagician1@gmail.com>"]

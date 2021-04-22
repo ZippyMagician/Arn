@@ -2,6 +2,7 @@ use self::tokens::Node;
 
 pub mod compress;
 pub mod consts;
+pub mod dict;
 pub mod env;
 pub mod num;
 pub mod tokens;

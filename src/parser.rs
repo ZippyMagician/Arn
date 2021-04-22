@@ -968,6 +968,8 @@ pub fn parse_node(env: Env, node: &Node) -> Dynamic {
 
         Node::String(v) => Dynamic::from(v.clone()),
 
+        Node::CmpString(v, chr) => Dynamic::from(utils::dict::decompress(v, *chr == '\'')),
+
         Node::Number(v) => Dynamic::from(v.clone()),
 
         Node::Variable(v) => env

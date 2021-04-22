@@ -7,6 +7,9 @@ pub enum Token {
     /// String Node
     String(String),
 
+    /// Compressed String Node
+    CmpString(String, char),
+
     /// Numeric Node
     Number(Num),
 
@@ -32,6 +35,9 @@ pub enum Node {
 
     /// String Node
     String(String),
+
+    /// Compressed String Node
+    CmpString(String, char),
 
     /// Numeric Node
     Number(Num),
@@ -67,6 +73,10 @@ impl Display for Node {
             }
 
             Self::String(st) => write!(f, "\"{}\" ", st),
+
+            Self::CmpString(cst, chr) => {
+                write!(f, "\"{}\"", super::dict::decompress(cst, *chr == '\''))
+            }
 
             Self::Number(num) => write!(f, "{} ", super::types::Dynamic::from(num.clone())),
 

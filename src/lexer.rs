@@ -29,7 +29,8 @@ pub fn lex(prg: &str) -> Vec<Token> {
             buf.clear();
         }
 
-        if !in_group && (buf == "{" || buf == "(" || buf == "[") {
+        // Why `as_ref`? I don't know. It doesn't work when it's `&&buf`
+        if !in_group && ["{", "(", "[", "`", "'"].contains(&buf.as_ref()) {
             in_group = true;
             group_char = Some(buf.chars().next().unwrap());
         }
@@ -79,6 +80,14 @@ pub fn lex(prg: &str) -> Vec<Token> {
                     buf.clear();
                     in_group = false;
                 }
+            } else if (tok == '`' || tok == '→') && Some('`') == group_char {
+                construct.push(Token::CmpString(buf[1..].to_owned(), '`'));
+                buf.clear();
+                in_group = false;
+            } else if (tok == '\'' || tok == '→') && Some('\'') == group_char {
+                construct.push(Token::CmpString(buf[1..].to_owned(), '\''));
+                buf.clear();
+                in_group = false;
             } else {
                 buf.push(tok);
             }
