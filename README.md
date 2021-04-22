@@ -19,16 +19,16 @@ arn run PATH 5 "Hello, World!"
 ```
 Would pass two lines of input to the program, one with a 5, and one with the string `Hello, World!`
 ### Post 1.0
-First, ensure [Rust](https://rust-lang.org) is installed on your system.
-You can either build from source by cloning the repository, ensuring you have [these requirements](https://docs.rs/gmp-mpfr-sys/1.4.4/gmp_mpfr_sys/index.html#building-on-gnulinux) fulfilled, and then running
+First, ensure [Rust](https://rust-lang.org) is installed on your system and that [these requirements](https://docs.rs/gmp-mpfr-sys/1.4.4/gmp_mpfr_sys/index.html#building-on-gnulinux) are fulfilled.
+You can either build from source by cloning the repository and then running
 ```
 cargo install --path path/to/repository
 ```
-or by running
+for the latest features, or by simply running
 ```
 cargo install arn-language
 ```
-
+for the current release edition
 ## About
 **Arn** is a golfing language; that is, it is designed to perform tasks in as few bytes as possible. It draws heavy inspiration from **J**/**APL**
 
