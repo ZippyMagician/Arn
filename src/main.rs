@@ -128,6 +128,11 @@ lazy_static! {
                 .help("Yields the i'th value in the return value of the program, where i is STDIN")
         )
         .arg(
+            Arg::with_name("find")
+                .short("I")
+                .help("Gets the index of the input inside the return value of the program")
+        )
+        .arg(
             Arg::with_name("not")
                 .short("!")
                 .help("Boolean nots the returned value")
@@ -213,6 +218,9 @@ fn main() {
         }
         if MATCHES.is_present("flat") {
             program = format!("({}):_", program);
+        }
+        if MATCHES.is_present("find") {
+            program = format!("({}):i", program);
         }
 
         // Create thread to run parser in that features much larger stack
