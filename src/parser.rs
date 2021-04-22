@@ -282,7 +282,7 @@ pub fn parse_op(env: Env, op: &str, left: &[Node], right: &[Node]) -> Dynamic {
                     .enumerate()
                     .map(|(i, _)| {
                         pre.iter()
-                            .map(|array| array.clone().nth(i).unwrap())
+                            .filter_map(|array| array.clone().nth(i))
                             .collect()
                     })
                     .collect::<Vec<Vec<Dynamic>>>(),
