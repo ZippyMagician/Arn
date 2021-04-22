@@ -128,9 +128,12 @@ pub fn lex(prg: &str) -> Vec<Token> {
                     {
                         construct.push(Token::Variable('_'.to_string()));
                     }
-                } else if let Some(Token::Operator(_, stack_rank)) = construct.last() {
-                    for _ in 0..stack_rank.1 {
-                        construct.push(Token::Variable('_'.to_string()));
+                } else if let Some(Token::Operator(_, stack_rank)) = construct.iter().rfind(|m| matches!(m, Token::Operator(_, _))) {
+                    let pos = construct.iter().rposition(|m| matches!(m, Token::Operator(_, _))).unwrap();
+                    if construct.len() - pos <= stack_rank.1 as usize {
+                        for _ in 0..stack_rank.1 as usize - (construct.len() - pos - 1) {
+                            construct.push(Token::Variable('_'.to_string()));
+                        }
                     }
                 }
             }
