@@ -1045,14 +1045,11 @@ pub fn parse(ast: &[Node]) {
     }
     if MATCHES.is_present("0-range") {
         stdin = utils::create_str_range(
-            1,
+            0,
             stdin
                 .parse::<usize>()
                 .expect("Input was not a valid integer") - 1,
-        )
-        .split(" ")
-        .rev()
-        .join(" ");
+        );
     }
 
     // Defined variables
@@ -1082,7 +1079,7 @@ pub fn parse(ast: &[Node]) {
     env.define_fn("f", |e, val| {
         let child = Rc::new(e.as_ref().clone());
         child.borrow_mut().define_var("_", val);
-        parse_node(Rc::clone(&child), &crate::build_ast(r#"*\~"#)[0])
+        parse_node(Rc::clone(&child), &crate::build_ast(r#"*\(~||[1])"#)[0])
     });
     env.define_fn("me", |e, val| {
         let child = Rc::new(e.as_ref().clone());
