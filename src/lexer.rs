@@ -113,6 +113,7 @@ pub fn lex(prg: &str) -> Vec<Token> {
                 consumed = false;
             }
 
+            // Insert mess of precedence logic here
             let rank = OPTIONS.rank.get(&buf).unwrap();
             if rank.0 > 0 {
                 if construct.is_empty()
@@ -128,10 +129,24 @@ pub fn lex(prg: &str) -> Vec<Token> {
                     {
                         construct.push(Token::Variable('_'.to_string()));
                     }
-                } else if let Some(Token::Operator(_, stack_rank)) = construct.iter().rfind(|m| matches!(m, Token::Operator(_, _))) {
-                    let pos = construct.iter().rposition(|m| matches!(m, Token::Operator(_, _))).unwrap();
-                    if construct.len() - pos <= stack_rank.1 as usize {
-                        for _ in 0..stack_rank.1 as usize - (construct.len() - pos - 1) {
+                } else if let Some(Token::Operator(ident, stack_rank)) = construct
+                    .iter()
+                    .rfind(|m| matches!(m, Token::Operator(_, _)))
+                {
+                    let pos = construct
+                        .iter()
+                        .rposition(|m| matches!(m, Token::Operator(_, _)))
+                        .unwrap();
+                    // The previous op has a lower precedence, shouldn't have `_` inserted after it yet
+                    let used_rank = if OPTIONS.precedence.get(ident).unwrap()
+                        < OPTIONS.precedence.get(&buf).unwrap()
+                    {
+                        rank.0 as usize
+                    } else {
+                        stack_rank.1 as usize
+                    };
+                    if construct.len() - pos <= used_rank {
+                        for _ in 0..used_rank - (construct.len() - pos - 1) {
                             construct.push(Token::Variable('_'.to_string()));
                         }
                     }
@@ -210,7 +225,25 @@ fn expr_to_postfix(tokens: &[Token]) -> Vec<Token> {
                     }
                 }
 
+                // If there are missing implied `_` from the program, insert them now. These will always be the last ones (so this won't lead to interpretation issues)
                 // The above will hold true
+                let total_rank = rank.0
+                    + rank.1
+                    + output
+                        .iter()
+                        .cloned()
+                        .filter(|n| matches!(n, Token::Operator(_, _)))
+                        .fold(0, |acc, op| {
+                            //  This will always work
+                            if let Token::Operator(_, rank) = op {
+                                acc + rank.0 + rank.1
+                            } else {
+                                unreachable!()
+                            }
+                        });
+                for _ in 0..(total_rank - output.len() as i32) {
+                    output.push(Token::Variable('_'.to_string()));
+                }
                 output.push(op)
             }
 
