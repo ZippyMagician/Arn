@@ -942,6 +942,31 @@ pub fn parse_op(env: Env, op: &str, left: &[Node], right: &[Node]) -> Dynamic {
             parse_node_uniq(Rc::clone(&child_env), &right[0])
         }
 
+        // Count of entries in <r1> that, when bound by <r2>, yield a truthy value
+        "/:" => {
+            let array = parse_node(Rc::clone(&env), &right[0])
+                .literal_array()
+                .set_env_self(Rc::clone(&env));
+            let child_env = Rc::new(env.as_ref().clone());
+
+            Dynamic::from(Num::with_val(
+                *FLOAT_PRECISION,
+                array
+                    .filter(|val| {
+                        if let Node::Block(_, name) = &right[1] {
+                            child_env
+                                .borrow_mut()
+                                .define_var(name.as_ref().unwrap_or(&USCORE), val.clone())
+                        } else {
+                            child_env.borrow_mut().define_var("_", val.clone());
+                        }
+
+                        parse_node_uniq(Rc::clone(&child_env), &right[1]).literal_bool()
+                    })
+                    .count(),
+            ))
+        }
+
         _ => unimplemented!(),
     }
 }
