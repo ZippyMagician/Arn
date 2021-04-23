@@ -38,7 +38,7 @@ pub fn parse_op(env: Env, op: &str, left: &[Node], right: &[Node]) -> Dynamic {
         ":=" => {
             let name = format!("{}", left[0]);
             let right = right[0].clone();
-            env.borrow_mut().define(&name, move |env, arg| {
+            env.borrow_mut().define(name.trim(), move |env, arg| {
                 let child = Rc::new(env.as_ref().clone());
                 child.borrow_mut().define_var("_", arg);
                 parse_node(Rc::clone(&child), &right)
@@ -50,7 +50,7 @@ pub fn parse_op(env: Env, op: &str, left: &[Node], right: &[Node]) -> Dynamic {
         "." => {
             let v = format!("{}", right[0]);
             let arg = parse_node(Rc::clone(&env), &left[0]);
-            env.borrow().attempt_call(&v, &env, arg)
+            env.borrow().attempt_call(v.trim(), &env, arg)
         }
 
         // <left> pow <right>
