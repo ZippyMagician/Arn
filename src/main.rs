@@ -78,6 +78,11 @@ lazy_static! {
                 .help("The input will be compressed and printed to STDOUT")
         )
         .arg(
+            Arg::with_name("debug")
+                .long("debug")
+                .help("Prints some debug information (to help check if what you found was a bug or not)")
+        )
+        .arg(
             Arg::with_name("one-ten")
                 .short("d")
                 .help("Sets STDIN to the range [1, 10]")
@@ -229,7 +234,13 @@ fn main() {
             .stack_size(size * 1024 * 1024);
 
         let handler = builder
-            .spawn(move || parser::parse(&build_ast(&program)))
+            .spawn(move || {
+                if MATCHES.is_present("debug") {
+                    println!("lexed: {:?}", lexer::lex(&program));
+                    println!("ast: {:?}", build_ast(&program));
+                }
+                parser::parse(&build_ast(&program))
+            })
             .unwrap();
         handler.join().unwrap();
     }
