@@ -216,8 +216,18 @@ pub fn parse_op(env: Env, op: &str, left: &[Node], right: &[Node]) -> Dynamic {
             let ops = format!("{}", right[0]);
             let chars = ops.trim().trim_matches('"').chars();
             let mut cur = parse_node(Rc::clone(&env), &left[0]).to_string();
+            let mut num = String::new();
 
-            for char in chars {
+            for char in chars.chain("\u{2192}".chars()) {
+                if !num.is_empty() && !char.is_numeric() {
+                    cur = radix(
+                        cur.parse::<i128>().expect("Invalid base10 number"),
+                        num.parse().unwrap(),
+                    )
+                    .to_string();
+                    num.clear();
+                }
+
                 cur =
                     match char {
                         'b' => radix(cur.parse::<i128>().expect("Invalid base10 number"), 2)
@@ -235,6 +245,11 @@ pub fn parse_op(env: Env, op: &str, left: &[Node], right: &[Node]) -> Dynamic {
                         'H' => i128::from_str_radix(&cur, 16)
                             .expect("Invalid base16 number")
                             .to_string(),
+                        '0'..='9' => {
+                            num.push(char);
+                            cur
+                        }
+                        '\u{2192}' => cur,
                         _ => panic!("Unrecognized base conversion char {}", char),
                     }
             }
