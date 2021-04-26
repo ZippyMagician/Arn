@@ -71,6 +71,11 @@ lazy_static! {
                 .value_name("STDIN")
         )
         .arg(
+            Arg::with_name("eval")
+                .long("eval")
+                .short("e")
+        )
+        .arg(
             Arg::with_name("stack-size")
                 .long("stack")
                 .help("Sets the size of the allocated stack for the program")

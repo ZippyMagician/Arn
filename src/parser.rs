@@ -1078,7 +1078,18 @@ pub fn parse(ast: &[Node]) {
     }
 
     // Defined variables
-    env.define_var("_", stdin.clone());
+    env.define_var(
+        "_",
+        // Eval code as input if `-e` present
+        if MATCHES.is_present("eval") {
+            parse_node(
+                Rc::new(RefCell::new(env.clone())),
+                &crate::build_ast(&stdin)[0],
+            )
+        } else {
+            Dynamic::from(stdin.clone())
+        },
+    );
     env.define_var(
         "E",
         Num::with_val(
@@ -1118,7 +1129,7 @@ pub fn parse(ast: &[Node]) {
         let child = Rc::new(e.as_ref().clone());
         child.borrow_mut().define_var("_", val);
         parse_node(
-            Rc::clone(&child), 
+            Rc::clone(&child),
             &crate::build_ast(r#":=:<,:-(?:v:-#&+?:^:-#"#)[0],
         )
     });
