@@ -16,6 +16,8 @@
 )]
 
 #[macro_use]
+extern crate clap;
+#[macro_use]
 extern crate lazy_static;
 
 #[macro_use]
@@ -34,8 +36,7 @@ use crate::utils::compress;
 // This is really cursed, but it works so hey
 lazy_static! {
     pub static ref MATCHES: clap::ArgMatches<'static> = App::new("Arn")
-        .version("1.1.1")
-        .author("ZippyMagician <zippymagician1@gmail.com>")
+        .version(crate_version!())
         .about("The Rust interpreter for Arn")
         .arg(
             Arg::with_name("file")
@@ -69,11 +70,13 @@ lazy_static! {
                 .short("u")
                 .takes_value(true)
                 .value_name("STDIN")
+                .help("Pass STDIN through this command instead of the true stdin stream if you desire.")
         )
         .arg(
             Arg::with_name("eval")
                 .long("eval")
                 .short("e")
+                .help("Interprets the input as Arn code")
         )
         .arg(
             Arg::with_name("stack-size")

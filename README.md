@@ -9,15 +9,11 @@ To install **Arn** you must have [Node.js](https://nodejs.org) installed on your
 ```sh
 npm install -g arn-language
 ```
-You can then run the command
+You can then use
 ```sh
-arn run PATH
+arn help
 ```
-to run a file as an Arn program. You can also pass extra arguments to pass some user input to the program (example below). Use `arn help` to get a full list of commands/flags.
-```sh
-arn run PATH 5 "Hello, World!"
-```
-Would pass two lines of input to the program, one with a 5, and one with the string `Hello, World!`
+to get a list of commands
 ### Post 1.0
 First, ensure [Rust](https://rust-lang.org) is installed on your system and that [these requirements](https://docs.rs/gmp-mpfr-sys/1.4.4/gmp_mpfr_sys/index.html#building-on-gnulinux) are fulfilled.
 You can either build from source by cloning the repository and then running
@@ -28,7 +24,11 @@ for the latest features, or by simply running
 ```
 cargo install arn-language
 ```
-for the current release edition
+for the current release edition. You then can run
+```
+arn --help
+```
+to get a list of commands
 ## About
 **Arn** is a golfing language; that is, it is designed to perform tasks in as few bytes as possible. It draws heavy inspiration from **J**/**APL**
 
@@ -59,5 +59,6 @@ This format, however, may lead to instances where your program needs to be a few
 | **`F_`** | `†` | `‡` | `•` | `…` | `‰` | `‹` | `›` | `€` | `™` | `⁺` | `⁻` | `⁼` | `⇒` | `⇐` | `★` | `Δ` |
 
 ### The future
-- Have to reimplement `:=` and compressed strings (changes to `:=`)
-- Some more command line arguments (of course)
+- I'm probably not going to implement any more command line arguments
+- Work on compression
+- If something can be done in a relatively small amount of symbols, it will be a function. Otherwise, a new symbol will be added.
