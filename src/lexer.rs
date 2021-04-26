@@ -91,6 +91,14 @@ pub fn lex(prg: &str) -> Vec<Token> {
             } else {
                 buf.push(tok);
             }
+        } else if Some(&Token::Operator(String::from(";"), (1, 1))) == construct.last() {
+            buf.push(tok);
+            if !buf.chars().all(char::is_alphanumeric) {
+                buf.pop();
+                construct.push(Token::Variable(buf.clone()));
+                buf.clear();
+                buf.push(tok);
+            }
         } else if buf == "_" || num::is_arn_num(&buf) {
             buf.push(tok);
             if !num::is_arn_num(&buf) {
