@@ -1107,14 +1107,22 @@ pub fn parse(ast: &[Node]) {
     env.define("me", |e, val| {
         let child = Rc::new(e.as_ref().clone());
         child.borrow_mut().define_var("_", val);
-        parse_node(Rc::clone(&child), &crate::build_ast(r#"(+\) / (#)"#)[0])
+        parse_node(Rc::clone(&child), &crate::build_ast(r#"(+\)/(#"#)[0])
+    });
+    env.define("med", |e, val| {
+        let child = Rc::new(e.as_ref().clone());
+        child.borrow_mut().define_var("_", val);
+        parse_node(
+            Rc::clone(&child), 
+            &crate::build_ast(r#":=:<,:-(?:v:-#&+?:^:-#"#)[0],
+        )
     });
     env.define("sdev", |e, val| {
         let child = Rc::new(e.as_ref().clone());
         child.borrow_mut().define_var("_", val);
         parse_node(
             Rc::clone(&child),
-            &crate::build_ast(r#":/ ( n{ :* (n - . me) }\ ) . me"#)[0],
+            &crate::build_ast(r#":/((@v{:*(v-me)).me"#)[0],
         )
     });
 
