@@ -1041,7 +1041,9 @@ pub fn parse_node(env: Env, node: &Node) -> Dynamic {
 pub fn parse(ast: &[Node]) {
     let mut env = Environment::init();
 
-    let mut stdin = if atty::is(atty::Stream::Stdin) {
+    let mut stdin = if let Some(val) = MATCHES.value_of("input") {
+        val.to_owned()
+    } else if atty::is(atty::Stream::Stdin) {
         String::from("")
     } else {
         let mut buffer = String::new();
@@ -1100,7 +1102,7 @@ pub fn parse(ast: &[Node]) {
         d
     });
     env.define("f", |e, val| {
-        if val.literal_num() < 0 {
+        if val.clone().literal_num() < 0 {
             panic!("Cannot take factorial of non-zero number");
         }
         let child = Rc::new(e.as_ref().clone());

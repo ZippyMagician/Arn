@@ -64,6 +64,13 @@ lazy_static! {
                 .value_name("INTEGER")
         )
         .arg(
+            Arg::with_name("input")
+                .long("user-input")
+                .short("u")
+                .takes_value(true)
+                .value_name("STDIN")
+        )
+        .arg(
             Arg::with_name("stack-size")
                 .long("stack")
                 .help("Sets the size of the allocated stack for the program")
