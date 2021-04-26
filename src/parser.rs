@@ -1100,6 +1100,9 @@ pub fn parse(ast: &[Node]) {
         d
     });
     env.define("f", |e, val| {
+        if val.literal_num() < 0 {
+            panic!("Cannot take factorial of non-zero number");
+        }
         let child = Rc::new(e.as_ref().clone());
         child.borrow_mut().define_var("_", val);
         parse_node(Rc::clone(&child), &crate::build_ast(r#"*\(~||[1])"#)[0])
