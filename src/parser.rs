@@ -292,7 +292,7 @@ pub fn parse_op(env: Env, op: &str, left: &[Node], right: &[Node]) -> Dynamic {
         }
 
         // Transpose <left>
-        ".@" => {
+        ":%" => {
             let mut parent = parse_node(Rc::clone(&env), &left[0]).literal_array();
             parent.set_env(Rc::clone(&env));
 
