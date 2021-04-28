@@ -194,7 +194,7 @@ fn main() {
                 .filter(|h| !h.starts_with("--") && h.starts_with('-'))
                 .flat_map(|n| n.trim_matches('-').chars().collect::<Vec<_>>())
             {
-                if arg != 'p' && arg != 'o' {
+                if arg != 'p' && arg != 'o' && arg != 'e' && arg != 'u' {
                     write!(flags, "{}", arg).unwrap();
                 }
             }
@@ -206,7 +206,7 @@ fn main() {
                 ", [{} bytes](https://github.com/ZippyMagician/Arn/wiki/Carn)\n",
                 comp_program.chars().count()
             );
-            println!("```\n{}\n```\n", comp_program);
+            println!("Version: **{}**\n```\n{}\n```\n", crate_version!(), comp_program);
             println!(
                 "# Explained\nUnpacked: `{}`\n```\nELABORATE HERE\n```",
                 program
