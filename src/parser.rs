@@ -1157,7 +1157,7 @@ pub fn parse(ast: &[Node]) {
         child.borrow_mut().define_var("_", val);
         parse_node(
             Rc::clone(&child),
-            &crate::build_ast(r#"(:-#&%2)&&:<?:v:-#||:-((:<?:-#)+(:<?(1+:-#"#)[0],
+            &crate::build_ast(r#"(:-#&%2=0)&&:-(((:<)?(--:-#))+((:<)?:-#))||(:<)?:v:-#"#)[0],
         )
     });
     env.define(["sdev"], |e, val| {
