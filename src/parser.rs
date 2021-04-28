@@ -213,7 +213,7 @@ pub fn parse_op(env: Env, op: &str, left: &[Node], right: &[Node]) -> Dynamic {
 
         // Base conversion of <left> based on <right>
         ";" => {
-            let ops = format!("{}", right[0]);
+            let ops = parse_node(Rc::clone(&env), &right[0]).to_string();
             let chars = ops.trim().trim_matches('"').chars();
             let mut cur = parse_node(Rc::clone(&env), &left[0]).to_string();
             if cur.matches(' ').count() > 0 {
