@@ -495,8 +495,8 @@ impl PartialOrd for Dynamic {
 
             Val::Array(s) => match &other.val {
                 Val::Array(o) => {
-                    let s = s.as_ref().clone().collect::<Vec<_>>();
-                    let o = o.as_ref().clone().collect::<Vec<_>>();
+                    let s = s.as_ref().clone().count();
+                    let o = o.as_ref().clone().count();
 
                     s.partial_cmp(&o)
                 }
