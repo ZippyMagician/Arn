@@ -1152,6 +1152,16 @@ pub fn parse(ast: &[Node]) {
         child.borrow_mut().define_var("_", val);
         parse_node(Rc::clone(&child), &crate::build_ast(r#"(+\)/(#"#)[0])
     });
+    env.define(["ma", "max"], |e, val| {
+        let child = Rc::new(e.as_ref().clone());
+        child.borrow_mut().define_var("_", val);
+        parse_node(Rc::clone(&child), &crate::build_ast(r#"(:>) :{"#)[0])
+    });
+    env.define(["mi", "min"], |e, val| {
+        let child = Rc::new(e.as_ref().clone());
+        child.borrow_mut().define_var("_", val);
+        parse_node(Rc::clone(&child), &crate::build_ast(r#"(:<) :{"#)[0])
+    });
     env.define(["med", "median"], |e, val| {
         let child = Rc::new(e.as_ref().clone());
         child.borrow_mut().define_var("_", val);
