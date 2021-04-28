@@ -206,7 +206,11 @@ fn main() {
                 ", [{} bytes](https://github.com/ZippyMagician/Arn/wiki/Carn)\n",
                 comp_program.chars().count()
             );
-            println!("Version: **{}**\n```\n{}\n```\n", crate_version!(), comp_program);
+            println!(
+                "Version: **{}**\n```\n{}\n```\n",
+                crate_version!(),
+                comp_program
+            );
             println!(
                 "# Explained\nUnpacked: `{}`\n```\nELABORATE HERE\n```",
                 program

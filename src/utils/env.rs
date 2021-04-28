@@ -16,11 +16,14 @@ impl Environment {
         }
     }
 
-    pub fn define<T: 'static>(&mut self, name: &str, f: T)
+    pub fn define<T: 'static, const SIZE: usize>(&mut self, names: [&str; SIZE], f: T)
     where
         T: Fn(Env, Dynamic) -> Dynamic,
     {
-        self.vals.insert(name.trim().to_owned(), Rc::new(f));
+        let ptr: Rc<dyn Fn(Env, Dynamic) -> Dynamic> = Rc::new(f);
+        for name in std::array::IntoIter::new(names) {
+            self.vals.insert(name.trim().to_owned(), Rc::clone(&ptr));
+        }
     }
 
     pub fn define_var<T: 'static + Clone>(&mut self, name: &str, val: T)

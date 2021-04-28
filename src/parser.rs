@@ -38,7 +38,7 @@ pub fn parse_op(env: Env, op: &str, left: &[Node], right: &[Node]) -> Dynamic {
         ":=" => {
             let name = format!("{}", left[0]);
             let right = right[0].clone();
-            env.borrow_mut().define(name.trim(), move |env, arg| {
+            env.borrow_mut().define([name.trim()], move |env, arg| {
                 let child = Rc::new(env.as_ref().clone());
                 child.borrow_mut().define_var("_", arg);
                 parse_node(Rc::clone(&child), &right)
@@ -748,6 +748,15 @@ pub fn parse_op(env: Env, op: &str, left: &[Node], right: &[Node]) -> Dynamic {
             Dynamic::from(result)
         }
 
+        // <left>.nth(<right>)
+        "?" => {
+            let mut left = parse_node(Rc::clone(&env), &left[0])
+                .literal_array()
+                .set_env_self(Rc::clone(&env));
+            let index = to_u32(&env, &right[0]) as usize;
+            left.nth(index).unwrap()
+        }
+
         // Concat <left> and <right>, special case for arrays
         "|" => {
             let left = parse_node(Rc::clone(&env), &left[0]);
@@ -1126,11 +1135,11 @@ pub fn parse(ast: &[Node]) {
     // I don't care what people say, I am never adding a constant for "Hello, World!"
 
     // Defined functions
-    env.define("o", |_, d| {
+    env.define(["o", "out"], |_, d| {
         println!("{}", d);
         d
     });
-    env.define("f", |e, val| {
+    env.define(["f", "fact"], |e, val| {
         if val.clone().literal_num() < 0 {
             panic!("Cannot take factorial of non-zero number");
         }
@@ -1138,20 +1147,20 @@ pub fn parse(ast: &[Node]) {
         child.borrow_mut().define_var("_", val);
         parse_node(Rc::clone(&child), &crate::build_ast(r#"*\(~||[1])"#)[0])
     });
-    env.define("me", |e, val| {
+    env.define(["me", "mean"], |e, val| {
         let child = Rc::new(e.as_ref().clone());
         child.borrow_mut().define_var("_", val);
         parse_node(Rc::clone(&child), &crate::build_ast(r#"(+\)/(#"#)[0])
     });
-    env.define("med", |e, val| {
+    env.define(["med", "median"], |e, val| {
         let child = Rc::new(e.as_ref().clone());
         child.borrow_mut().define_var("_", val);
         parse_node(
             Rc::clone(&child),
-            &crate::build_ast(r#":=:<,:-(?:v:-#&+?:^:-#"#)[0],
+            &crate::build_ast(r#"(:-#&%2)&&:<?:v:-#||:-((:<?:-#)+(:<?(1+:-#"#)[0],
         )
     });
-    env.define("sdev", |e, val| {
+    env.define(["sdev"], |e, val| {
         let child = Rc::new(e.as_ref().clone());
         child.borrow_mut().define_var("_", val);
         parse_node(
