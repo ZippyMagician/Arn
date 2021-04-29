@@ -230,16 +230,13 @@ fn expr_to_postfix(tokens: &[Token]) -> Vec<Token> {
                     // The above will hold true
                     let total_rank = op_rank.0 as i128
                         + op_rank.1 as i128
-                        + output
-                            .iter()
-                            .cloned()
-                            .fold(0_i128, |acc, op| {
-                                if let Token::Operator(_, rank) = op {
-                                    acc + rank.0 as i128 + rank.1 as i128
-                                } else {
-                                    acc
-                                }
-                            });
+                        + output.iter().cloned().fold(0_i128, |acc, op| {
+                            if let Token::Operator(_, rank) = op {
+                                acc + rank.0 as i128 + rank.1 as i128
+                            } else {
+                                acc
+                            }
+                        });
                     for _ in 0..(total_rank - output.len() as i128) {
                         output.push(Token::Variable('_'.to_string()));
                     }

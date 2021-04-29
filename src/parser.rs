@@ -213,7 +213,11 @@ pub fn parse_op(env: Env, op: &str, left: &[Node], right: &[Node]) -> Dynamic {
 
         // Base conversion of <left> based on <right>
         ";" => {
-            let ops = parse_node(Rc::clone(&env), &right[0]).to_string();
+            let ops = if env.borrow().vals.get(&right[0].to_string()).is_none() {
+                right[0].to_string()
+            } else {
+                parse_node(Rc::clone(&env), &right[0]).to_string()
+            };
             let chars = ops.trim().trim_matches('"').chars();
             let mut cur = parse_node(Rc::clone(&env), &left[0]).to_string();
             if cur.matches(' ').count() > 0 {
@@ -302,17 +306,26 @@ pub fn parse_op(env: Env, op: &str, left: &[Node], right: &[Node]) -> Dynamic {
             }
 
             Dynamic::from(
-                pre.clone()
-                    .get(0)
-                    .unwrap()
-                    .clone()
-                    .enumerate()
-                    .map(|(i, _)| {
-                        pre.iter()
-                            .filter_map(|array| array.clone().nth(i))
-                            .collect()
-                    })
-                    .collect::<Vec<Vec<Dynamic>>>(),
+                vec![
+                    0;
+                    pre.iter()
+                        .cloned()
+                        .max_by(|l, r| l.clone().count().cmp(&r.clone().count()))
+                        .unwrap_or_else(|| Sequence::from_vec_dyn(
+                            &[],
+                            Node::String(String::new()),
+                            Some(0)
+                        ))
+                        .count()
+                ]
+                .iter()
+                .enumerate()
+                .map(|(i, _)| {
+                    pre.iter()
+                        .filter_map(|array| array.clone().nth(i))
+                        .collect()
+                })
+                .collect::<Vec<Vec<Dynamic>>>(),
             )
         }
 
