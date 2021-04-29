@@ -1196,7 +1196,7 @@ pub fn parse(ast: &[Node]) {
         child.borrow_mut().define_var("_", val);
         parse_node(
             Rc::clone(&child),
-            &crate::build_ast(r#":{@a{:}@a<>&:_"#)[0],
+            &crate::build_ast(r#":{@a{:}@a<>}&:_"#)[0],
         )
     });
     env.define(["eq", "equal"], |e, val| {
