@@ -36,7 +36,10 @@ pub fn lex(prg: &str) -> Vec<Token> {
         }
 
         if in_group && group_char.unwrap() == tok {
-            group_count += 1;
+            let last = buf.chars().last().unwrap_or('\u{2192}');
+            if group_char.unwrap() != '{' || (last != '.' && last != ':') {
+                group_count += 1;
+            }
         }
 
         if in_string {
@@ -48,6 +51,7 @@ pub fn lex(prg: &str) -> Vec<Token> {
                 buf.push(tok);
             }
         } else if in_group {
+            let last = buf.chars().last().unwrap_or('\u{2192}');
             if (tok == ')' || tok == '→') && Some('(') == group_char {
                 if group_count > 0 {
                     group_count -= 1;
@@ -57,7 +61,7 @@ pub fn lex(prg: &str) -> Vec<Token> {
                     buf.clear();
                     in_group = false;
                 }
-            } else if (tok == '}' || tok == '→') && Some('{') == group_char {
+            } else if (tok == '}' || tok == '→') && Some('{') == group_char && last != '.' && last != ':' {
                 if group_count > 0 {
                     group_count -= 1;
                     buf.push(tok);

@@ -71,7 +71,7 @@ pub fn parse_op(env: Env, op: &str, left: &[Node], right: &[Node]) -> Dynamic {
         }
 
         // [<left>, <right>]
-        ",:" => {
+        "<>" => {
             let left = parse_node(Rc::clone(&env), &left[0]);
             let right = parse_node(Rc::clone(&env), &right[0]);
             Dynamic::from([left, right])
