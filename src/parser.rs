@@ -1191,6 +1191,22 @@ pub fn parse(ast: &[Node]) {
             &crate::build_ast(r#":/((@v{:*(v-me)).me"#)[0],
         )
     });
+    env.define(["crt", "cartesian"], |e, val| {
+        let child = Rc::new(e.as_ref().clone());
+        child.borrow_mut().define_var("_", val);
+        parse_node(
+            Rc::clone(&child),
+            &crate::build_ast(r#":{@a{:}@a<>&:_"#)[0],
+        )
+    });
+    env.define(["eq", "equal"], |e, val| {
+        let child = Rc::new(e.as_ref().clone());
+        child.borrow_mut().define_var("_", val);
+        parse_node(
+            Rc::clone(&child),
+            &crate::build_ast(r#":@#=1"#)[0],
+        )
+    });
 
     let env: Env = Rc::new(RefCell::new(env));
 
