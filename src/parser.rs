@@ -220,8 +220,8 @@ pub fn parse_op(env: Env, op: &str, left: &[Node], right: &[Node]) -> Dynamic {
             };
             let chars = ops.trim().trim_matches('"').chars();
             let mut cur = parse_node(Rc::clone(&env), &left[0]).to_string();
-            if cur.matches(' ').count() > 0 {
-                cur = cur.split(' ').collect::<Vec<_>>().join("");
+            if cur.matches('\n').count() > 0 {
+                cur = cur.split('\n').collect::<Vec<_>>().join("");
             }
             let mut num = String::new();
 
