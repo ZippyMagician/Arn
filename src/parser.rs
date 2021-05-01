@@ -551,8 +551,9 @@ pub fn parse_op(env: Env, op: &str, left: &[Node], right: &[Node]) -> Dynamic {
                 let seperator = constructed.trim().trim_matches('_');
                 let program = res
                     .iter()
-                    .map(|n| format!("{}", n))
-                    .collect::<Vec<String>>()
+                    .cloned()
+                    .map(|n| format!("{}", n.into_node()))
+                    .collect::<Vec<_>>()
                     .join(seperator);
 
                 // This looks like a Vec<Node>, but in reality it is a single Node (only one value)
