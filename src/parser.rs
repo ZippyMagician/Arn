@@ -1099,6 +1099,18 @@ pub fn parse_node(env: Env, node: &Node) -> Dynamic {
     }
 }
 
+macro_rules! def_builtins {
+    ($env:ident; $($($name:literal),*: $value:literal);*) => {
+        $(
+            $env.define([$($name),*], |e, val| {
+                let child = Rc::new(e.as_ref().clone());
+                child.borrow_mut().define_var("_", val);
+                parse_node(Rc::clone(&child), &crate::build_ast($value)[0])
+            });
+        )*
+    }
+}
+
 pub fn parse(ast: &[Node]) {
     let mut env = Environment::init();
 
@@ -1173,58 +1185,16 @@ pub fn parse(ast: &[Node]) {
         println!("{}", d);
         d
     });
-    env.define(["f", "fact"], |e, val| {
-        if val.clone().literal_num() < 0 {
-            panic!("Cannot take factorial of non-zero number");
-        }
-        let child = Rc::new(e.as_ref().clone());
-        child.borrow_mut().define_var("_", val);
-        parse_node(Rc::clone(&child), &crate::build_ast(r#"*\(~||[1])"#)[0])
-    });
-    env.define(["me", "mean"], |e, val| {
-        let child = Rc::new(e.as_ref().clone());
-        child.borrow_mut().define_var("_", val);
-        parse_node(Rc::clone(&child), &crate::build_ast(r#"(+\)/(#"#)[0])
-    });
-    env.define(["ma", "max"], |e, val| {
-        let child = Rc::new(e.as_ref().clone());
-        child.borrow_mut().define_var("_", val);
-        parse_node(Rc::clone(&child), &crate::build_ast(r#"(:>) :{"#)[0])
-    });
-    env.define(["mi", "min"], |e, val| {
-        let child = Rc::new(e.as_ref().clone());
-        child.borrow_mut().define_var("_", val);
-        parse_node(Rc::clone(&child), &crate::build_ast(r#"(:<) :{"#)[0])
-    });
-    env.define(["med", "median"], |e, val| {
-        let child = Rc::new(e.as_ref().clone());
-        child.borrow_mut().define_var("_", val);
-        parse_node(
-            Rc::clone(&child),
-            &crate::build_ast(r#"(:-#&%2=0)&&:-(((:<)?(--:-#))+((:<)?:-#))||(:<)?:v:-#"#)[0],
-        )
-    });
-    env.define(["sdev"], |e, val| {
-        let child = Rc::new(e.as_ref().clone());
-        child.borrow_mut().define_var("_", val);
-        parse_node(
-            Rc::clone(&child),
-            &crate::build_ast(r#":/((@v{:*(v-me)).me"#)[0],
-        )
-    });
-    env.define(["crt", "cartesian"], |e, val| {
-        let child = Rc::new(e.as_ref().clone());
-        child.borrow_mut().define_var("_", val);
-        parse_node(
-            Rc::clone(&child),
-            &crate::build_ast(r#":{@a{:}@a<>}&:_"#)[0],
-        )
-    });
-    env.define(["eq", "equal"], |e, val| {
-        let child = Rc::new(e.as_ref().clone());
-        child.borrow_mut().define_var("_", val);
-        parse_node(Rc::clone(&child), &crate::build_ast(r#":@#=1"#)[0])
-    });
+    def_builtins! {env;
+        "f", "fact":        r#"*\(~||[1])"#;
+        "me", "mean":       r#"(+\)/(#"#;
+        "ma", "max":        r#"(:>) :{"#;
+        "mi", "min":        r#"(:<) :{"#;
+        "med", "median":    r#"(:-#&%2=0)&&:-(((:<)?(--:-#))+((:<)?:-#))||(:<)?:v:-#"#;
+        "sdev":             r#":/((@v{:*(v-me)).me"#;
+        "crt", "cartesian": r#":{@a{:}@a<>}&:_"#;
+        "eq", "equal":      r#":@#=1"#
+    };
 
     let env: Env = Rc::new(RefCell::new(env));
 
