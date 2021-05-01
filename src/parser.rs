@@ -944,6 +944,26 @@ pub fn parse_op(env: Env, op: &str, left: &[Node], right: &[Node]) -> Dynamic {
             Dynamic::from(groups)
         }
 
+        "??" => {
+            let val = parse_node(Rc::clone(&env), &left[0]);
+            let condition = parse_node(Rc::clone(&env), &right[0]).literal_bool();
+            let child_env = Rc::new(env.as_ref().clone());
+
+            if condition {
+                if let Node::Block(_, name) = &right[1] {
+                    child_env
+                        .borrow_mut()
+                        .define_var(name.as_ref().unwrap_or(&USCORE), val.clone())
+                } else {
+                    child_env.borrow_mut().define_var("_", val.clone());
+                }
+
+                parse_node(Rc::clone(&child_env), &right[1])
+            } else {
+                val
+            }
+        }
+
         // Bind <right> to each value in <left>
         "@" => {
             let seq = parse_node(Rc::clone(&env), &left[0])
@@ -1203,10 +1223,7 @@ pub fn parse(ast: &[Node]) {
     env.define(["eq", "equal"], |e, val| {
         let child = Rc::new(e.as_ref().clone());
         child.borrow_mut().define_var("_", val);
-        parse_node(
-            Rc::clone(&child),
-            &crate::build_ast(r#":@#=1"#)[0],
-        )
+        parse_node(Rc::clone(&child), &crate::build_ast(r#":@#=1"#)[0])
     });
 
     let env: Env = Rc::new(RefCell::new(env));

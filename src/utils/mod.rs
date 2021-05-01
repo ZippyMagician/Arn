@@ -1,4 +1,4 @@
-use self::tokens::Node;
+use self::tokens::*;
 
 pub mod compress;
 pub mod consts;
@@ -8,10 +8,24 @@ pub mod num;
 pub mod tokens;
 pub mod types;
 
+// Creates a space-separated range [s, n]
 pub fn create_str_range(s: usize, n: usize) -> String {
     (s..=n).map(|v| v.to_string()).collect::<Vec<_>>().join(" ")
 }
 
+// Sums the rank from the start and slice of Tokens
+pub fn sum_rank(start: i128, rest: &[Token]) -> i128 {
+    start
+        + rest.iter().cloned().fold(0_i128, |acc, op| {
+            if let Token::Operator(_, rank) = op {
+                acc + rank.0 as i128 + rank.1 as i128
+            } else {
+                acc
+            }
+        })
+}
+
+// Systematically replace `_` with values from entries
 pub fn traverse_replace(entries: &mut Vec<Node>, tree: Node) -> Node {
     match &tree {
         Node::Block(body, nm) => {

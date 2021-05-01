@@ -61,7 +61,11 @@ pub fn lex(prg: &str) -> Vec<Token> {
                     buf.clear();
                     in_group = false;
                 }
-            } else if (tok == '}' || tok == '→') && Some('{') == group_char && last != '.' && last != ':' {
+            } else if (tok == '}' || tok == '→')
+                && Some('{') == group_char
+                && last != '.'
+                && last != ':'
+            {
                 if group_count > 0 {
                     group_count -= 1;
                     buf.push(tok);
@@ -215,15 +219,15 @@ fn expr_to_postfix(tokens: &[Token]) -> Vec<Token> {
     let mut output = Vec::with_capacity(tokens.len());
 
     for tok in tokens {
-        if let Token::Operator(left, rank) = tok {
+        if let Token::Operator(right, rank) = tok {
             while !operators.is_empty() {
                 let op = operators.pop().unwrap();
-                if let Token::Operator(ref right, op_rank) = op {
+                if let Token::Operator(ref left, left_rank) = op {
                     if OPTIONS.precedence.get(left).is_none()
                         || OPTIONS.precedence.get(right).is_none()
-                        || (OPTIONS.precedence.get(left).unwrap()
-                            > OPTIONS.precedence.get(right).unwrap()
-                            && op_rank.1 > 0)
+                        || (OPTIONS.precedence.get(right).unwrap()
+                            > OPTIONS.precedence.get(left).unwrap()
+                            && left_rank.1 > 0)
                         || rank.0 == 0
                     {
                         operators.push(op);
@@ -232,15 +236,8 @@ fn expr_to_postfix(tokens: &[Token]) -> Vec<Token> {
 
                     // If there are missing implied `_` from the program, insert them now. These will always be the last ones (so this won't lead to interpretation issues)
                     // The above will hold true
-                    let total_rank = op_rank.0 as i128
-                        + op_rank.1 as i128
-                        + output.iter().cloned().fold(0_i128, |acc, op| {
-                            if let Token::Operator(_, rank) = op {
-                                acc + rank.0 as i128 + rank.1 as i128
-                            } else {
-                                acc
-                            }
-                        });
+                    let total_rank =
+                        crate::utils::sum_rank(left_rank.0 as i128 + left_rank.1 as i128, &output);
                     for _ in 0..(total_rank - output.len() as i128) {
                         output.push(Token::Variable('_'.to_string()));
                     }
@@ -258,7 +255,11 @@ fn expr_to_postfix(tokens: &[Token]) -> Vec<Token> {
     }
 
     while !operators.is_empty() {
-        if let Token::Operator(_, _) = operators.last().unwrap() {
+        if let Token::Operator(_, rank) = operators.last().unwrap() {
+            let total_rank = crate::utils::sum_rank(rank.0 as i128 + rank.1 as i128, &output);
+            for _ in 0..(total_rank - output.len() as i128) {
+                output.push(Token::Variable('_'.to_string()));
+            }
             output.push(operators.pop().unwrap());
         } else {
             // Discard if invalid
