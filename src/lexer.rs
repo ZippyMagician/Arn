@@ -26,6 +26,10 @@ pub fn lex(prg: &str) -> Vec<Token> {
             && !in_group
             && (buf == "\n" || buf == " " || buf == "\r" || buf == "\u{2192}")
         {
+            // \n is an implicit comma
+            if buf == "\n" {
+                construct.push(Token::Comma);
+            }
             buf.clear();
         }
 
