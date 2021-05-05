@@ -219,46 +219,72 @@ pub fn parse_op(env: Env, op: &str, left: &[Node], right: &[Node]) -> Dynamic {
                 parse_node(Rc::clone(&env), &right[0]).to_string()
             };
             let chars = ops.trim().trim_matches('"').chars();
-            let mut cur = parse_node(Rc::clone(&env), &left[0]).to_string();
-            if cur.matches('\n').count() > 0 {
-                cur = cur.split('\n').collect::<Vec<_>>().join("");
-            }
+            let mut cur = parse_node(Rc::clone(&env), &left[0]);
+            cur = if cur.clone().to_string().matches('\n').count() > 0 {
+                let temp = cur
+                    .to_string()
+                    .trim()
+                    .split('\n')
+                    .map(str::to_owned)
+                    .collect::<Vec<_>>();
+                if chars
+                    .clone()
+                    .next()
+                    .map_or(true, |c| c != 'H' && c != 'O' && c != 'B')
+                {
+                    Dynamic::from(temp)
+                } else {
+                    Dynamic::from(temp.join(""))
+                }
+            } else {
+                cur.into_string()
+            };
             let mut num = String::new();
 
             for char in chars.chain("\u{2192}".chars()) {
                 if !num.is_empty() && !char.is_numeric() {
-                    cur = radix(
-                        cur.parse::<i128>().expect("Invalid base10 number"),
-                        num.parse().unwrap(),
-                    )
-                    .to_string();
+                    cur = Dynamic::from(utils::nbase_padded(cur, |cur| {
+                        radix(
+                            cur.parse::<i128>().expect("Invalid base10 number"),
+                            num.parse().unwrap(),
+                        )
+                        .to_string()
+                    }));
                     num.clear();
                 }
 
-                cur =
-                    match char {
-                        'b' => radix(cur.parse::<i128>().expect("Invalid base10 number"), 2)
-                            .to_string(),
-                        'o' => radix(cur.parse::<i128>().expect("Invalid base10 number"), 8)
-                            .to_string(),
-                        'h' => radix(cur.parse::<i128>().expect("Invalid base10 number"), 16)
-                            .to_string(),
-                        'B' => i128::from_str_radix(&cur, 2)
+                cur = match char {
+                    'b' => Dynamic::from(utils::nbase_padded(cur, |cur| {
+                        radix(cur.parse::<i128>().expect("Invalid base10 number"), 2).to_string()
+                    })),
+                    'o' => Dynamic::from(utils::nbase_padded(cur, |cur| {
+                        radix(cur.parse::<i128>().expect("Invalid base10 number"), 8).to_string()
+                    })),
+                    'h' => Dynamic::from(utils::nbase_padded(cur, |cur| {
+                        radix(cur.parse::<i128>().expect("Invalid base10 number"), 16).to_string()
+                    })),
+                    'B' => Dynamic::from(
+                        i128::from_str_radix(&cur.literal_string(), 2)
                             .expect("Invalid base2 number")
                             .to_string(),
-                        'O' => i128::from_str_radix(&cur, 8)
+                    ),
+                    'O' => Dynamic::from(
+                        i128::from_str_radix(&cur.literal_string(), 8)
                             .expect("Invalid base8 number")
                             .to_string(),
-                        'H' => i128::from_str_radix(&cur, 16)
+                    ),
+                    'H' => Dynamic::from(
+                        i128::from_str_radix(&cur.literal_string(), 16)
                             .expect("Invalid base16 number")
                             .to_string(),
-                        '0'..='9' => {
-                            num.push(char);
-                            cur
-                        }
-                        '\u{2192}' => cur,
-                        _ => panic!("Unrecognized base conversion char {}", char),
+                    ),
+                    '0'..='9' => {
+                        num.push(char);
+                        cur
                     }
+                    '\u{2192}' => cur,
+                    _ => panic!("Unrecognized base conversion char {}", char),
+                }
             }
 
             Dynamic::from(cur)
@@ -944,6 +970,7 @@ pub fn parse_op(env: Env, op: &str, left: &[Node], right: &[Node]) -> Dynamic {
             Dynamic::from(groups)
         }
 
+        // If <r1> then bind <r2> to <left>, else yield <left>
         "??" => {
             let val = parse_node(Rc::clone(&env), &left[0]);
             let condition = parse_node(Rc::clone(&env), &right[0]).literal_bool();

@@ -352,9 +352,11 @@ impl Display for Dynamic {
                     "{}",
                     if s.contains('.') && !s.contains('e') {
                         // First remove trailing zeros, then the dot if that was everything
-                        &s.trim_end_matches('0').trim_end_matches('.').replace('-', "_")
+                        s.trim_end_matches('0')
+                            .trim_end_matches('.')
+                            .replace('-', "_")
                     } else {
-                        &s.replace('-', "_")
+                        s.replace('-', "_")
                     }
                 )
             }

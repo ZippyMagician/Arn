@@ -74,3 +74,24 @@ pub fn traverse_replace(entries: &mut Vec<Node>, tree: Node) -> Node {
         _ => unimplemented!(),
     }
 }
+
+// Create non-base10 matrix
+pub fn nbase_padded<T: FnMut(String) -> String>(
+    mut orig: self::types::Dynamic,
+    mut f: T,
+) -> Vec<String> {
+    if !orig.is_array() {
+        orig = self::types::Dynamic::from([orig]);
+    }
+    // This should be inferred, but isn't
+    let mut v: Vec<String> = orig
+        .literal_array()
+        .map(|d| f(d.literal_string()))
+        .collect();
+    let max = v.iter().map(|n| n.len()).max().unwrap();
+    v = v
+        .iter()
+        .map(|n| format!("{:0>size$}", n, size = max))
+        .collect();
+    v
+}

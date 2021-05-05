@@ -21,8 +21,8 @@ async function yank() {
     for (let _ in titles) base += '| :---: ';
     base += '|\n';
     
-    for (name in defs) {
-        base += `| \`${name.replace(/([\|])/g, "\\$1")}\` | \`${defs[name][0]}\` | \`${defs[name][1].map(c => " _ ".repeat(c)).join(name.replace(/([\|])/g, "\\$1")).trim()}\` | **${defs[name][2].replace(/([\<\>\|])/g, "\\$1")}** |\n`;
+    for (n in defs) {
+        base += `| \`${n.replace(/([\|])/g, "\\$1")}\` | \`${defs[n][0]}\` | \`${defs[n][1].map(c => " _ ".repeat(c)).join(n.replace(/([\|])/g, "\\$1")).trim()}\` | **${defs[n][2].replace(/([\<\>\|])/g, "\\$1")}** |\n`;
     }
 
     console.log(base);
