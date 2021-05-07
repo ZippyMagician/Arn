@@ -26,10 +26,10 @@ mod lexer;
 mod parser;
 mod utils;
 
-use std::fmt::Write;
-use std::fs;
+use std::{fmt::Write as FmtWrite, io::Write as IoWrite};
+use std::{fs, io};
 
-use clap::{App, Arg};
+use clap::{App, Arg, SubCommand};
 
 use crate::utils::compress;
 
@@ -40,8 +40,18 @@ lazy_static! {
         .about("The Rust interpreter for Arn")
         .arg(
             Arg::with_name("file")
-                .required(true)
+                .default_value("")
                 .help("The input file to be run")
+        )
+        .subcommand(
+            SubCommand::with_name("cli")
+                .about("Interactive Arn shell")
+                .arg(
+                    Arg::with_name("stdin")
+                        .help("STDIN to pass into cli, interpreted as Arn code")
+                        .value_name("STDIN")
+                        .default_value("0")
+                )
         )
         .arg(
             Arg::with_name("gen-answer")
@@ -181,6 +191,23 @@ lazy_static! {
 }
 
 fn main() {
+    if let Some(cli) = MATCHES.subcommand_matches("cli") {
+        // Always present
+        let stdin = cli.value_of("stdin").unwrap();
+        let mut program = String::new();
+        loop {
+            print!("> ");
+            io::stdout().flush().expect("Cannot flush STDOUT");
+            io::stdin()
+                .read_line(&mut program)
+                .expect("Could not read from STDIN");
+            if program == ".exit" {
+                break;
+            }
+            parser::parse(&build_ast(&format!("_ := ({}),\n{}", stdin, program)));
+        }
+    }
+
     if let Some(path) = MATCHES.value_of("file") {
         // Read file, remove CRLF
         let mut program = read_file(path).replace("\r\n", "\n");
