@@ -204,13 +204,13 @@ fn main() {
             if program == ".exit" {
                 break;
             }
-            parser::parse(&build_ast(&format!("_ := ({}),\n{}", stdin, program)));
+            parser::parse(&build_ast(&format!("_ := ({}),\n{}", stdin, program.trim())));
         }
     }
 
     if let Some(path) = MATCHES.value_of("file") {
         // Read file, remove CRLF
-        let mut program = read_file(path).replace("\r\n", "\n");
+        let mut program = read_file(path).replace("\r\n", "\n").trim().to_owned();
 
         if MATCHES.is_present("gen-answer") {
             let comp_program = compress::pack(&program);
