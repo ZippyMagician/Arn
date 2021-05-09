@@ -47,7 +47,10 @@ pub fn lex(prg: &str) -> Vec<Token> {
         }
 
         if in_string {
-            if tok == '"' || tok == '→' {
+            if tok == '"' && buf.ends_with('\\') {
+                buf.drain(buf.len() - 1..);
+                buf.push(tok);
+            } else if tok == '"' || tok == '→' {
                 construct.push(Token::String(buf.clone()));
                 buf.clear();
                 in_string = false
