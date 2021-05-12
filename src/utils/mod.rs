@@ -29,10 +29,14 @@ pub fn sum_rank(start: i128, rest: &[Token]) -> i128 {
 pub fn traverse_replace(entries: &mut Vec<Node>, tree: Node) -> Node {
     match &tree {
         Node::Block(body, nm) => {
-            let new_body = body
-                .iter()
-                .map(|n| traverse_replace(entries, n.clone()))
-                .collect();
+            // Blocks that use a key of `_` should not be messed with
+            let new_body = if nm.is_none() || nm.as_ref().unwrap() == "_" {
+                body.clone()
+            } else {
+                body.iter()
+                    .map(|n| traverse_replace(entries, n.clone()))
+                    .collect()
+            };
             Node::Block(new_body, nm.clone())
         }
 
@@ -60,15 +64,31 @@ pub fn traverse_replace(entries: &mut Vec<Node>, tree: Node) -> Node {
         }
 
         Node::Op(n, largs, rargs) => {
-            let nl = largs
-                .iter()
-                .map(|n| traverse_replace(entries, n.clone()))
-                .collect();
+            // Fold shouldn't have the left args replaced
+            let nl = if n == "\\" {
+                largs.clone()
+            } else {
+                largs
+                    .iter()
+                    .map(|n| traverse_replace(entries, n.clone()))
+                    .collect()
+            };
             let nr = rargs
                 .iter()
                 .map(|n| traverse_replace(entries, n.clone()))
                 .collect();
             Node::Op(n.clone(), nl, nr)
+        }
+
+        Node::Sequence(body, block, len) => {
+            let new_body = body
+                .iter()
+                .map(|n| traverse_replace(entries, n.clone()))
+                .collect();
+            let new_len = len
+                .as_ref()
+                .map(|n| Box::new(traverse_replace(entries, n.as_ref().clone())));
+            Node::Sequence(new_body, block.clone(), new_len)
         }
 
         _ => unimplemented!(),

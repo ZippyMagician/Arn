@@ -686,7 +686,7 @@ impl Sequence {
 
     #[inline]
     pub fn set_env(&mut self, env: Env) {
-        self.env = Some(env);
+        self.env = Some(Rc::new(env.as_ref().clone()));
     }
 
     #[inline]
@@ -716,6 +716,11 @@ impl Sequence {
         } else {
             self.index += 1;
             let block = self.traverse_replace(self.block.clone());
+            self.env
+                .as_ref()
+                .unwrap()
+                .borrow_mut()
+                .define_var("p", Dynamic::from(self.cstr.as_slice()));
             let res = crate::parser::parse_node(Rc::clone(self.env.as_ref().unwrap()), &block);
             self.cstr.push(res.clone());
 
