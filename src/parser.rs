@@ -1208,8 +1208,12 @@ pub fn parse(ast: &[Node]) {
     // I don't care what people say, I am never adding a constant for "Hello, World!"
 
     // Defined functions
-    env.define(["o", "out"], |_, d| {
+    env.define(["ol", "outl"], |_, d| {
         println!("{}", d);
+        d
+    });
+    env.define(["o", "out"], |_, d| {
+        print!("{}", d);
         d
     });
     def_builtins! {env;
