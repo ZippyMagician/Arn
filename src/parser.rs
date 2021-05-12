@@ -1209,6 +1209,10 @@ pub fn parse(ast: &[Node]) {
         "pi",
         Num::with_val(*FLOAT_PRECISION, rug::float::Constant::Pi),
     );
+    env.define_var(
+        "phi",
+        Num::parse("1.61803398874989484820458683436563811").unwrap(),
+    );
     env.define_var("a", Vec::<Dynamic>::new());
     env.define_var("c", String::new());
     env.define_var("Fi", "Fizz".to_string());
