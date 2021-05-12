@@ -591,13 +591,21 @@ pub fn parse_op(env: Env, op: &str, left: &[Node], right: &[Node]) -> Dynamic {
         // Floor <right>
         ":v" => {
             let right = parse_node(Rc::clone(&env), &right[0]);
-            right.mutate_num(Num::floor)
+            if right.is_string() {
+                right.mutate_string(|s| s.to_ascii_lowercase())
+            } else {
+                right.mutate_num(Num::floor)
+            }
         }
 
         // Ceil <right>
         ":^" => {
             let right = parse_node(Rc::clone(&env), &right[0]);
-            right.mutate_num(Num::ceil)
+            if right.is_string() {
+                right.mutate_string(|s| s.to_ascii_uppercase())
+            } else {
+                right.mutate_num(Num::ceil)
+            }
         }
 
         // Inc <right>

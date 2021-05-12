@@ -204,7 +204,11 @@ fn main() {
             if program == ".exit" {
                 break;
             }
-            parser::parse(&build_ast(&format!("_ := ({}),\n{}", stdin, program.trim())));
+            parser::parse(&build_ast(&format!(
+                "_ := ({}),\n{}",
+                stdin,
+                program.trim()
+            )));
         }
     }
 
