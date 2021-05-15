@@ -907,10 +907,8 @@ pub fn parse_op(env: Env, op: &str, left: &[Node], right: &[Node]) -> Dynamic {
 
             if left.clone().literal_bool() {
                 left
-            } else if right.clone().literal_bool() {
-                right
             } else {
-                Dynamic::from(false)
+                right
             }
         }
 
@@ -1232,15 +1230,16 @@ pub fn parse(ast: &[Node]) {
         d
     });
     def_builtins! {env;
-        "f", "fact":        r#"*\(~||[1])"#;
+        "f", "fact":        r#"~||[1]&*\"#;
         "me", "mean":       r#"(+\)/(#"#;
-        "ma", "max":        r#"(:>) :{"#;
+        "ma", "max":        r#":>&:{"#;
         "mo", "mode":       r#":@&ma:{"#;
-        "mi", "min":        r#"(:<) :{"#;
+        "mi", "min":        r#":<&:{"#;
         "med", "median":    r#"(:-#&%2=0)&&:-(((:<)?(--:-#))+((:<)?:-#))||(:<)?:v:-#"#;
         "sdev":             r#":/((@v{:*(v-me)).me"#;
         "crt", "cartesian": r#":{@a{:}@a<>}&:_"#;
-        "eq", "equal":      r#":@#=1"#
+        "eq", "equal":      r#":@#=1"#;
+        "pst", "powerset":  r#":<(0->2^(#);2@a{|{+0&&[:}]||[}\a.<z"#
     };
 
     let env: Env = Rc::new(RefCell::new(env));
