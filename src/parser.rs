@@ -545,8 +545,8 @@ pub fn parse_op(env: Env, op: &str, left: &[Node], right: &[Node]) -> Dynamic {
             }
         }
 
-        // Fold + map op
-        "\\" => {
+        // Fold + map op, Cumulative fold + map op
+        "\\" | ":\\" => {
             let seq = Box::new(
                 parse_node(Rc::clone(&env), &right[0])
                     .literal_array()
@@ -572,7 +572,7 @@ pub fn parse_op(env: Env, op: &str, left: &[Node], right: &[Node]) -> Dynamic {
 
             if rest == Node::Variable("_".to_string()) {
                 Dynamic::from(res.as_ref().clone())
-            } else {
+            } else if op == "\\" {
                 let constructed = format!("{}", rest);
                 let seperator = constructed.trim().trim_matches('_');
                 let program = res
@@ -585,6 +585,23 @@ pub fn parse_op(env: Env, op: &str, left: &[Node], right: &[Node]) -> Dynamic {
                 // This looks like a Vec<Node>, but in reality it is a single Node (only one value)
                 let val = crate::build_ast(&program);
                 parse_node(Rc::clone(&env), &val[0])
+            } else {
+                let constructed = format!("{}", rest);
+                let seperator = constructed.trim().trim_matches('_');
+                let mut v = res.as_ref().clone();
+                for i in 1..v.len() {
+                    v[i] = parse_node(
+                        Rc::clone(&env),
+                        &crate::build_ast(&format!(
+                            "{} {} {}",
+                            v[i - 1].clone().into_node(),
+                            seperator,
+                            v[i].clone().into_node()
+                        ))[0],
+                    )
+                }
+
+                Dynamic::from(v)
             }
         }
 

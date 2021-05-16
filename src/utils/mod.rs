@@ -65,7 +65,7 @@ pub fn traverse_replace(entries: &mut Vec<Node>, tree: Node) -> Node {
 
         Node::Op(n, largs, rargs) => {
             // Fold shouldn't have the left args replaced
-            let nl = if n == "\\" {
+            let nl = if n == "\\" || n == ":\\" {
                 largs.clone()
             } else {
                 largs
