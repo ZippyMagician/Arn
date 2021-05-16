@@ -108,6 +108,16 @@ lazy_static! {
                 .help("Prints some debug information (to help check if what you found was a bug or not)")
         )
         .arg(
+            Arg::with_name("input-left")
+                .short("t")
+                .help("Unpacks STDIN with left precedence; [A, B] ==> _ := A, a := B")
+        )
+        .arg(
+            Arg::with_name("input-right")
+                .short("T")
+                .help("Unpacks STDIN with right precedence; [A, B] ==> a := A, _ := B")
+        )
+        .arg(
             Arg::with_name("one-ten")
                 .short("d")
                 .help("Sets STDIN to the range [1, 10]")

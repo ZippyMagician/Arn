@@ -1243,6 +1243,18 @@ pub fn parse(ast: &[Node]) {
     env.define_var("Bu", "Buzz".to_string());
     // I don't care what people say, I am never adding a constant for "Hello, World!"
 
+    if MATCHES.is_present("input-left") {
+        let orig = env.get_var("_");
+        let as_vec = orig.literal_array().collect::<Vec<_>>();
+        env.define_var("_", as_vec[0].clone());
+        env.define_var("a", as_vec[1..].iter().cloned().collect::<Vec<_>>());
+    } else if MATCHES.is_present("input-right") {
+        let orig = env.get_var("_");
+        let as_vec = orig.literal_array().collect::<Vec<_>>();
+        env.define_var("_", as_vec[1..].iter().cloned().collect::<Vec<_>>());
+        env.define_var("a", as_vec[0].clone());
+    }
+
     // Defined functions
     env.define(["ol", "outl"], |_, d| {
         println!("{}", d);
