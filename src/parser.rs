@@ -741,6 +741,12 @@ pub fn parse_op(env: Env, op: &str, left: &[Node], right: &[Node]) -> Dynamic {
             ])
         }
 
+        // Evaluate <right> as arn code
+        "!." => {
+            let program = parse_node(Rc::clone(&env), &right[0]).literal_string();
+            parse_node(Rc::clone(&env), &crate::build_ast(&program)[0])
+        }
+
         // Zip <left> and <right>
         "z" => {
             let left = parse_node(Rc::clone(&env), &left[0])
