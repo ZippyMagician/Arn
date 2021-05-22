@@ -611,6 +611,12 @@ impl From<Sequence> for Dynamic {
     }
 }
 
+impl From<Node> for Dynamic {
+    fn from(v: Node) -> Self {
+        crate::parser::parse_node(Rc::new(RefCell::new(Environment::init())), &v)
+    }
+}
+
 #[allow(clippy::from_over_into)]
 impl Into<Node> for Dynamic {
     fn into(self) -> Node {
