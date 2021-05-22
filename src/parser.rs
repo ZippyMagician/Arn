@@ -1241,6 +1241,52 @@ pub fn parse(ast: &[Node]) {
     env.define_var("c", String::new());
     env.define_var("Fi", "Fizz".to_string());
     env.define_var("Bu", "Buzz".to_string());
+    let dummy_env = Rc::new(RefCell::new(Environment::init()));
+    env.define_var(
+        "sH",
+        Sequence::from_vec(
+            &crate::build_ast("1/2"),
+            crate::build_ast("/2")[0].clone(),
+            None,
+        )
+        .set_env_self(Rc::clone(&dummy_env)),
+    );
+    env.define_var(
+        "sA",
+        Sequence::from_vec(
+            &crate::build_ast("1"),
+            crate::build_ast("!")[0].clone(),
+            None,
+        )
+        .set_env_self(Rc::clone(&dummy_env)),
+    );
+    env.define_var(
+        "sE",
+        Sequence::from_vec(
+            &crate::build_ast("2"),
+            crate::build_ast("+2")[0].clone(),
+            None,
+        )
+        .set_env_self(Rc::clone(&dummy_env)),
+    );
+    env.define_var(
+        "sO",
+        Sequence::from_vec(
+            &crate::build_ast("1"),
+            crate::build_ast("+2")[0].clone(),
+            None,
+        )
+        .set_env_self(Rc::clone(&dummy_env)),
+    );
+    env.define_var(
+        "sF",
+        Sequence::from_vec(
+            &crate::build_ast("1 1"),
+            crate::build_ast("+")[0].clone(),
+            None,
+        )
+        .set_env_self(Rc::clone(&dummy_env)),
+    );
     // I don't care what people say, I am never adding a constant for "Hello, World!"
 
     if MATCHES.is_present("input-left") {

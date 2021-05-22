@@ -602,6 +602,15 @@ where
     }
 }
 
+impl From<Sequence> for Dynamic {
+    fn from(v: Sequence) -> Self {
+        Self {
+            val: Val::Array(Box::new(v)),
+            cur: 4,
+        }
+    }
+}
+
 #[allow(clippy::from_over_into)]
 impl Into<Node> for Dynamic {
     fn into(self) -> Node {
