@@ -4,16 +4,6 @@
 A general-purpose functional golfing language. [Tutorial](https://github.com/ZippyMagician/Arn/wiki/Tutorial)
 
 ## Installation
-### Prior to 1.0
-To install **Arn** you must have [Node.js](https://nodejs.org) installed on your system. Once installed, run
-```sh
-npm install -g arn-language
-```
-You can then use
-```sh
-arn help
-```
-to get a list of commands
 ### Post 1.0
 First, ensure [Rust](https://rust-lang.org) is installed on your system and that [these requirements](https://docs.rs/gmp-mpfr-sys/1.4.4/gmp_mpfr_sys/index.html#building-on-gnulinux) are fulfilled.
 You can either build from source by cloning the repository and then running
@@ -27,6 +17,16 @@ cargo install arn-language
 for the current release edition. You then can run
 ```
 arn --help
+```
+to get a list of commands
+### Prior to 1.0
+To install **Arn** you must have [Node.js](https://nodejs.org) installed on your system. Once installed, run
+```sh
+npm install -g arn-language
+```
+You can then use
+```sh
+arn help
 ```
 to get a list of commands
 ## About
@@ -44,9 +44,9 @@ This format, however, may lead to instances where your program needs to be a few
 | **`0_`** | `!` | `"` | `#` | `$` | `%` | `&` | `'` | `(` | `)` | `*` | `+` | `,` | `-` | `.` | `/` | `0` |
 | **`1_`** | `1` | `2` | `3` | `4` | `5` | `6` | `7` | `8` | `9` | `:` | `;` | `<` | `=` | `>` | `?` | `@` |
 | **`2_`** | `A` | `B` | `C` | `D` | `E` | `F` | `G` | `H` | `I` | `J` | `K` | `L` | `M` | `N` | `O` | `P` |
-| **`3_`** | `Q` | `R` | `S` | `T` | `U` | `V` | `W` | `X` | `Y` | `Z` | `[` | `\` | `]` | `^` | `_` | ``` |
+| **`3_`** | `Q` | `R` | `S` | `T` | `U` | `V` | `W` | `X` | `Y` | `Z` | `[` | `\` | `]` | `^` | `_` | ``` ` ``` |
 | **`4_`** | `a` | `b` | `c` | `d` | `e` | `f` | `g` | `h` | `i` | `j` | `k` | `l` | `m` | `n` | `o` | `p` |
-| **`5_`** | `q` | `r` | `s` | `t` | `u` | `v` | `w` | `x` | `y` | `z` | `{` | `|` | `}` | `~` | `¡` | `¢` |
+| **`5_`** | `q` | `r` | `s` | `t` | `u` | `v` | `w` | `x` | `y` | `z` | `{` | `\|` | `}` | `~` | `¡` | `¢` |
 | **`6_`** | `£` | `¤` | `¥` | `¦` | `§` | `¨` | `©` | `ª` | `«` | `¬` | `®` | `¯` | `°` | `○` | `■` | `↑` |
 | **`7_`** | `↓` | `→` | `←` | `║` | `═` | `╔` | `╗` | `╚` | `╝` | `░` | `▒` | `►` | `◄` | `│` | `─` | `┌` |
 | **`8_`** | `┐` | `└` | `┘` | `├` | `┤` | `┴` | `┬` | `♦` | `┼` | `█` | `▄` | `▀` | `▬` | `±` | `²` | `³` |
@@ -58,7 +58,30 @@ This format, however, may lead to instances where your program needs to be a few
 | **`E_`** | `Ÿ` | `Ž` | `ž` | `ƒ` | `ƥ` | `ʠ` | `ˆ` | `˜` | `–` | `—` | `‘` | `’` | `‚` | `“` | `”` | `„` |
 | **`F_`** | `†` | `‡` | `•` | `…` | `‰` | `‹` | `›` | `€` | `™` | `⁺` | `⁻` | `⁼` | `⇒` | `⇐` | `★` | `Δ` |
 
-### The future
-- I'm probably not going to implement any more command line arguments
-- Work on compression
-- If something can be done in a relatively small amount of symbols, it will be a function. Otherwise, a new symbol will be added.
+### Some sample programs
+#### Hello, World
+```
+'yt, bs!
+```
+#### Cat program
+```
+_
+```
+#### FizzBuzz (1->100)
+```
+~e2@"Fizz"^!%3|`#&`^!%5||
+```
+#### Fibonacci Sequence
+```
+[1 1{+
+```
+#### Prime Check
+```
+#.:}=
+```
+*Uses Wilson's Theorem*
+```
+!(f/+1)%
+```
+### Future Plans
+I plan on working on more practical features in the future, and I'm also going to look into changing the way certain operations work on sequences, among other things.
