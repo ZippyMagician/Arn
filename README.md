@@ -5,7 +5,7 @@ A general-purpose functional golfing language. [Tutorial](https://github.com/Zip
 
 ## Installation
 ### Post 1.0
-First, ensure [Rust](https://rust-lang.org) is installed on your system and that [these requirements](https://docs.rs/gmp-mpfr-sys/1.4.4/gmp_mpfr_sys/index.html#building-on-gnulinux) are fulfilled.
+First, ensure [Rust](https://rust-lang.org) is installed on your system and that [these requirements](https://docs.rs/gmp-mpfr-sys/1.4.4/gmp_mpfr_sys/index.html#building-on-gnulinux) are fulfilled. **Please build with rustc version 1.52.1 (current the stable branch), as nightly has an issue currently**.
 You can either build from source by cloning the repository and then running
 ```
 cargo install --path path/to/repository
@@ -18,7 +18,7 @@ for the current release edition. You then can run
 ```
 arn --help
 ```
-to get a list of commands
+to get a list of commands.
 ### Prior to 1.0
 To install **Arn** you must have [Node.js](https://nodejs.org) installed on your system. Once installed, run
 ```sh
