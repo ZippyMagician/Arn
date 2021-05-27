@@ -719,7 +719,14 @@ impl Sequence {
 
     fn traverse_replace(&mut self, n: Node) -> Node {
         let mut vals = self.cstr.iter().cloned().map(|n| n.into_node()).collect();
-        super::traverse_replace(&mut vals, n)
+        if let Node::Block(mut body, n) = n {
+            for i in 0..body.len() {
+                body[i] = super::traverse_replace(&mut vals, body[i].clone());
+            }
+            Node::Block(body, n)
+        } else {
+            unreachable!()
+        }
     }
 
     #[allow(clippy::unnecessary_wraps)]
