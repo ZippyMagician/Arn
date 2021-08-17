@@ -114,7 +114,8 @@ pub fn lex(prg: &str) -> Vec<Token> {
                     construct.push(Token::Variable("_".to_string()));
                 } else {
                     construct.push(Token::Number(
-                        num::parse_arn_num(&buf).expect("Error parsing number"),
+                        num::parse_arn_num(&buf)
+                            .unwrap_or_else(|_| panic!("Error parsing number `{}`", buf)),
                     ));
                 }
                 buf.clear();

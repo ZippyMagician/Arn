@@ -5,40 +5,28 @@ use crate::FLOAT_PRECISION;
 // Alias
 pub type Num = Float;
 
-#[derive(Debug, Clone, Copy)]
-pub struct EmptyError();
-
-impl<T> From<T> for EmptyError
-where
-    T: std::error::Error,
-{
-    #[inline]
-    fn from(_: T) -> Self {
-        Self()
-    }
-}
-
 pub fn is_arn_num(string: &str) -> bool {
-    if string.is_empty() {
+    let count_ = string.matches('_').count();
+    if string.is_empty() || count_ > 2 {
         return false;
     }
 
-    let mut seen_e = false;
+    let mut expos = None;
 
-    for (i, chr) in string.chars().enumerate() {
+    for (i, chr) in string.char_indices() {
         match chr {
             '_' => {
-                if i > 0 && string.chars().nth(i - 1).unwrap() != 'e' {
+                if i > 0 && Some(i - 1) != expos {
                     return false;
                 }
             }
 
             'e' => {
-                if seen_e {
+                if expos.is_some() {
                     return false;
                 }
 
-                seen_e = true;
+                expos = Some(i);
             }
 
             '0'..='9' => {}
@@ -47,37 +35,25 @@ pub fn is_arn_num(string: &str) -> bool {
         }
     }
 
-    if seen_e && string.matches('_').count() > 2 {
-        return false;
+    if expos.is_some() {
+        true
+    } else {
+        count_ <= 1
     }
-
-    string.matches('_').count() <= 1
 }
 
-pub fn parse_arn_num(string: &str) -> Result<Num, EmptyError> {
-    let mut num = String::with_capacity(string.len());
-
-    for (i, chr) in string.chars().enumerate() {
-        match chr {
-            '_' => {
-                if i > 0 && string.chars().nth(i - 1).unwrap() != 'e' {
-                    return Err(EmptyError());
-                }
-                num.push('-');
-            }
-
-            'e' => {
-                if num.is_empty() || num.starts_with('-') {
-                    num.push('1');
-                }
-                num.push('e');
-            }
-
-            '0'..='9' => num.push(chr),
-
-            _ => return Err(EmptyError()),
-        }
+pub fn parse_arn_num(string: &str) -> Result<Num, Box<dyn std::error::Error>> {
+    let mut num = String::with_capacity(string.len() + 1);
+    if string.starts_with('e') {
+        num.push('1');
+        num.push_str(string);
+    } else if string.starts_with("_e") {
+        num.push_str("-1");
+        num.push_str(&string[1..]);
+    } else {
+        num.push_str(string);
     }
+    num = num.replace('_', "-");
 
     Ok({
         let num = Num::parse(&num)?;
